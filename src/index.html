@@ -1,0 +1,64 @@
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+    <style>
+        body {
+            background: rgba(0, 0, 0, .01);
+        }
+        h1, h2, #editor {
+            font-family: 'Roboto Mono', monospace;
+        }
+        h1 {
+            margin-bottom: 0;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: lighter;
+        }
+        h2 {
+            margin-top: 0;
+            font-weight: lighter;
+            text-align: center;
+            color: rgba(0, 0, 0, 0.5);
+        }
+        #editor {
+            display: flex;
+            justify-content: center;
+        }
+        #editor .box {
+            border-radius: 5px;
+            border: 1px solid rgba(0, 0, 0, .1);
+            border-right: none;
+            display: flex;
+            flex-direction: row;
+        }
+        #editor textarea {
+            border: none;
+            padding: 20px 20px 20px 30px;
+            display: block;
+            resize: none;
+            outline: none;
+            overflow: hidden;
+        }
+        #editor .handle {
+            border-right: 2px dashed rgba(0, 0, 0, .1);
+            width: 8px;
+            background: white;
+            cursor: col-resize;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Tofu</h1>
+<h2>energy-effient code editing</h2>
+<div id="editor">
+    <div class="box">
+        <textarea></textarea>
+        <div class="handle"></div>
+    </div>
+</div>
+<script src="index.ts"></script>
+</body>
+</html>

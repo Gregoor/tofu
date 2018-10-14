@@ -1,0 +1,35 @@
+{
+  "name": "tofu",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel --no-hmr src/index.html",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.0.0",
+    "@babel/parser": "^7.0.0",
+    "@babel/types": "^7.0.0",
+    "@types/jest": "^23.3.3",
+    "prettier": "^1.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "babel-core": "^6.26.3",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "jest": "^23.6.0",
+    "parcel-bundler": "^1.9.7",
+    "ts-jest": "^23.10.3",
+    "typescript": "^3.0.3"
+  },
+  "browserslist": [
+    "last 2 firefox versions",
+    "last 2 chrome versions",
+    "last 1 edge version",
+    "last 1 safari version"
+  ],
+  "jest": {
+    "preset": "ts-jest"
+  }
+}
