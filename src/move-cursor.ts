@@ -1,5 +1,5 @@
 const t = require('@babel/types');
-import { getNode } from './utils';
+import { getNode } from './ast-utils';
 
 const isCursorable = node =>
   [
@@ -123,10 +123,12 @@ let moveCursorX = function(
 
 moveCursorX = withSpreadCursor(moveCursorX);
 
+export type Direction = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null;
+
 let moveCursor = function(
   ast,
   code,
-  direction: 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null,
+  direction: Direction,
   [start, end]: [number, number]
 ) {
   if (direction != 'UP' && direction != 'DOWN') {

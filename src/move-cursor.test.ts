@@ -144,6 +144,17 @@ const tests = [
     }
   ],
   [
+    `if (t) {
+}
+`,
+    {
+      DOWN: [
+        //
+        [8, 11]
+      ]
+    }
+  ],
+  [
     testCode,
     {
       RIGHT: [
