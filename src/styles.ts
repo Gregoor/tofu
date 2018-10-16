@@ -1,5 +1,11 @@
 import { css } from 'emotion';
 
+const borderRadius = '10px';
+
+const font = css`
+  font-family: 'Roboto Mono', monospace;
+`;
+
 const codeFontSize = css`
   font-size: 13.3333px;
 `;
@@ -12,10 +18,11 @@ const action = css`
 `;
 
 const actionBar = css`
-  border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0 ${borderRadius} ${borderRadius} 0;
   border-left: none;
-  padding: 10px;
+  padding: 20px;
+  padding-right: 30px;
   min-width: 170px;
   display: flex;
   flex-direction: column;
@@ -33,16 +40,18 @@ const actionSection = css`
 `;
 
 const box = css`
-  border-radius: 5px;
+  border-radius: ${borderRadius} 0 0 ${borderRadius};
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-right: none;
   display: flex;
   flex-direction: row;
+  overflow: hidden;
 `;
 
 const editor = css`
   display: flex;
   justify-content: center;
+  ${font};
 `;
 
 const handle = css`
@@ -78,6 +87,8 @@ const textArea = css`
   resize: none;
   outline: none;
   overflow: hidden;
+  ${codeFontSize};
+  ${font};
 `;
 
 const textAreaWrapper = css`
