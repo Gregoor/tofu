@@ -184,7 +184,7 @@ export default class Editor {
     }
     this.resizeStartX = event.clientX;
 
-    this.update({ printWidth: this.state.printWidth + colChange });
+    this.update({ printWidth: Math.max(20, this.state.printWidth + colChange) });
   };
 
   update = (
