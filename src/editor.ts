@@ -98,6 +98,14 @@ export default class Editor {
       return;
     }
 
+    if (event.key == 'Home' || event.key == 'End') {
+      // don't judge me
+      setTimeout(() => {
+        this.update({ cursor: textArea.selectionStart });
+        this.moveCursor(null);
+      });
+    }
+
     const direction = {
       ArrowLeft: 'LEFT',
       ArrowRight: 'RIGHT',
