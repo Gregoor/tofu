@@ -119,7 +119,7 @@ export default class Editor {
     }
 
     event.preventDefault();
-    this.moveCursor(direction);
+    this.moveCursor(direction, event.shiftKey);
   };
 
   handleInput = ({ data }: any) => {
@@ -170,11 +170,35 @@ export default class Editor {
     this.moveCursor(null);
   };
 
-  moveCursor(direction: Direction) {
+  moveCursor(direction: Direction, rangeSelect = false) {
+    if (!this.state.ast) {
+      this.update({});
+    }
     const { ast, code, cursor } = this.state;
-    const newCursor = moveCursor(ast, code, direction, cursor);
-    console.debug(cursor, '=>', newCursor);
-    this.update({ cursor: newCursor });
+    let nextCursor = moveCursor(
+      ast,
+      code,
+      direction,
+      direction == 'RIGHT' ? Math.max(...cursor) : Math.min(...cursor)
+    );
+    if (rangeSelect) {
+      const nextNode = getNode(ast, nextCursor[0]);
+      if (
+        t.isLiteral(nextNode) &&
+        nextNode.start < nextCursor[0] &&
+        nextNode.end > nextCursor[1]
+      ) {
+        nextCursor = [cursor[0], nextCursor[1]].sort((a, b) => a - b) as [
+          number,
+          number
+        ];
+      } else {
+        const { start, end } = nextNode;
+        nextCursor = [Math.min(start, getNode(ast, cursor[0]).start), end];
+      }
+    }
+    console.debug(cursor, '=>', nextCursor);
+    this.update({ cursor: nextCursor });
   }
 
   handleResize = (event: MouseEvent) => {

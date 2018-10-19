@@ -25,17 +25,16 @@ let moveCursorX = function(
   code: string,
   direction: 'LEFT' | 'RIGHT' | null,
   recursionDepth: number,
-  cursor: Cursor
+  start: number
 ): number | Cursor {
   const { isLeft, isRight } = {
     isLeft: direction === 'LEFT',
     isRight: direction === 'RIGHT'
   };
-  const [start, end] = spreadCursor(cursor);
   const node = getNode(ast, start);
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
-  const nextCursor = [nextStart, nextStart];
+  const nextCursor = nextStart;
   const moveOn = moveCursorX.bind(
     null,
     ast,
@@ -57,17 +56,17 @@ let moveCursorX = function(
 
   if (t.isVariableDeclaration(node)) {
     const kindLength = node.kind.length;
-    if (isRight && end - node.start == kindLength) {
-      return end + additive;
+    if (isRight && start - node.start == kindLength) {
+      return start + additive;
     }
-    if (start > node.start && end <= node.start + kindLength) {
+    if (start > node.start && start <= node.start + kindLength) {
       return [node.start, node.start + kindLength];
     }
   }
 
   if (
     recursionDepth > 0 &&
-    t.isBooleanLiteral(node) &&
+    (t.isBooleanLiteral(node) || t.isNullLiteral(node)) &&
     ((isRight && start == node.start) || (isLeft && start == node.end))
   ) {
     return [node.start, node.end];
@@ -75,18 +74,18 @@ let moveCursorX = function(
 
   if (
     t.isBinaryExpression(node) &&
-    ((isRight && end == node.left.end + 1) ||
+    ((isRight && start == node.left.end + 1) ||
       (isLeft && start == node.right.start - 1))
   ) {
     return [node.left.end + 1, node.right.start - 1];
   }
 
   if (t.isArrayExpression(node)) {
-    if (end == node.start) {
+    if (start == node.start) {
       return [node.start, node.end];
     }
     if (recursionDepth > 0 && start == node.end) {
-      return end;
+      return start;
     }
   }
 
@@ -105,12 +104,12 @@ let moveCursorX = function(
   }
 
   if (isCursorable(node) && (recursionDepth > 0 || direction == null)) {
-    return [start, end];
+    return start;
   }
 
   if (direction == null) {
-    const left = moveCursorX(ast, code, 'LEFT', 0, cursor);
-    const right = moveCursorX(ast, code, 'RIGHT', 0, cursor);
+    const left = moveCursorX(ast, code, 'LEFT', 0, start);
+    const right = moveCursorX(ast, code, 'RIGHT', 0, start);
     const leftBreak = code.slice(left[0], start).includes('\n');
     const rightBreak = code.slice(start, right[0]).includes('\n');
     if (leftBreak) return right;
@@ -125,14 +124,9 @@ moveCursorX = withSpreadCursor(moveCursorX);
 
 export type Direction = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null;
 
-let moveCursor = function(
-  ast,
-  code,
-  direction: Direction,
-  [start, end]: [number, number]
-) {
+let moveCursor = function(ast, code, direction: Direction, start: number) {
   if (direction != 'UP' && direction != 'DOWN') {
-    return moveCursorX(ast, code, direction, 0, [start, end]);
+    return moveCursorX(ast, code, direction, 0, start);
   }
 
   const isUp = direction == 'UP';

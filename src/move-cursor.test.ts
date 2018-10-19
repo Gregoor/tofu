@@ -7,12 +7,7 @@ function testPath(ast, code, path, direction) {
   for (let [before, after] of path) {
     test(`${direction}: ${before} => ${after}`, () => {
       expect(
-        moveCursor(
-          ast,
-          code,
-          direction == 'null' ? null : direction,
-          spreadCursor(before)
-        )
+        moveCursor(ast, code, direction == 'null' ? null : direction, before)
       ).toEqual(spreadCursor(after));
     });
   }
@@ -29,7 +24,7 @@ const tests = [
         //
         [0, [0, 3]],
         [1, [0, 3]],
-        [[0, 3], 4],
+        [3, 4],
         [4, 5],
         [5, 8],
         [11, 11]
@@ -56,7 +51,7 @@ const tests = [
       RIGHT: [
         //
         [0, [0, 5]],
-        [[0, 5], 6],
+        [5, 6],
         [5, 6],
         [9, [12, 16]]
       ]
@@ -68,11 +63,11 @@ const tests = [
       RIGHT: [
         //
         [2, [3, 4]],
-        [[3, 4], 6]
+        [4, 6]
       ],
       LEFT: [
         //
-        [[3, 4], 2],
+        [3, 2],
         [6, [3, 4]]
       ]
     }
@@ -84,11 +79,11 @@ const tests = [
         //
         [4, 5],
         [5, [6, 7]],
-        [[6, 7], 9]
+        [7, 9]
       ],
       LEFT: [
         //
-        [[6, 7], 5]
+        [6, 5]
       ]
     }
   ],
@@ -104,7 +99,7 @@ const tests = [
       LEFT: [
         //
         [17, 16],
-        [[18, 19], 17]
+        [18, 17]
       ]
     }
   ],
@@ -113,7 +108,7 @@ const tests = [
     {
       RIGHT: [
         //
-        [[0, 4], [5, 6]]
+        [4, [5, 6]]
       ]
     }
   ],
@@ -177,7 +172,7 @@ const tests = [
         [4, 0],
         [24, 10],
         [28, 12],
-        [[43, 48], 16],
+        [43, 16],
         [55, 26],
         [74, 41],
         [93, 87]
