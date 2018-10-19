@@ -19,6 +19,8 @@ export default class Editor {
   resizeHandle: HTMLElement;
   state: EditorState;
 
+  renderIdleCallbackId: number;
+
   resizeStartX = null;
 
   actions: ActionSections = [];
@@ -282,7 +284,10 @@ export default class Editor {
     }
 
     this.state = { ...newState, ast, code, cursor: [start, end] };
-    this.render();
+    (window as any).cancelIdleCallback(this.renderIdleCallbackId);
+    this.renderIdleCallbackId = (window as any).requestIdleCallback(
+      this.render
+    );
   };
 
   render = () => {
