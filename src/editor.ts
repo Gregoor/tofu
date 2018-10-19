@@ -67,7 +67,7 @@ export default class Editor {
     const [start] = cursor;
 
     let action = this.actions
-      .filter(s => event.altKey || !s.needsAlt)
+      .filter(s => event.ctrlKey || !s.ctrlModifier)
       .map(s => s.children)
       .flat()
       .find(a => a.key == event.key);
@@ -285,7 +285,7 @@ export default class Editor {
     this.render();
   };
 
-  render() {
+  render = () => {
     const { actionBar, state, textArea } = this;
 
     textArea.style.height = 'auto';
@@ -307,7 +307,8 @@ export default class Editor {
         section.append(
           el('h4', [
             actionSection.title,
-            actionSection.needsAlt && el('span', { class: styles.key }, 'Alt')
+            actionSection.ctrlModifier &&
+              el('span', { class: styles.key }, 'Ctrl')
           ]),
           ...actionSection.children.map(action =>
             el('div', { class: styles.action }, [
@@ -320,5 +321,5 @@ export default class Editor {
         return section;
       })
     );
-  }
+  };
 }
