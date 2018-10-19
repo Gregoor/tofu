@@ -89,11 +89,15 @@ export default class Editor {
         .split('\n')
         .map((s, i) => s.length + (i == 0 ? 0 : 1))
         .reduce((accu, n) => accu.concat((accu[accu.length - 1] || 0) + n), []);
-      const pos = accuCharCounts.find(n => n >= textArea.selectionStart);
+      let index = accuCharCounts.findIndex(n => n >= textArea.selectionStart);
+      if (event.shiftKey && index > 0) {
+        index -= 1;
+      }
+      const pos = event.shiftKey && index == 0 ? 0 : accuCharCounts[index];
       this.update(
         {
           code: code.slice(0, pos) + '\n' + code.slice(pos),
-          cursor: pos + 1
+          cursor: pos == 0 ? 0 : pos + 1
         },
         { prettify: false }
       );
