@@ -124,10 +124,6 @@ export default class Editor {
     }[event.key];
     if (!direction) return;
 
-    if (!this.state.ast) {
-      this.update({});
-    }
-
     event.preventDefault();
     this.moveCursor(direction, event.shiftKey);
   };
@@ -136,7 +132,7 @@ export default class Editor {
     const {
       ast,
       code,
-      cursor: [start]
+      cursor: [start, end]
     } = this.state;
     let { selectionStart, selectionEnd, value } = this.textArea;
 
@@ -146,7 +142,7 @@ export default class Editor {
       shouldParse = t.isStringLiteral(node) && node.end != start;
     }
 
-    const [parents] = ast ? getFocusPath(ast, start) : [null];
+    const [parents] = ast ? getFocusPath(ast, start) : [[], []];
     parents.reverse();
     const node = Array.isArray(parents[0]) ? parents[1] : parents[0];
 
@@ -165,7 +161,10 @@ export default class Editor {
     this.update(
       {
         code:
-          data && t.isArrayExpression(node)
+          data &&
+          t.isArrayExpression(node) &&
+          start > node.start &&
+          end < node.end
             ? replaceCode(code, start, data + ',')
             : value,
         cursor: [selectionStart, selectionEnd]
@@ -218,7 +217,9 @@ export default class Editor {
     }
     this.resizeStartX = event.clientX;
 
-    this.update({ printWidth: Math.max(20, this.state.printWidth + colChange) });
+    this.update({
+      printWidth: Math.max(20, this.state.printWidth + colChange)
+    });
   };
 
   update = (
