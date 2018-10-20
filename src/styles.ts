@@ -23,7 +23,7 @@ const actionBar = css`
   border-left: none;
   padding: 20px;
   padding-right: 30px;
-  min-width: 170px;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   background: white;
