@@ -4,6 +4,8 @@ import { getNode } from './ast-utils';
 const isCursorable = node =>
   [
     t.isStringLiteral,
+    t.isTemplateLiteral,
+    t.isTemplateElement,
     t.isIdentifier,
     t.isNumericLiteral,
     t.isCallExpression,
