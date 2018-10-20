@@ -76,9 +76,9 @@ export default class Editor {
       .filter(s => event.ctrlKey || !s.ctrlModifier)
       .map(s => s.children)
       .flat()
-      .find(a => a.key == event.key);
+      .find(a => (a.key ? a.key == event.key : a.code === event.code));
     if (action) {
-      const result = action.execute(this.state);
+      const result = action.execute(this.state, event.shiftKey);
       this.update(result);
       if (result.cursorFromAST) {
         this.update({ cursor: result.cursorFromAST(this.state.ast) });
@@ -348,7 +348,11 @@ export default class Editor {
           ...actionSection.children.map(action =>
             el('div', { class: styles.action }, [
               el('div', action.name),
-              el('div', { class: styles.key }, action.key)
+              el(
+                'div',
+                { class: styles.key },
+                action.key || { Comma: ',' }[action.code]
+              )
             ])
           )
         );

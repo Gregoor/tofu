@@ -25,28 +25,85 @@ type ActionResult = ({ code: string } | { ast }) & {
   cursorFromAST?: (ast) => number | Cursor;
 };
 
-const variableDeclaration = ({ ast, cursor }: EditorState): ActionResult => {
+const addVariableDeclaration = ({
+  ast,
+  cursor: [start]
+}: EditorState): ActionResult => {
+  const [parents, path] = getFocusPath(ast, start);
+  const parent = parents
+    .reverse()
+    .find(node => t.isBlockStatement(node) || t.isProgram(node));
+  const index = findSlotIndex(parent.body, start);
+  parent.body.splice(
+    index,
+    0,
+    t.variableDeclaration('const', [
+      t.variableDeclarator(t.identifier('name'), t.nullLiteral())
+    ])
+  );
+  return {
+    ast,
+    cursorFromAST: ast => {
+      const node = path
+        .concat(path[path.length - 1] == 'body' ? [] : 'body', index)
+        .reduce((ast, property) => ast[property], ast);
+      return [node.start, node.start + node.kind.length];
+    }
+  };
+};
+
+const toggleLogicalExpression = (node, newOperator) => ({
+  ast,
+  cursor: [start]
+}: EditorState): ActionResult => {
+  node.operator = newOperator;
+  return {
+    ast,
+    cursorFromAST: ast => {
+      const node = getNode(ast, start);
+      return [node.left.end + 1, node.right.start - 1];
+    }
+  };
+};
+
+const addLogicalExpression = operator => ({ ast, cursor: [start] }) => {
+  const [parents] = getFocusPath(ast, start);
+  console.log(parents);
   return { ast };
 };
 
-const addToCollection = ({
-  ast,
-  cursor: [start, end]
-}: EditorState): ActionResult => {
+const isInCollection = ([start, end]: Cursor) => node =>
+  (t.isArrayExpression(node) && start > node.start && end < node.end) ||
+  (t.isCallExpression(node) &&
+    start >
+      node.end -
+        // ()
+        2 -
+        node.arguments.reduce((sum, node) => sum + node.end - node.start, 0) -
+        // ", " between arguments
+        (node.arguments.length - 1) * 2 &&
+    end < node.end);
+const addToCollection = (
+  { ast, cursor: [start, end] }: EditorState,
+  shift: boolean
+): ActionResult => {
   const [parents, path] = getFocusPath(ast, start);
-  const collectionIndex = findLastIndex(
-    parents,
-    node => t.isArrayExpression(node) && start > node.start && end < node.end
-  );
+  const collectionIndex = findLastIndex(parents, isInCollection([start, end]));
   const collection = parents[collectionIndex];
-  const index = findSlotIndex(collection.elements, start);
-  collection.elements.splice(index, 0, t.nullLiteral());
+  const childKey = { ArrayExpression: 'elements', CallExpression: 'arguments' }[
+    collection.type
+  ];
+  let index = findSlotIndex(collection[childKey], start);
+  if (shift) {
+    index = Math.max(0, index - 1);
+  }
+  collection[childKey].splice(index, 0, t.nullLiteral());
   return {
     ast,
     cursorFromAST: ast => {
       const node = path
         .slice(0, collectionIndex)
-        .concat('elements', index)
+        .concat(childKey, index)
         .reduce((ast, property) => ast[property], ast);
       return [node.start, node.end];
     }
@@ -139,8 +196,9 @@ export type ActionSections = {
   title: string;
   children: {
     name: string;
-    key: string;
-    execute: (EditorState) => ActionResult;
+    code?: string;
+    key?: string;
+    execute: (EditorState, shift: boolean) => ActionResult;
   }[];
   ctrlModifier: boolean;
 }[];
@@ -156,16 +214,41 @@ export default function getAvailableActions({
   const [node] = parents;
   const actions = [];
 
-  const parentCollection = parents.find(
-    node => t.isArrayExpression(node) && start > node.start && end < node.end
-  );
-  if (t.isArrayExpression(parentCollection)) {
+  if (t.isLogicalExpression(node)) {
+    const newOperator = node.operator == '||' ? '&' : '|';
     actions.push({
-      title: { ArrayExpression: 'Array' }[parentCollection.type],
+      title: 'Modify',
+      children: [
+        {
+          name: newOperator.repeat(2),
+          key: newOperator,
+          execute: toggleLogicalExpression(node, newOperator.repeat(2))
+        }
+      ]
+    });
+  } else if (t.isExpression(node)) {
+    actions.push({
+      title: 'Insert',
+      children: [
+        ...['&', '|'].map(operator => ({
+          name: operator.repeat(2),
+          key: operator,
+          execute: operator.repeat(2)
+        }))
+      ]
+    });
+  }
+
+  const parentCollection = parents.find(isInCollection([start, end]));
+  if (parentCollection) {
+    actions.push({
+      title: { ArrayExpression: 'Array', CallExpression: 'Arguments' }[
+        parentCollection.type
+      ],
       children: [
         {
           name: 'Add',
-          key: ',',
+          code: 'Comma',
           execute: addToCollection
         }
       ],
@@ -193,7 +276,7 @@ export default function getAvailableActions({
     ctrlModifier: true,
     children: [
       ...(insertMode
-        ? [{ name: 'const/let/var', key: 'd', execute: variableDeclaration }]
+        ? [{ name: 'const/let/var', key: 'd', execute: addVariableDeclaration }]
         : []),
       {
         name: 'if',
