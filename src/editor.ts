@@ -12,6 +12,10 @@ import styles from './styles';
 
 const babylon = require('prettier/parser-babylon');
 
+function generateCodeFromAST(ast) {
+  return generate(ast, { retainLines: true }).code;
+}
+
 export default class Editor {
   textArea: HTMLTextAreaElement;
   actionBar: HTMLElement;
@@ -241,23 +245,29 @@ export default class Editor {
     let [start, end] = cursor;
 
     const newState = { ...prevState, ...{ ...state, cursor } };
-    let { ast, code, printWidth } = newState;
+    let { ast, code, lastValidAST, printWidth } = newState;
 
-    code = state.ast ? generate(state.ast).code : code;
+    if (state.ast) {
+      code = generateCodeFromAST(state.ast);
+    }
 
     const { textArea } = this;
     const newWidth = printWidth !== prevState.printWidth;
 
-    if (code !== prevState.code || newWidth) {
+    const prettierOptions = {
+      parser: 'babylon',
+      plugins: [babylon],
+      cursorOffset: start,
+      printWidth,
+      trailingComma: 'all'
+    };
+    if (!ast || code !== prevState.code || newWidth) {
       if (prettify) {
         try {
-          const { formatted, cursorOffset } = prettier.formatWithCursor(code, {
-            parser: 'babylon',
-            plugins: [babylon],
-            cursorOffset: start,
-            printWidth,
-            trailingComma: 'all'
-          });
+          const { formatted, cursorOffset } = prettier.formatWithCursor(
+            code,
+            prettierOptions
+          );
           ast = parse(formatted);
           code = formatted;
           start = end = cursorOffset;
@@ -266,8 +276,17 @@ export default class Editor {
             throw e;
           }
           if (shouldParse) {
-            ast = prevState.ast;
-            code = prevState.code;
+            ast = prevState.ast || lastValidAST;
+            const {
+              formatted,
+              cursorOffset,
+              ...rest
+            } = prettier.formatWithCursor(generateCodeFromAST(ast), {
+              ...prettierOptions,
+              cursorOffset: prevState.cursor[0] || start
+            });
+            code = formatted;
+            start = end = cursorOffset;
           } else {
             ast = null;
           }
@@ -287,7 +306,13 @@ export default class Editor {
       this.resizeHandle.title = printWidth.toString();
     }
 
-    this.state = { ...newState, ast, code, cursor: [start, end] };
+    this.state = {
+      ...newState,
+      ast,
+      code,
+      cursor: [start, end],
+      lastValidAST: ast || lastValidAST
+    };
     (window as any).cancelIdleCallback(this.renderIdleCallbackId);
     this.renderIdleCallbackId = (window as any).requestIdleCallback(
       this.render
