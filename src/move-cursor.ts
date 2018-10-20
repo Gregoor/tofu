@@ -73,7 +73,7 @@ let moveCursorX = function(
   }
 
   if (
-    t.isBinaryExpression(node) &&
+    (t.isBinaryExpression(node) || t.isLogicalExpression(node)) &&
     ((isRight && start == node.left.end + 1) ||
       (isLeft && start == node.right.start - 1))
   ) {
