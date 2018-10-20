@@ -137,7 +137,7 @@ export default class Editor {
     let { selectionStart, selectionEnd, value } = this.textArea;
 
     let shouldParse = true;
-    if (ast && data == '.') {
+    if (ast && (data == '.' || data == 'e')) {
       const node = getNode(ast, start);
       shouldParse = t.isStringLiteral(node) && node.end != start;
     }
