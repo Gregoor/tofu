@@ -262,7 +262,10 @@ export default class Editor {
       printWidth,
       trailingComma: 'all'
     };
-    if (!ast || code !== prevState.code || newWidth) {
+
+    if (!shouldParse) {
+      ast = null;
+    } else if (!ast || code !== prevState.code || newWidth) {
       if (prettify) {
         try {
           const { formatted, cursorOffset } = prettier.formatWithCursor(
@@ -276,24 +279,18 @@ export default class Editor {
           if (!(e instanceof SyntaxError)) {
             throw e;
           }
-          if (shouldParse) {
-            ast = prevState.ast || lastValidAST;
-            const {
-              formatted,
-              cursorOffset,
-              ...rest
-            } = prettier.formatWithCursor(generateCodeFromAST(ast), {
+          ast = prevState.ast || lastValidAST;
+          const { formatted, cursorOffset } = prettier.formatWithCursor(
+            generateCodeFromAST(ast),
+            {
               ...prettierOptions,
               cursorOffset: prevState.cursor[0] || start
-            });
-            code = formatted;
-            start = end = cursorOffset;
-          } else {
-            ast = null;
-          }
+            }
+          );
+          ast = parse(formatted);
+          code = formatted;
+          start = end = cursorOffset;
         }
-      } else {
-        ast = parse(code);
       }
 
       textArea.value = code;
