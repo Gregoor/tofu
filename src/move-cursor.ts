@@ -25,13 +25,15 @@ function withSpreadCursor<T>(fn: (...args: T[]) => number | Cursor) {
 let moveCursorX = function(
   ast,
   code: string,
-  direction: 'LEFT' | 'RIGHT' | null,
+  direction: 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null,
   recursionDepth: number,
   start: number
 ): number | Cursor {
-  const { isLeft, isRight } = {
+  const { isLeft, isRight, isDown, isUp } = {
     isLeft: direction === 'LEFT',
-    isRight: direction === 'RIGHT'
+    isRight: direction === 'RIGHT',
+    isDown: direction === 'DOWN',
+    isUp: direction === 'UP'
   };
   const node = getNode(ast, start);
   const additive = isLeft ? -1 : isRight ? 1 : 0;
@@ -93,8 +95,9 @@ let moveCursorX = function(
 
   if (t.isBlockStatement(node) && node.body.length == 0) {
     const nextStart = node.start + 1;
-    if (start == nextStart) {
-      return moveOn(isRight ? node.end + 1 : node.start - 1);
+
+    if (start == nextStart || (start > nextStart && (isRight || isDown))) {
+      return moveOn(isRight || isDown ? node.end + 1 : node.start - 1);
     }
     return nextStart;
   }
@@ -104,12 +107,13 @@ let moveCursorX = function(
   if (t.isStringLiteral(node) && start == node.start) {
     return moveOn(nextCursor);
   }
+  const isHorizontal = isLeft || isRight;
 
-  if (isCursorable(node) && (recursionDepth > 0 || direction == null)) {
+  if (isCursorable(node) && (recursionDepth > 0 || !isHorizontal)) {
     return start;
   }
 
-  if (direction == null) {
+  if (!isHorizontal) {
     const left = moveCursorX(ast, code, 'LEFT', 0, start);
     const right = moveCursorX(ast, code, 'RIGHT', 0, start);
     const leftBreak = code.slice(left[0], start).includes('\n');
@@ -160,7 +164,7 @@ let moveCursor = function(ast, code, direction: Direction, start: number) {
         : charCounts[line] + (line == 0 ? 1 : 0));
   }
 
-  return moveCursorX(ast, code, null, 0, nextStart);
+  return moveCursorX(ast, code, direction, 0, nextStart);
 };
 
 export default withSpreadCursor(moveCursor);
