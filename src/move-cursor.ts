@@ -38,7 +38,6 @@ let moveCursorX = function(
   const node = getNode(ast, start);
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
-  const nextCursor = nextStart;
   const moveOn = moveCursorX.bind(
     null,
     ast,
@@ -55,6 +54,9 @@ let moveCursorX = function(
   }
 
   if (start !== nextStart && code[start] == '\n' && code[nextStart] == '\n') {
+    if (isLeft && recursionDepth == 0) {
+      return nextStart;
+    }
     return isRight ? nextStart : start;
   }
 
@@ -84,13 +86,8 @@ let moveCursorX = function(
     return [node.left.end + 1, node.right.start - 1];
   }
 
-  if (t.isArrayExpression(node)) {
-    if (start == node.start) {
-      return [node.start, node.end];
-    }
-    if (recursionDepth > 0 && start == node.end) {
-      return start;
-    }
+  if (t.isArrayExpression(node) && recursionDepth > 0 && start == node.end) {
+    return start;
   }
 
   if (t.isBlockStatement(node) && node.body.length == 0) {
@@ -105,7 +102,7 @@ let moveCursorX = function(
   // Only skip over the starting quote, we might want to call functions on that
   // string so we need the cursor after the closing quote
   if (t.isStringLiteral(node) && start == node.start) {
-    return moveOn(nextCursor);
+    return moveOn(nextStart);
   }
   const isHorizontal = isLeft || isRight;
 
@@ -114,8 +111,8 @@ let moveCursorX = function(
   }
 
   if (!isHorizontal) {
-    const left = moveCursorX(ast, code, 'LEFT', 0, start);
-    const right = moveCursorX(ast, code, 'RIGHT', 0, start);
+    const left = moveCursorX(ast, code, 'LEFT', 1, start);
+    const right = moveCursorX(ast, code, 'RIGHT', 1, start);
     const leftBreak = code.slice(left[0], start).includes('\n');
     const rightBreak = code.slice(start, right[0]).includes('\n');
     if (leftBreak) return right;
@@ -123,7 +120,7 @@ let moveCursorX = function(
     return start - left[0] < right[0] - start ? left : right;
   }
 
-  return moveOn(nextCursor);
+  return moveOn(nextStart);
 };
 
 moveCursorX = withSpreadCursor(moveCursorX);
@@ -164,7 +161,7 @@ let moveCursor = function(ast, code, direction: Direction, start: number) {
         : charCounts[line] + (line == 0 ? 1 : 0));
   }
 
-  return moveCursorX(ast, code, direction, 0, nextStart);
+  return moveCursorX(ast, code, direction, 1, nextStart);
 };
 
 export default withSpreadCursor(moveCursor);
