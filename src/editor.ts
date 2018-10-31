@@ -3,11 +3,16 @@ const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 import prettier from 'prettier/standalone';
 import { el } from 'redom';
-import getAvailableActions, { ActionSections } from './actions';
+import getAvailableActions, {
+  ActionSections,
+  keywords,
+  wrappingStatement
+} from './actions';
 import { getFocusPath, getNode } from './ast-utils';
 import { replaceCode } from './code-utils';
 import { EditorState } from './edtior-state';
 import moveCursor, { Cursor, Direction, spreadCursor } from './move-cursor';
+import RangeSelector from './range-selector';
 import styles from './styles';
 
 const babylon = require('prettier/parser-babylon');
@@ -22,6 +27,7 @@ export default class Editor {
   lineNumbers: HTMLElement;
   resizeHandle: HTMLElement;
   state: EditorState;
+  rangeSelector = new RangeSelector();
 
   renderIdleCallbackId: number;
 
@@ -76,18 +82,17 @@ export default class Editor {
       .filter(s => event.ctrlKey || !s.ctrlModifier)
       .map(s => s.children)
       .flat()
-      .find(a => (a.key ? a.key == event.key : a.code === event.code));
+      .find(a => a.key == event.key || (a.codes || []).includes(event.code));
     if (action) {
       const result = action.execute(this.state, event.shiftKey);
       this.update(result);
-      if (result.cursorFromAST) {
-        this.update({ cursor: result.cursorFromAST(this.state.ast) });
-      }
       event.preventDefault();
       return;
     }
 
-    if (event.key == 'Enter' && !t.isTemplateLiteral(getNode(ast, start))) {
+    const node = ast ? getNode(ast, start) : null;
+
+    if (event.key == 'Enter' && !t.isTemplateLiteral(node)) {
       event.preventDefault();
       const accuCharCounts = code
         .split('\n')
@@ -146,12 +151,45 @@ export default class Editor {
     parents.reverse();
     const node = Array.isArray(parents[0]) ? parents[1] : parents[0];
 
-    if (data == '(' && t.isExpression(node)) {
+    if (
+      data == '(' &&
+      t.isExpression(node) &&
+      !t.isStringLiteral(node) &&
+      !t.isTemplateLiteral(node)
+    ) {
       this.update({
         code: replaceCode(code, start, '()'),
         cursor: selectionStart
       });
       return;
+    }
+
+    if (t.isIdentifier(node)) {
+      const keyword = keywords.find(key => key.name.slice(0, -1) == node.name);
+      if (keyword && data == keyword.name[node.name.length]) {
+        shouldParse = false;
+      }
+    }
+
+    if (!ast && (data == ' ' || data == '(')) {
+      const keyword = keywords.find(
+        ({ name }) => code.slice(start - name.length, start) == name
+      );
+      if (keyword) {
+        event.preventDefault();
+        const { name, create, getInitialCursor } = keyword;
+
+        const nextStart = start - name.length;
+        const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
+        this.update(
+          wrappingStatement(create, getInitialCursor)({
+            ast: parse(nextCode),
+            code: nextCode,
+            cursor: [nextStart, nextStart]
+          })
+        );
+        return;
+      }
     }
 
     if (["'", '"', '`'].includes(data)) {
@@ -184,30 +222,24 @@ export default class Editor {
       this.update({});
     }
     const { ast, code, cursor } = this.state;
-    let nextCursor = moveCursor(
-      ast,
-      code,
-      direction,
-      direction == 'RIGHT' ? Math.max(...cursor) : Math.min(...cursor)
-    );
+
     if (rangeSelect) {
-      const nextNode = getNode(ast, nextCursor[0]);
-      if (
-        t.isLiteral(nextNode) &&
-        nextNode.start < nextCursor[0] &&
-        nextNode.end > nextCursor[1]
-      ) {
-        nextCursor = [cursor[0], nextCursor[1]].sort((a, b) => a - b) as [
-          number,
-          number
-        ];
-      } else {
-        const { start, end } = nextNode;
-        nextCursor = [Math.min(start, getNode(ast, cursor[0]).start), end];
-      }
+      this.update({
+        cursor: this.rangeSelector.run(ast, code, cursor, direction)
+      });
+    } else {
+      this.rangeSelector.reset();
+      this.update({
+        cursor: moveCursor(
+          ast,
+          code,
+          direction,
+          (direction == 'RIGHT' || direction == 'DOWN' ? Math.max : Math.min)(
+            ...cursor
+          )
+        )
+      });
     }
-    console.debug(cursor, '=>', nextCursor);
-    this.update({ cursor: nextCursor });
   }
 
   handleResize = (event: MouseEvent) => {
@@ -223,12 +255,14 @@ export default class Editor {
   };
 
   update = (
-    state: Partial<{
-      ast: any;
-      code: string;
-      cursor: number | Cursor;
-      printWidth: number;
-    }>,
+    state: Partial<
+      {
+        ast: any;
+        code: string;
+        cursor: number | Cursor;
+        printWidth: number;
+      } & { cursorFromAST?: (ast) => any }
+    >,
     options: { prettify?: boolean; shouldParse?: boolean } = {}
   ) => {
     const { prettify, shouldParse } = {
@@ -246,7 +280,7 @@ export default class Editor {
     let [start, end] = cursor;
 
     const newState = { ...prevState, ...{ ...state, cursor } };
-    let { ast, code, lastValidAST, printWidth } = newState;
+    let { ast, code, cursorFromAST, lastValidAST, printWidth } = newState;
 
     if (state.ast) {
       code = generateCodeFromAST(state.ast);
@@ -291,9 +325,17 @@ export default class Editor {
           code = formatted;
           start = end = cursorOffset;
         }
+      } else {
+        ast = parse(code);
       }
 
       textArea.value = code;
+    }
+
+    if (cursorFromAST) {
+      const cursor = cursorFromAST(ast);
+      start = cursor[0];
+      end = cursor[1];
     }
 
     textArea.selectionStart = start;
@@ -309,6 +351,7 @@ export default class Editor {
       ast,
       code,
       cursor: [start, end],
+      cursorFromAST: null,
       lastValidAST: ast || lastValidAST
     };
     (window as any).cancelIdleCallback(this.renderIdleCallbackId);
@@ -342,16 +385,36 @@ export default class Editor {
             actionSection.ctrlModifier &&
               el('span', { class: styles.key }, 'Ctrl')
           ]),
-          ...actionSection.children.map(action =>
-            el('div', { class: styles.action }, [
-              el('div', action.name),
-              el(
-                'div',
-                { class: styles.key },
-                action.key || { Comma: ',' }[action.code]
-              )
-            ])
-          )
+          ...actionSection.children.map(action => {
+            const keys = [];
+            if (action.key) {
+              keys.push(action.key);
+            }
+            if (action.codes) {
+              keys.push(
+                ...action.codes.map(code => ({ Comma: ',' }[code] || code))
+              );
+            }
+            return el(
+              'button',
+              {
+                class: styles.action,
+                onclick: () => {
+                  const result = action.execute(this.state, false);
+                  this.update(result);
+                  this.textArea.focus();
+                }
+              },
+              [
+                el('div', action.name),
+                el(
+                  'div',
+                  { class: styles.keys },
+                  keys.map(key => el('div', { class: styles.key }, key))
+                )
+              ]
+            );
+          })
         );
 
         return section;

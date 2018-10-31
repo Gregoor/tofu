@@ -21,6 +21,49 @@ function findSlotIndex(collection, start: number) {
   return index;
 }
 
+export const keywords: {
+  name: string;
+  label?: string;
+  create: (child?) => any;
+  getInitialCursor: (ast, path) => [number, number];
+}[] = [
+  {
+    name: 'if',
+    create: (child = t.blockStatement([t.emptyStatement()])) =>
+      t.ifStatement(t.identifier('someCondition'), child),
+    getInitialCursor: (ast, path) => {
+      const test = [...path, 'test'].reduce(
+        (ast, property) => ast[property],
+        ast
+      );
+      return [test.start, test.start + test.name.length];
+    }
+  },
+  {
+    name: 'for',
+    label: 'for...of',
+    create: (child = t.blockStatement([t.emptyStatement()])) =>
+      t.forOfStatement(
+        t.variableDeclaration('const', [
+          t.variableDeclarator(t.identifier('item'))
+        ]),
+        t.identifier('iterable'),
+        child
+      ),
+    getInitialCursor: (ast, path) => {
+      const id = [...path, 'left', 'declarations', '0', 'id'].reduce(
+        (ast, property) => ast[property],
+        ast
+      );
+      return [id.start, id.start + id.name.length];
+    }
+  }
+
+  // const: {},
+  // let: {},
+  // var: {}
+];
+
 type ActionResult = ({ code: string } | { ast }) & {
   cursorFromAST?: (ast) => number | Cursor;
 };
@@ -66,12 +109,6 @@ const toggleLogicalExpression = (node, newOperator) => ({
   };
 };
 
-const addLogicalExpression = operator => ({ ast, cursor: [start] }) => {
-  const [parents] = getFocusPath(ast, start);
-  console.log(parents);
-  return { ast };
-};
-
 const isInCollection = ([start, end]: Cursor) => node =>
   (t.isArrayExpression(node) && start > node.start && end < node.end) ||
   (t.isCallExpression(node) &&
@@ -83,18 +120,19 @@ const isInCollection = ([start, end]: Cursor) => node =>
         // ", " between arguments
         (node.arguments.length - 1) * 2 &&
     end < node.end);
-const addToCollection = (
-  { ast, cursor: [start, end] }: EditorState,
-  shift: boolean
-): ActionResult => {
+const addToCollection = ({
+  ast,
+  cursor: [start, end]
+}: EditorState): ActionResult => {
   const [parents, path] = getFocusPath(ast, start);
   const collectionIndex = findLastIndex(parents, isInCollection([start, end]));
   const collection = parents[collectionIndex];
+  const node = parents[parents.length - 1];
   const childKey = { ArrayExpression: 'elements', CallExpression: 'arguments' }[
     collection.type
   ];
   let index = findSlotIndex(collection[childKey], start);
-  if (shift) {
+  if (start == node.start && end == node.start) {
     index = Math.max(0, index - 1);
   }
   collection[childKey].splice(index, 0, t.nullLiteral());
@@ -125,10 +163,14 @@ const changeDeclarationKindTo = (kind: string) => ({
   };
 };
 
-const wrappingStatement = (
-  wrapper: (child) => any,
-  cursorFromAST: (ast, path: string[]) => Cursor
-) => ({ ast, code, cursor: [start] }: EditorState): ActionResult => {
+export const wrappingStatement = (
+  wrapper: (child?) => any,
+  getInitialCursor: (ast, path: string[]) => Cursor
+) => ({
+  ast,
+  code,
+  cursor: [start]
+}: Pick<EditorState, 'ast' | 'code' | 'cursor'>): ActionResult => {
   const [parents, path] = getFocusPath(ast, start);
   const parentStatementIndex = findLastIndex(parents, n => t.isStatement(n));
   const parentStatement = parents[parentStatementIndex];
@@ -150,57 +192,24 @@ const wrappingStatement = (
     const index = findSlotIndex(siblings, start);
     basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
 
-    newCode = replaceCode(
-      code,
-      start,
-      generate(wrapper(t.blockStatement([t.emptyStatement()]))).code
-    );
+    newCode = replaceCode(code, start, generate(wrapper()).code);
   }
 
   return {
     code: newCode,
-    cursorFromAST: ast => cursorFromAST(ast, basePath)
+    cursorFromAST: ast => getInitialCursor(ast, basePath)
   };
 };
-
-const ifStatement = wrappingStatement(
-  child => t.ifStatement(t.identifier('someCondition'), child),
-  (ast, path) => {
-    const test = [...path, 'test'].reduce(
-      (ast, property) => ast[property],
-      ast
-    );
-    return [test.start, test.start + test.name.length];
-  }
-);
-
-const forStatement = wrappingStatement(
-  child =>
-    t.forOfStatement(
-      t.variableDeclaration('const', [
-        t.variableDeclarator(t.identifier('item'))
-      ]),
-      t.identifier('iterable'),
-      child
-    ),
-  (ast, path) => {
-    const id = [...path, 'left', 'declarations', '0', 'id'].reduce(
-      (ast, property) => ast[property],
-      ast
-    );
-    return [id.start, id.start + id.name.length];
-  }
-);
 
 export type ActionSections = {
   title: string;
   children: {
     name: string;
-    code?: string;
+    codes?: string[];
     key?: string;
     execute: (EditorState, shift: boolean) => ActionResult;
   }[];
-  ctrlModifier: boolean;
+  ctrlModifier?: boolean;
 }[];
 
 export default function getAvailableActions({
@@ -226,17 +235,6 @@ export default function getAvailableActions({
         }
       ]
     });
-  } else if (t.isExpression(node)) {
-    actions.push({
-      title: 'Insert',
-      children: [
-        ...['&', '|'].map(operator => ({
-          name: operator.repeat(2),
-          key: operator,
-          execute: operator.repeat(2)
-        }))
-      ]
-    });
   }
 
   const parentCollection = parents.find(isInCollection([start, end]));
@@ -248,7 +246,7 @@ export default function getAvailableActions({
       children: [
         {
           name: 'Add',
-          code: 'Comma',
+          codes: ['Comma', 'Space'],
           execute: addToCollection
         }
       ],
@@ -266,30 +264,19 @@ export default function getAvailableActions({
           name,
           key: name[0],
           execute: changeDeclarationKindTo(name)
-        })),
-      ctrlModifier: false
+        }))
     });
   }
 
-  actions.push({
-    title: insertMode ? 'Insert' : 'Surround with',
-    ctrlModifier: true,
-    children: [
-      ...(insertMode
-        ? [{ name: 'const/let/var', key: 'd', execute: addVariableDeclaration }]
-        : []),
-      {
-        name: 'if',
-        key: 'i',
-        execute: ifStatement
-      },
-      {
-        name: 'for...of',
-        key: 'f',
-        execute: forStatement
-      }
-    ]
-  });
+  if (!insertMode) {
+    actions.push({
+      title: 'Wrap with',
+      children: keywords.map(({ name, label, create, getInitialCursor }) => ({
+        name: label || name,
+        execute: wrappingStatement(create, getInitialCursor)
+      }))
+    });
+  }
 
   return actions;
 }

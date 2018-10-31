@@ -13,8 +13,18 @@ const codeFontSize = css`
 const action = css`
   display: flex;
   justify-content: space-between;
-  ${codeFontSize};
+  border: none;
   margin: 5px 0;
+  padding: 0;
+  width: 100%;
+  ${font};
+  ${codeFontSize};
+  background: none;
+  cursor: pointer;
+  
+  &:hover {
+    font-weight: bold;
+  }
 `;
 
 const actionBar = css`
@@ -69,6 +79,15 @@ const key = css`
   font-weight: normal;
 `;
 
+const keys = css`
+  display: flex;
+  flex-direction: row;
+  
+  & > :nth-child(2n) {
+    margin-left: 5px;
+  }
+`;
+
 const lineNumbers = css`
   //margin-right: 15px;
   display: flex;
@@ -106,6 +125,7 @@ export default {
   editor,
   handle,
   key,
+  keys,
   lineNumbers,
   textArea,
   textAreaWrapper
