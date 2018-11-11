@@ -86,8 +86,13 @@ let moveCursorX = function(
     return [node.left.end + 1, node.right.start - 1];
   }
 
-  if (t.isArrayExpression(node) && recursionDepth > 0 && start == node.end) {
-    return start;
+  if (t.isArrayExpression(node) && recursionDepth > 0) {
+    if (node.elements.length == 0) {
+      return start;
+    }
+    if (start == node.end) {
+      return start;
+    }
   }
 
   if (t.isBlockStatement(node) && node.body.length == 0) {

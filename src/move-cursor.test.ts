@@ -163,6 +163,14 @@ const tests = [
     }
   ],
   [
+    '[];',
+    {
+      RIGHT: [
+        [0, 1]
+      ]
+    }
+  ],
+  [
     testCode,
     {
       RIGHT: [
