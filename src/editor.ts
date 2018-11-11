@@ -141,34 +141,21 @@ export default class Editor {
     } = this.state;
     let { selectionStart, selectionEnd, value } = this.textArea;
 
-    let shouldParse = true;
-    if (ast && (data == '.' || data == 'e')) {
-      const node = getNode(ast, start);
-      shouldParse = t.isStringLiteral(node) && node.end != start;
-    }
-
     const [parents] = ast ? getFocusPath(ast, start) : [[], []];
     parents.reverse();
     const node = Array.isArray(parents[0]) ? parents[1] : parents[0];
 
     if (
-      data == '(' &&
-      t.isExpression(node) &&
+      ['(', '['].includes(data) &&
+      (t.isExpression(node) || t.isBlock(node)) &&
       !t.isStringLiteral(node) &&
       !t.isTemplateLiteral(node)
     ) {
       this.update({
-        code: replaceCode(code, start, '()'),
+        code: replaceCode(code, start, data + {'(': ')', '[': ']'}[data]),
         cursor: selectionStart
       });
       return;
-    }
-
-    if (t.isIdentifier(node)) {
-      const keyword = keywords.find(key => key.name.slice(0, -1) == node.name);
-      if (keyword && data == keyword.name[node.name.length]) {
-        shouldParse = false;
-      }
     }
 
     if (!ast && (data == ' ' || data == '(')) {
@@ -207,7 +194,6 @@ export default class Editor {
             : value,
         cursor: [selectionStart, selectionEnd]
       },
-      { shouldParse }
     );
   };
 
@@ -263,11 +249,10 @@ export default class Editor {
         printWidth: number;
       } & { cursorFromAST?: (ast) => any }
     >,
-    options: { prettify?: boolean; shouldParse?: boolean } = {}
+    options: { prettify?: boolean; } = {}
   ) => {
-    const { prettify, shouldParse } = {
+    const { prettify } = {
       prettify: true,
-      shouldParse: true,
       ...options
     };
 
@@ -297,9 +282,7 @@ export default class Editor {
       trailingComma: 'all'
     };
 
-    if (!shouldParse) {
-      ast = null;
-    } else if (!ast || code !== prevState.code || newWidth) {
+    if (!ast || code !== prevState.code || newWidth) {
       if (prettify) {
         try {
           const { formatted, cursorOffset } = prettier.formatWithCursor(
@@ -313,17 +296,20 @@ export default class Editor {
           if (!(e instanceof SyntaxError)) {
             throw e;
           }
-          ast = prevState.ast || lastValidAST;
-          const { formatted, cursorOffset } = prettier.formatWithCursor(
-            generateCodeFromAST(ast),
-            {
-              ...prettierOptions,
-              cursorOffset: prevState.cursor[0] || start
-            }
-          );
-          ast = parse(formatted);
-          code = formatted;
-          start = end = cursorOffset;
+          if (ast) {
+            ast = null;
+          } else {
+            const { formatted, cursorOffset } = prettier.formatWithCursor(
+              generateCodeFromAST(lastValidAST),
+              {
+                ...prettierOptions,
+                cursorOffset: prevState.cursor[0] || start
+              }
+            );
+            ast = parse(formatted);
+            code = formatted;
+            start = end = cursorOffset;
+          }
         }
       } else {
         ast = parse(code);
@@ -376,7 +362,7 @@ export default class Editor {
     this.actions = state.ast ? getAvailableActions(state) : [];
     actionBar.innerHTML = '';
     actionBar.append(
-      ...this.actions.map(actionSection => {
+      ...this.actions.filter(a => a.title).map(actionSection => {
         const section = el('section', { class: styles.actionSection });
 
         section.append(

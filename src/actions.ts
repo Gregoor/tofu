@@ -163,6 +163,20 @@ const changeDeclarationKindTo = (kind: string) => ({
   };
 };
 
+function removeCallOrMember({ ast, cursor }: EditorState): ActionResult {
+  const [parents, path] = getFocusPath(ast, cursor[0]);
+  const [node, parent] = parents.slice().reverse();
+  const [lastKey] = path.slice().reverse();
+  parent[lastKey] = node.callee || node.object;
+  return {
+    ast,
+    cursorFromAST: ast => {
+      const callee = path.reduce((ast, property) => ast[property], ast);
+      return [callee.end, callee.end];
+    }
+  };
+}
+
 export const wrappingStatement = (
   wrapper: (child?) => any,
   getInitialCursor: (ast, path: string[]) => Cursor
@@ -202,7 +216,7 @@ export const wrappingStatement = (
 };
 
 export type ActionSections = {
-  title: string;
+  title?: string;
   children: {
     name: string;
     codes?: string[];
@@ -275,6 +289,15 @@ export default function getAvailableActions({
         name: label || name,
         execute: wrappingStatement(create, getInitialCursor)
       }))
+    });
+  }
+
+  if (
+    (t.isCallExpression(node) || t.isMemberExpression(node)) &&
+    start == node.end
+  ) {
+    actions.push({
+      children: [{ name: '', key: 'Backspace', execute: removeCallOrMember }]
     });
   }
 
