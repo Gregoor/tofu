@@ -2,7 +2,7 @@ const t = require('@babel/types');
 import moveCursor, { Cursor, Direction, spreadCursor } from './move-cursor';
 import { getFocusPath, getNode } from './ast-utils';
 
-function cursorFromNode(ancestor): Cursor {
+export function selectNode(ancestor): Cursor {
   return Array.isArray(ancestor)
     ? [ancestor[0].start, ancestor[ancestor.length - 1].end]
     : [ancestor.start, ancestor.end];
@@ -23,7 +23,7 @@ export default class RangeSelector {
 
     if (direction == 'UP') {
       for (const node of getFocusPath(ast, cursor[0])[0].reverse()) {
-        const nextCursor = cursorFromNode(node);
+        const nextCursor = selectNode(node);
 
         if (cursor[0] > nextCursor[0] || cursor[1] < nextCursor[1]) {
           return nextCursor;
@@ -33,7 +33,7 @@ export default class RangeSelector {
     } else if (direction == 'DOWN') {
       let selectedNodeFound = false;
       for (const node of getFocusPath(ast, this.initialRange[0])[0]) {
-        const nodeCursor = cursorFromNode(node);
+        const nodeCursor = selectNode(node);
         const selectOverlaps =
           cursor[0] == nodeCursor[0] && cursor[1] == nodeCursor[1];
         if (!selectOverlaps && selectedNodeFound) {

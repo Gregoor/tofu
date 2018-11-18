@@ -1,9 +1,14 @@
 const generate = require('@babel/generator').default;
 const t = require('@babel/types');
-import { EditorState } from './edtior-state';
 import { getFocusPath, getNode } from './ast-utils';
 import { replaceCode } from './code-utils';
+import { EditorState } from './edtior-state';
 import { Cursor } from './move-cursor';
+import { selectNode } from './range-selector';
+
+function getNodeFromPath(ast, path: (string | number)[]) {
+  return path.reduce((ast, property) => ast[property], ast);
+}
 
 function findLastIndex(nodes: any[], check: (n) => boolean) {
   const reverseIndex = nodes
@@ -21,6 +26,12 @@ function findSlotIndex(collection, start: number) {
   return index;
 }
 
+const selectName = ({ start, name }) =>
+  [start, start + name.length] as [number, number];
+
+const selectKind = ({ start, kind }) =>
+  [start, start + kind.length] as [number, number];
+
 export const keywords: {
   name: string;
   label?: string;
@@ -31,13 +42,8 @@ export const keywords: {
     name: 'if',
     create: (child = t.blockStatement([t.emptyStatement()])) =>
       t.ifStatement(t.identifier('someCondition'), child),
-    getInitialCursor: (ast, path) => {
-      const test = [...path, 'test'].reduce(
-        (ast, property) => ast[property],
-        ast
-      );
-      return [test.start, test.start + test.name.length];
-    }
+    getInitialCursor: (ast, path) =>
+      selectName(getNodeFromPath(ast, [...path, 'test']))
   },
   {
     name: 'for',
@@ -50,13 +56,10 @@ export const keywords: {
         t.identifier('iterable'),
         child
       ),
-    getInitialCursor: (ast, path) => {
-      const id = [...path, 'left', 'declarations', '0', 'id'].reduce(
-        (ast, property) => ast[property],
-        ast
-      );
-      return [id.start, id.start + id.name.length];
-    }
+    getInitialCursor: (ast, path) =>
+      selectName(
+        getNodeFromPath(ast, [...path, 'left', 'declarations', '0', 'id'])
+      )
   },
 
   ...['const', 'let', 'var'].map(kind => ({
@@ -68,13 +71,8 @@ export const keywords: {
           initial || (kind == 'const' ? t.nullLiteral() : null)
         )
       ]),
-    getInitialCursor: (ast, path) => {
-      const id = [...path, 'declarations', '0', 'id'].reduce(
-        (ast, property) => ast[property],
-        ast
-      );
-      return [id.start, id.start + id.name.length] as [number, number];
-    }
+    getInitialCursor: (ast, path) =>
+      selectName(getNodeFromPath(ast, [...path, 'declarations', '0', 'id']))
   }))
 ];
 
@@ -100,12 +98,13 @@ const addVariableDeclaration = ({
   );
   return {
     ast,
-    cursorFromAST: ast => {
-      const node = path
-        .concat(path[path.length - 1] == 'body' ? [] : 'body', index)
-        .reduce((ast, property) => ast[property], ast);
-      return [node.start, node.start + node.kind.length];
-    }
+    cursorFromAST: ast =>
+      selectKind(
+        getNodeFromPath(
+          ast,
+          path.concat(path[path.length - 1] == 'body' ? [] : 'body', index)
+        )
+      )
   };
 };
 
@@ -134,6 +133,7 @@ const isInCollection = ([start, end]: Cursor) => node =>
         // ", " between arguments
         (node.arguments.length - 1) * 2 &&
     end < node.end);
+
 const addToCollection = ({
   ast,
   cursor: [start, end]
@@ -152,13 +152,13 @@ const addToCollection = ({
   collection[childKey].splice(index, 0, t.nullLiteral());
   return {
     ast,
-    cursorFromAST: ast => {
-      const node = path
-        .slice(0, collectionIndex)
-        .concat(childKey, index)
-        .reduce((ast, property) => ast[property], ast);
-      return [node.start, node.end];
-    }
+    cursorFromAST: ast =>
+      selectNode(
+        getNodeFromPath(
+          ast,
+          path.slice(0, collectionIndex).concat(childKey, index)
+        )
+      )
   };
 };
 
@@ -170,10 +170,7 @@ const changeDeclarationKindTo = (kind: string) => ({
   node.kind = kind;
   return {
     ast,
-    cursorFromAST: ast => {
-      const node = getNode(ast, start);
-      return [node.start, node.start + node.kind.length];
-    }
+    cursorFromAST: ast => selectKind(getNode(ast, start))
   };
 };
 
@@ -185,7 +182,7 @@ function removeCallOrMember({ ast, cursor }: EditorState): ActionResult {
   return {
     ast,
     cursorFromAST: ast => {
-      const callee = path.reduce((ast, property) => ast[property], ast);
+      const callee = getNodeFromPath(ast, path);
       return [callee.end, callee.end];
     }
   };
@@ -201,16 +198,16 @@ const addElseBranch = block => ({
   return {
     ast,
     cursorFromAST: ast => {
-      const block = [...path.slice(0, -1), 'alternate'].reduce(
-        (ast, property) => ast[property],
-        ast
-      );
+      const block = getNodeFromPath(ast, [...path.slice(0, -1), 'alternate']);
       return [block.start + 1, block.start + 1];
     }
   };
 };
 
-const addIfElseBranch = block => ({ ast, cursor: [start] }: EditorState): ActionResult => {
+const addIfElseBranch = block => ({
+  ast,
+  cursor: [start]
+}: EditorState): ActionResult => {
   const [parents, path] = getFocusPath(ast, start);
   const [, ifStatement] = parents.reverse();
   ifStatement.alternate = t.ifStatement(
@@ -219,15 +216,12 @@ const addIfElseBranch = block => ({ ast, cursor: [start] }: EditorState): Action
   );
   return {
     ast,
-    cursorFromAST: ast => {
-      const test = [...path.slice(0, -1), 'alternate', 'test'].reduce(
-        (ast, property) => ast[property],
-        ast
-      );
-      return [test.start, test.end];
-    }
+    cursorFromAST: ast =>
+      selectNode(
+        getNodeFromPath(ast, [...path.slice(0, -1), 'alternate', 'test'])
+      )
   };
-}
+};
 
 export const wrappingStatement = (
   wrapper: (child?) => any,
@@ -253,7 +247,7 @@ export const wrappingStatement = (
       generate(wrapper(t.blockStatement([parentStatement]))).code
     );
   } else {
-    const parent = path.reduce((ast, property) => ast[property], ast);
+    const parent = getNodeFromPath(ast, path);
     const siblings = Array.isArray(parent) ? parent : parent.body;
     const index = findSlotIndex(siblings, start);
     basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
