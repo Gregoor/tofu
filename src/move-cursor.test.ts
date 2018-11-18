@@ -1,7 +1,9 @@
+import { spreadCursor } from './cursor-utils';
+
 const { parse } = require('@babel/parser');
 const fs = require('fs');
 const path = require('path');
-import moveCursor, { spreadCursor } from './move-cursor';
+import moveCursor from './move-cursor';
 
 function testPath(ast, code, path, direction) {
   for (let [before, after] of path) {

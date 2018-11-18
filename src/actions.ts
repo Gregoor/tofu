@@ -2,9 +2,10 @@ const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 import { getFocusPath, getNode } from './ast-utils';
 import { replaceCode } from './code-utils';
+import { selectKind, selectName } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import { Cursor } from './move-cursor';
-import { selectNode } from './range-selector';
+import { selectNode } from './cursor-utils';
 
 function getNodeFromPath(ast, path: (string | number)[]) {
   return path.reduce((ast, property) => ast[property], ast);
@@ -25,12 +26,6 @@ function findSlotIndex(collection, start: number) {
   }
   return index;
 }
-
-const selectName = ({ start, name }) =>
-  [start, start + name.length] as [number, number];
-
-const selectKind = ({ start, kind }) =>
-  [start, start + kind.length] as [number, number];
 
 export const keywords: {
   name: string;

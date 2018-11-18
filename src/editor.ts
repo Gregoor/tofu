@@ -10,8 +10,9 @@ import getAvailableActions, {
 } from './actions';
 import { getFocusPath, getNode } from './ast-utils';
 import { replaceCode } from './code-utils';
+import { spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
-import moveCursor, { Cursor, Direction, spreadCursor } from './move-cursor';
+import moveCursor, { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
 import styles from './styles';
 

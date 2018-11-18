@@ -1,4 +1,5 @@
-import { Cursor, spreadCursor } from './move-cursor';
+import { Cursor} from './move-cursor';
+import { spreadCursor } from './cursor-utils';
 
 export function replaceCode(
   code: string,

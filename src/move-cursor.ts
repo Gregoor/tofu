@@ -1,5 +1,7 @@
-const t = require('@babel/types');
 import { getNode, getParent } from './ast-utils';
+import { spreadCursor } from './cursor-utils';
+
+const t = require('@babel/types');
 
 const isCursorable = node =>
   [
@@ -12,10 +14,6 @@ const isCursorable = node =>
   ].some(check => check(node));
 
 export type Cursor = [number, number];
-
-export function spreadCursor(cursor: number | Cursor): [number, number] {
-  return Array.isArray(cursor) ? cursor : [cursor, cursor];
-}
 
 function withSpreadCursor<T>(fn: (...args: T[]) => number | Cursor) {
   return (...args: T[]) => spreadCursor(fn(...args));

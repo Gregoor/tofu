@@ -1,12 +1,7 @@
 const t = require('@babel/types');
-import moveCursor, { Cursor, Direction, spreadCursor } from './move-cursor';
 import { getFocusPath, getNode } from './ast-utils';
-
-export function selectNode(ancestor): Cursor {
-  return Array.isArray(ancestor)
-    ? [ancestor[0].start, ancestor[ancestor.length - 1].end]
-    : [ancestor.start, ancestor.end];
-}
+import { selectNode, spreadCursor } from './cursor-utils';
+import moveCursor, { Cursor, Direction } from './move-cursor';
 
 function findIndexForCursor(collection, cursor: number | [number, number]) {
   const [start, end] = spreadCursor(cursor);
