@@ -21,7 +21,7 @@ const action = css`
   ${codeFontSize};
   background: none;
   cursor: pointer;
-  
+
   &:hover {
     font-weight: bold;
   }
@@ -33,7 +33,11 @@ const actionBar = css`
   border-left: none;
   padding: 20px;
   padding-right: 30px;
-  min-width: 180px;
+  min-width: 230px;
+  box-sizing: border-box;;
+  position: sticky;
+  top: 0;
+  height: fit-content;
   display: flex;
   flex-direction: column;
   background: white;
@@ -82,7 +86,7 @@ const key = css`
 const keys = css`
   display: flex;
   flex-direction: row;
-  
+
   & > :nth-child(2n) {
     margin-left: 5px;
   }

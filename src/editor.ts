@@ -152,7 +152,7 @@ export default class Editor {
       !t.isTemplateLiteral(node)
     ) {
       this.update({
-        code: replaceCode(code, start, data + {'(': ')', '[': ']'}[data]),
+        code: replaceCode(code, start, data + { '(': ')', '[': ']' }[data]),
         cursor: selectionStart
       });
       return;
@@ -183,18 +183,16 @@ export default class Editor {
       data += data;
     }
 
-    this.update(
-      {
-        code:
-          data &&
-          t.isArrayExpression(node) &&
-          start > node.start &&
-          end < node.end
-            ? replaceCode(code, start, data + ',')
-            : value,
-        cursor: [selectionStart, selectionEnd]
-      },
-    );
+    this.update({
+      code:
+        data &&
+        t.isArrayExpression(node) &&
+        start > node.start &&
+        end < node.end
+          ? replaceCode(code, start, data + ',')
+          : value,
+      cursor: [selectionStart, selectionEnd]
+    });
   };
 
   handleClick = () => {
@@ -249,7 +247,7 @@ export default class Editor {
         printWidth: number;
       } & { cursorFromAST?: (ast) => any }
     >,
-    options: { prettify?: boolean; } = {}
+    options: { prettify?: boolean } = {}
   ) => {
     const { prettify } = {
       prettify: true,
@@ -351,6 +349,8 @@ export default class Editor {
 
     textArea.style.height = 'auto';
     textArea.style.height = textArea.scrollHeight + 'px';
+    this.textArea.blur();
+    this.textArea.focus();
 
     if (false) {
       this.lineNumbers.innerHTML = '';

@@ -1,5 +1,5 @@
 const t = require('@babel/types');
-import { getNode } from './ast-utils';
+import { getNode, getParent } from './ast-utils';
 
 const isCursorable = node =>
   [
@@ -8,8 +8,7 @@ const isCursorable = node =>
     t.isTemplateElement,
     t.isIdentifier,
     t.isNumericLiteral,
-    t.isCallExpression,
-    node => t.isMemberExpression(node) && node.computed
+    t.isCallExpression
   ].some(check => check(node));
 
 export type Cursor = [number, number];
@@ -95,13 +94,34 @@ let moveCursorX = function(
     }
   }
 
+  if (
+    t.isMemberExpression(node) &&
+    node.computed &&
+    recursionDepth > 0 &&
+    start == node.end
+  ) {
+    return start;
+  }
+
+  const shouldEndBlock =
+    t.isBlockStatement(node) &&
+    t.isIfStatement(getParent(ast, start)) &&
+    ((isRight && start !== node.end) || recursionDepth > 0);
+
   if (t.isBlockStatement(node) && node.body.length == 0) {
     const nextStart = node.start + 1;
-
-    if (start == nextStart || (start > nextStart && (isRight || isDown))) {
-      return moveOn(isRight || isDown ? node.end + 1 : node.start - 1);
+    const isRightOrDown = isRight || isDown;
+    if (start == nextStart || (start > nextStart && isRightOrDown)) {
+      if (shouldEndBlock) {
+        return node.end;
+      }
+      return moveOn(isRightOrDown ? node.end + 1 : node.start - 1);
     }
     return nextStart;
+  }
+
+  if (start == node.end && shouldEndBlock) {
+    return node.end;
   }
 
   // Only skip over the starting quote, we might want to call functions on that

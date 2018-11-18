@@ -57,11 +57,25 @@ export const keywords: {
       );
       return [id.start, id.start + id.name.length];
     }
-  }
+  },
 
-  // const: {},
-  // let: {},
-  // var: {}
+  ...['const', 'let', 'var'].map(kind => ({
+    name: kind,
+    create: initial =>
+      t.variableDeclaration(kind, [
+        t.variableDeclarator(
+          t.identifier('n'),
+          initial || (kind == 'const' ? t.nullLiteral() : null)
+        )
+      ]),
+    getInitialCursor: (ast, path) => {
+      const id = [...path, 'declarations', '0', 'id'].reduce(
+        (ast, property) => ast[property],
+        ast
+      );
+      return [id.start, id.start + id.name.length] as [number, number];
+    }
+  }))
 ];
 
 type ActionResult = ({ code: string } | { ast }) & {
@@ -177,6 +191,44 @@ function removeCallOrMember({ ast, cursor }: EditorState): ActionResult {
   };
 }
 
+const addElseBranch = block => ({
+  ast,
+  cursor: [start]
+}: EditorState): ActionResult => {
+  const [parents, path] = getFocusPath(ast, start);
+  const [, ifStatement] = parents.reverse();
+  ifStatement.alternate = block || t.blockStatement([t.emptyStatement()]);
+  return {
+    ast,
+    cursorFromAST: ast => {
+      const block = [...path.slice(0, -1), 'alternate'].reduce(
+        (ast, property) => ast[property],
+        ast
+      );
+      return [block.start + 1, block.start + 1];
+    }
+  };
+};
+
+const addIfElseBranch = block => ({ ast, cursor: [start] }: EditorState): ActionResult => {
+  const [parents, path] = getFocusPath(ast, start);
+  const [, ifStatement] = parents.reverse();
+  ifStatement.alternate = t.ifStatement(
+    t.identifier('test'),
+    block || t.blockStatement([t.emptyStatement()])
+  );
+  return {
+    ast,
+    cursorFromAST: ast => {
+      const test = [...path.slice(0, -1), 'alternate', 'test'].reduce(
+        (ast, property) => ast[property],
+        ast
+      );
+      return [test.start, test.end];
+    }
+  };
+}
+
 export const wrappingStatement = (
   wrapper: (child?) => any,
   getInitialCursor: (ast, path: string[]) => Cursor
@@ -234,7 +286,7 @@ export default function getAvailableActions({
   parents.reverse();
   const parentStatement = parents.find(node => t.isStatement(node));
   const insertMode = !parentStatement || t.isBlockStatement(parentStatement);
-  const [node] = parents;
+  const [node, parent] = parents;
   const actions = [];
 
   if (t.isLogicalExpression(node)) {
@@ -298,6 +350,35 @@ export default function getAvailableActions({
   ) {
     actions.push({
       children: [{ name: '', key: 'Backspace', execute: removeCallOrMember }]
+    });
+  }
+
+  if (
+    t.isIfStatement(parent) &&
+    t.isBlockStatement(node) &&
+    start == node.end
+  ) {
+    const children = [];
+    const { alternate } = parent;
+
+    if (!alternate || t.isIfStatement(alternate)) {
+      children.push({
+        name: 'else',
+        key: 'e',
+        execute: addElseBranch(alternate ? alternate.consequent : null)
+      });
+    }
+    if (!alternate || t.isBlockStatement(alternate)) {
+      children.push({
+        name: 'else if',
+        key: 'i',
+        execute: addIfElseBranch(alternate || null)
+      });
+    }
+
+    actions.push({
+      title: alternate ? 'Change branch' : 'Add branch',
+      children
     });
   }
 
