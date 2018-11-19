@@ -14,6 +14,7 @@
     "@types/jest": "^23.3.3",
     "@types/redom": "^3.12.0",
     "emotion": "^9.2.12",
+    "immer": "^1.7.4",
     "prettier": "^1.14.2",
     "redom": "^3.14.2"
   },

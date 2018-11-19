@@ -3,6 +3,7 @@ const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 import prettier from 'prettier/standalone';
 import { el } from 'redom';
+import produce from 'immer';
 import getAvailableActions, {
   ActionSections,
   keywords,
@@ -85,8 +86,11 @@ export default class Editor {
       .flat()
       .find(a => a.key == event.key || (a.codes || []).includes(event.code));
     if (action) {
-      const result = action.execute(this.state, event.shiftKey);
-      this.update(result);
+      let cursorFromAST;
+      const nextState = produce(this.state, state => {
+        cursorFromAST = action.execute(state);
+      });
+      this.update({ ...nextState, cursorFromAST });
       event.preventDefault();
       return;
     }
@@ -169,13 +173,14 @@ export default class Editor {
 
         const nextStart = start - name.length;
         const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
-        this.update(
-          wrappingStatement(create, getInitialCursor)({
-            ast: parse(nextCode),
-            code: nextCode,
+        const ast = parse(nextCode);
+        this.update({
+          ast,
+          cursorFromAST: wrappingStatement(create, getInitialCursor)({
+            ast: ast,
             cursor: [nextStart, nextStart]
           })
-        );
+        });
         return;
       }
     }
@@ -318,18 +323,21 @@ export default class Editor {
     }
 
     if (cursorFromAST) {
-      const cursor = cursorFromAST(ast);
+      const cursor = spreadCursor(cursorFromAST(ast));
       start = cursor[0];
       end = cursor[1];
     }
-
-    textArea.selectionStart = start;
-    textArea.selectionEnd = end || start;
 
     if (newWidth) {
       textArea.cols = printWidth;
       this.resizeHandle.title = printWidth.toString();
     }
+
+    this.textArea.blur();
+    this.textArea.focus();
+
+    textArea.selectionStart = start;
+    textArea.selectionEnd = end || start;
 
     this.state = {
       ...newState,
@@ -350,8 +358,6 @@ export default class Editor {
 
     textArea.style.height = 'auto';
     textArea.style.height = textArea.scrollHeight + 'px';
-    this.textArea.blur();
-    this.textArea.focus();
 
     if (false) {
       this.lineNumbers.innerHTML = '';
@@ -387,9 +393,8 @@ export default class Editor {
               {
                 class: styles.action,
                 onclick: () => {
-                  const result = action.execute(this.state, false);
-                  this.update(result);
-                  this.textArea.focus();
+                  const cursorFromAST = action.execute(this.state);
+                  this.update({ ast: this.state.ast, cursorFromAST });
                 }
               },
               [

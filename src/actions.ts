@@ -1,7 +1,5 @@
-const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 import { getFocusPath, getNode } from './ast-utils';
-import { replaceCode } from './code-utils';
 import { selectKind, selectName } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import { Cursor } from './move-cursor';
@@ -71,14 +69,9 @@ export const keywords: {
   }))
 ];
 
-type ActionResult = ({ code: string } | { ast }) & {
-  cursorFromAST?: (ast) => number | Cursor;
-};
+type Action = ({ ast, cursor: Cursor }) => (ast) => number | Cursor;
 
-const addVariableDeclaration = ({
-  ast,
-  cursor: [start]
-}: EditorState): ActionResult => {
+const addVariableDeclaration: Action = ({ ast, cursor: [start] }) => {
   const [parents, path] = getFocusPath(ast, start);
   const parent = parents
     .reverse()
@@ -91,31 +84,23 @@ const addVariableDeclaration = ({
       t.variableDeclarator(t.identifier('name'), t.nullLiteral())
     ])
   );
-  return {
-    ast,
-    cursorFromAST: ast =>
-      selectKind(
-        getNodeFromPath(
-          ast,
-          path.concat(path[path.length - 1] == 'body' ? [] : 'body', index)
-        )
+  return ast =>
+    selectKind(
+      getNodeFromPath(
+        ast,
+        path.concat(path[path.length - 1] == 'body' ? [] : 'body', index)
       )
-  };
+    );
 };
 
-const toggleLogicalExpression = (node, newOperator) => ({
-  ast,
-  cursor: [start]
-}: EditorState): ActionResult => {
-  node.operator = newOperator;
-  return {
-    ast,
-    cursorFromAST: ast => {
+const toggleLogicalExpression = (node, newOperator) =>
+  (({ ast, cursor: [start] }) => {
+    node.operator = newOperator;
+    return ast => {
       const node = getNode(ast, start);
       return [node.left.end + 1, node.right.start - 1];
-    }
-  };
-};
+    };
+  }) as Action;
 
 const isInCollection = ([start, end]: Cursor) => node =>
   (t.isArrayExpression(node) && start > node.start && end < node.end) ||
@@ -129,10 +114,7 @@ const isInCollection = ([start, end]: Cursor) => node =>
         (node.arguments.length - 1) * 2 &&
     end < node.end);
 
-const addToCollection = ({
-  ast,
-  cursor: [start, end]
-}: EditorState): ActionResult => {
+const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
   const [parents, path] = getFocusPath(ast, start);
   const collectionIndex = findLastIndex(parents, isInCollection([start, end]));
   const collection = parents[collectionIndex];
@@ -145,116 +127,78 @@ const addToCollection = ({
     index = Math.max(0, index - 1);
   }
   collection[childKey].splice(index, 0, t.nullLiteral());
-  return {
-    ast,
-    cursorFromAST: ast =>
-      selectNode(
-        getNodeFromPath(
-          ast,
-          path.slice(0, collectionIndex).concat(childKey, index)
-        )
+  return ast =>
+    selectNode(
+      getNodeFromPath(
+        ast,
+        path.slice(0, collectionIndex).concat(childKey, index)
       )
-  };
+    );
 };
 
-const changeDeclarationKindTo = (kind: string) => ({
-  ast,
-  cursor: [start]
-}: EditorState): ActionResult => {
-  const node = getNode(ast, start);
-  node.kind = kind;
-  return {
-    ast,
-    cursorFromAST: ast => selectKind(getNode(ast, start))
-  };
-};
+const changeDeclarationKindTo = (kind: string) =>
+  (({ ast, cursor: [start] }) => {
+    const node = getNode(ast, start);
+    node.kind = kind;
+    return ast => selectKind(getNode(ast, start));
+  }) as Action;
 
-function removeCallOrMember({ ast, cursor }: EditorState): ActionResult {
+const removeCallOrMember: Action = ({ ast, cursor }) => {
   const [parents, path] = getFocusPath(ast, cursor[0]);
   const [node, parent] = parents.slice().reverse();
   const [lastKey] = path.slice().reverse();
   parent[lastKey] = node.callee || node.object;
-  return {
-    ast,
-    cursorFromAST: ast => {
-      const callee = getNodeFromPath(ast, path);
-      return [callee.end, callee.end];
-    }
-  };
-}
-
-const addElseBranch = block => ({
-  ast,
-  cursor: [start]
-}: EditorState): ActionResult => {
-  const [parents, path] = getFocusPath(ast, start);
-  const [, ifStatement] = parents.reverse();
-  ifStatement.alternate = block || t.blockStatement([t.emptyStatement()]);
-  return {
-    ast,
-    cursorFromAST: ast => {
-      const block = getNodeFromPath(ast, [...path.slice(0, -1), 'alternate']);
-      return [block.start + 1, block.start + 1];
-    }
-  };
+  return ast => getNodeFromPath(ast, path).end;
 };
 
-const addIfElseBranch = block => ({
-  ast,
-  cursor: [start]
-}: EditorState): ActionResult => {
-  const [parents, path] = getFocusPath(ast, start);
-  const [, ifStatement] = parents.reverse();
-  ifStatement.alternate = t.ifStatement(
-    t.identifier('test'),
-    block || t.blockStatement([t.emptyStatement()])
-  );
-  return {
-    ast,
-    cursorFromAST: ast =>
+const addElseBranch = block =>
+  (({ ast, cursor: [start] }) => {
+    const [parents, path] = getFocusPath(ast, start);
+    const [, ifStatement] = parents.reverse();
+    ifStatement.alternate = block || t.blockStatement([t.emptyStatement()]);
+    return ast =>
+      getNodeFromPath(ast, [...path.slice(0, -1), 'alternate']).start + 1;
+  }) as Action;
+
+const addIfElseBranch = block =>
+  (({ ast, cursor: [start] }) => {
+    const [parents, path] = getFocusPath(ast, start);
+    const [, ifStatement] = parents.reverse();
+    ifStatement.alternate = t.ifStatement(
+      t.identifier('test'),
+      block || t.blockStatement([t.emptyStatement()])
+    );
+    return ast =>
       selectNode(
         getNodeFromPath(ast, [...path.slice(0, -1), 'alternate', 'test'])
-      )
-  };
-};
+      );
+  }) as Action;
 
 export const wrappingStatement = (
   wrapper: (child?) => any,
   getInitialCursor: (ast, path: string[]) => Cursor
-) => ({
-  ast,
-  code,
-  cursor: [start]
-}: Pick<EditorState, 'ast' | 'code' | 'cursor'>): ActionResult => {
-  const [parents, path] = getFocusPath(ast, start);
-  const parentStatementIndex = findLastIndex(parents, n => t.isStatement(n));
-  const parentStatement = parents[parentStatementIndex];
+) =>
+  (({ ast, cursor: [start] }) => {
+    const [parents, path] = getFocusPath(ast, start);
+    const parentStatementIndex = findLastIndex(parents, n => t.isStatement(n));
+    const parentStatement = parents[parentStatementIndex];
 
-  let newCode;
-  let basePath;
+    let basePath;
+    if (parentStatement && !t.isBlockStatement(parentStatement)) {
+      basePath = path.slice(0, parentStatementIndex);
+      getNodeFromPath(ast, basePath.slice(0, -1))[
+        basePath[basePath.length - 1]
+      ] = wrapper(t.blockStatement([parentStatement]));
+    } else {
+      const parent = getNodeFromPath(ast, path);
+      const siblings = Array.isArray(parent) ? parent : parent.body;
+      const index = findSlotIndex(siblings, start);
+      basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
+      getNodeFromPath(ast, basePath.slice(0, -1)).splice(index, 0, wrapper());
+    }
 
-  if (parentStatement && !t.isBlockStatement(parentStatement)) {
-    basePath = path.slice(0, parentStatementIndex);
-
-    newCode = replaceCode(
-      code,
-      [parentStatement.start, parentStatement.end + 1],
-      generate(wrapper(t.blockStatement([parentStatement]))).code
-    );
-  } else {
-    const parent = getNodeFromPath(ast, path);
-    const siblings = Array.isArray(parent) ? parent : parent.body;
-    const index = findSlotIndex(siblings, start);
-    basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
-
-    newCode = replaceCode(code, start, generate(wrapper()).code);
-  }
-
-  return {
-    code: newCode,
-    cursorFromAST: ast => getInitialCursor(ast, basePath)
-  };
-};
+    return ast => getInitialCursor(ast, basePath);
+  }) as Action;
 
 export type ActionSections = {
   title?: string;
@@ -262,7 +206,7 @@ export type ActionSections = {
     name: string;
     codes?: string[];
     key?: string;
-    execute: (EditorState, shift: boolean) => ActionResult;
+    execute: Action;
   }[];
   ctrlModifier?: boolean;
 }[];
