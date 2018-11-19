@@ -1,9 +1,8 @@
 const t = require('@babel/types');
 import { getFocusPath, getNode } from './ast-utils';
-import { selectKind, selectName } from './cursor-utils';
+import { selectKind, selectName, selectNode } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import { Cursor } from './move-cursor';
-import { selectNode } from './cursor-utils';
 
 function getNodeFromPath(ast, path: (string | number)[]) {
   return path.reduce((ast, property) => ast[property], ast);
@@ -69,7 +68,7 @@ export const keywords: {
   }))
 ];
 
-type Action = ({ ast, cursor: Cursor }) => (ast) => number | Cursor;
+export type Action = ({ ast, cursor: Cursor }) => (ast) => number | Cursor;
 
 const addVariableDeclaration: Action = ({ ast, cursor: [start] }) => {
   const [parents, path] = getFocusPath(ast, start);

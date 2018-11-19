@@ -5,6 +5,7 @@ import prettier from 'prettier/standalone';
 import { el } from 'redom';
 import produce from 'immer';
 import getAvailableActions, {
+  Action,
   ActionSections,
   keywords,
   wrappingStatement
@@ -28,7 +29,8 @@ export default class Editor {
   actionBar: HTMLElement;
   lineNumbers: HTMLElement;
   resizeHandle: HTMLElement;
-  state: EditorState;
+  history: EditorState[] = [];
+  future: EditorState[] = [];
   rangeSelector = new RangeSelector();
 
   renderIdleCallbackId: number;
@@ -75,6 +77,10 @@ export default class Editor {
     );
   }
 
+  get state() {
+    return this.history[this.history.length - 1];
+  }
+
   handleKeyDown = (event: KeyboardEvent) => {
     const { textArea, state } = this;
     const { ast, code, cursor } = state;
@@ -86,11 +92,20 @@ export default class Editor {
       .flat()
       .find(a => a.key == event.key || (a.codes || []).includes(event.code));
     if (action) {
-      let cursorFromAST;
-      const nextState = produce(this.state, state => {
-        cursorFromAST = action.execute(state);
-      });
-      this.update({ ...nextState, cursorFromAST });
+      this.executeAction(action);
+      event.preventDefault();
+      return;
+    }
+
+    if (event.code == 'KeyZ' && event.ctrlKey) {
+      if (event.shiftKey && this.future.length > 0) {
+        this.history.push(this.future.pop());
+        this.render();
+      } else if (!event.shiftKey && this.history.length > 1) {
+        this.future.push(this.state);
+        this.history = this.history.slice(0, -1);
+        this.render();
+      }
       event.preventDefault();
       return;
     }
@@ -177,7 +192,7 @@ export default class Editor {
         this.update({
           ast,
           cursorFromAST: wrappingStatement(create, getInitialCursor)({
-            ast: ast,
+            ast,
             cursor: [nextStart, nextStart]
           })
         });
@@ -207,6 +222,26 @@ export default class Editor {
     this.moveCursor(null);
   };
 
+  handleResize = (event: MouseEvent) => {
+    const colChange = Math.round((event.clientX - this.resizeStartX) / 2.9);
+    if (colChange == 0) {
+      return;
+    }
+    this.resizeStartX = event.clientX;
+
+    this.update({
+      printWidth: Math.max(20, this.state.printWidth + colChange)
+    });
+  };
+
+  executeAction(action: { execute: Action }) {
+    let cursorFromAST;
+    const nextState = produce(this.state, state => {
+      cursorFromAST = action.execute(state);
+    });
+    this.update({ ...nextState, cursorFromAST });
+  }
+
   moveCursor(direction: Direction, rangeSelect = false) {
     if (!this.state.ast) {
       this.update({});
@@ -231,18 +266,6 @@ export default class Editor {
       });
     }
   }
-
-  handleResize = (event: MouseEvent) => {
-    const colChange = Math.round((event.clientX - this.resizeStartX) / 2.9);
-    if (colChange == 0) {
-      return;
-    }
-    this.resizeStartX = event.clientX;
-
-    this.update({
-      printWidth: Math.max(20, this.state.printWidth + colChange)
-    });
-  };
 
   update = (
     state: Partial<
@@ -318,8 +341,6 @@ export default class Editor {
       } else {
         ast = parse(code);
       }
-
-      textArea.value = code;
     }
 
     if (cursorFromAST) {
@@ -328,25 +349,14 @@ export default class Editor {
       end = cursor[1];
     }
 
-    if (newWidth) {
-      textArea.cols = printWidth;
-      this.resizeHandle.title = printWidth.toString();
-    }
-
-    this.textArea.blur();
-    this.textArea.focus();
-
-    textArea.selectionStart = start;
-    textArea.selectionEnd = end || start;
-
-    this.state = {
+    this.history.push({
       ...newState,
       ast,
       code,
       cursor: [start, end],
       cursorFromAST: null,
       lastValidAST: ast || lastValidAST
-    };
+    });
     (window as any).cancelIdleCallback(this.renderIdleCallbackId);
     this.renderIdleCallbackId = (window as any).requestIdleCallback(
       this.render
@@ -355,6 +365,18 @@ export default class Editor {
 
   render = () => {
     const { actionBar, state, textArea } = this;
+
+    textArea.value = state.code;
+
+    textArea.cols = state.printWidth;
+    this.resizeHandle.title = state.printWidth.toString();
+
+    this.textArea.blur();
+    this.textArea.focus();
+
+    const [start, end] = state.cursor;
+    textArea.selectionStart = start;
+    textArea.selectionEnd = end || start;
 
     textArea.style.height = 'auto';
     textArea.style.height = textArea.scrollHeight + 'px';
@@ -392,10 +414,7 @@ export default class Editor {
               'button',
               {
                 class: styles.action,
-                onclick: () => {
-                  const cursorFromAST = action.execute(this.state);
-                  this.update({ ast: this.state.ast, cursorFromAST });
-                }
+                onclick: () => this.executeAction(action)
               },
               [
                 el('div', action.name),
