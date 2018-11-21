@@ -1,6 +1,7 @@
 const generate = require('@babel/generator').default;
 const { parse } = require('@babel/parser');
 const t = require('@babel/types');
+const CodeFlask = require('codeflask').default;
 import prettier from 'prettier/standalone';
 import { el } from 'redom';
 import produce from 'immer';
@@ -26,8 +27,8 @@ function generateCodeFromAST(ast) {
 
 export default class Editor {
   textArea: HTMLTextAreaElement;
+  flask: any;
   actionBar: HTMLElement;
-  lineNumbers: HTMLElement;
   resizeHandle: HTMLElement;
   history: EditorState[] = [];
   future: EditorState[] = [];
@@ -40,25 +41,20 @@ export default class Editor {
   actions: ActionSections = [];
 
   constructor(container: HTMLElement, code: string) {
-    const box = el('div', { class: styles.box });
     const actionBar = (this.actionBar = el('div', { class: styles.actionBar }));
-    container.append(box, actionBar);
-    container.classList.add(styles.editor);
+    const flaskContainer = el('div', {class: styles.flaskContainer});
 
-    const textArea = (this.textArea = el('textarea', {
-      class: styles.textArea
-    }) as HTMLTextAreaElement);
-    this.lineNumbers = el('div', { class: styles.lineNumbers });
+    this.flask = new CodeFlask(flaskContainer, {
+      language: 'js',
+      lineNumbers: !true
+    });
+    const textArea = (this.textArea = this.flask.elTextarea);
     this.resizeHandle = el('div', {
       class: styles.handle
     });
-    box.append(
-      el('div', { class: styles.textAreaWrapper }, [
-        this.lineNumbers,
-        textArea
-      ]),
-      this.resizeHandle
-    );
+
+    container.append(flaskContainer, this.resizeHandle, actionBar);
+    container.classList.add(styles.editor);
 
     this.update({ code, cursor: [0, 0], printWidth: 80 });
 
@@ -298,7 +294,6 @@ export default class Editor {
       code = generateCodeFromAST(state.ast);
     }
 
-    const { textArea } = this;
     const newWidth = printWidth !== prevState.printWidth;
 
     const prettierOptions = {
@@ -366,7 +361,7 @@ export default class Editor {
   render = () => {
     const { actionBar, state, textArea } = this;
 
-    textArea.value = state.code;
+    this.flask.updateCode(state.code);
 
     textArea.cols = state.printWidth;
     this.resizeHandle.title = state.printWidth.toString();
@@ -380,13 +375,6 @@ export default class Editor {
 
     textArea.style.height = 'auto';
     textArea.style.height = textArea.scrollHeight + 'px';
-
-    if (false) {
-      this.lineNumbers.innerHTML = '';
-      this.lineNumbers.append(
-        ...state.code.split('\n').map((_, i) => el('div', i))
-      );
-    }
 
     this.actions = state.ast ? getAvailableActions(state) : [];
     actionBar.innerHTML = '';

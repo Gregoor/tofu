@@ -1,4 +1,10 @@
-import { css } from 'emotion';
+import { css, injectGlobal } from 'emotion';
+
+injectGlobal`
+  ::selection {
+    background: yellow;
+  }
+`;
 
 const borderRadius = '10px';
 
@@ -34,7 +40,7 @@ const actionBar = css`
   padding: 20px;
   padding-right: 30px;
   min-width: 230px;
-  box-sizing: border-box;;
+  box-sizing: border-box;
   position: sticky;
   top: 0;
   height: fit-content;
@@ -53,19 +59,37 @@ const actionSection = css`
   margin-bottom: 5px;
 `;
 
-const box = css`
+const editor = css`
+  display: flex;
+  justify-content: center;
+  ${font};
+`;
+
+const flaskContainer = css`
   border-radius: ${borderRadius} 0 0 ${borderRadius};
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-right: none;
   display: flex;
   flex-direction: row;
-  overflow: hidden;
-`;
+  background: white;
 
-const editor = css`
-  display: flex;
-  justify-content: center;
-  ${font};
+  .codeflask.codeflask {
+    position: relative;
+    width: initial;
+    height: initial;
+  }
+  
+  .codeflask textarea {
+    position: static;
+  }
+  
+  .codeflask pre {
+    position: absolute;
+  }
+  
+  .keyword {
+    font-weight: bold;
+  }
 `;
 
 const handle = css`
@@ -92,45 +116,13 @@ const keys = css`
   }
 `;
 
-const lineNumbers = css`
-  //margin-right: 15px;
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  text-align: right;
-  ${codeFontSize};
-  color: lightgrey;
-  user-select: none;
-`;
-
-const textArea = css`
-  border: none;
-  padding: 0;
-  display: block;
-  resize: none;
-  outline: none;
-  overflow: hidden;
-  ${codeFontSize};
-  ${font};
-`;
-
-const textAreaWrapper = css`
-  padding: 20px 20px 20px 30px;
-  display: flex;
-  flex-direction: row;
-  background: white;
-`;
-
 export default {
   action,
   actionBar,
   actionSection,
-  box,
   editor,
+  flaskContainer,
   handle,
   key,
-  keys,
-  lineNumbers,
-  textArea,
-  textAreaWrapper
+  keys
 };
