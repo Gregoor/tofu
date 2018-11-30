@@ -1,4 +1,4 @@
-import { getNode, getParent } from './ast-utils';
+import { getFocusPath, getNode, getParent } from './ast-utils';
 import { spreadCursor } from './cursor-utils';
 
 const t = require('@babel/types');
@@ -32,7 +32,7 @@ let moveCursorX = function(
     isDown: direction === 'DOWN',
     isUp: direction === 'UP'
   };
-  const node = getNode(ast, start);
+  const [node, parent] = getFocusPath(ast, start)[0].reverse();
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
   const moveOn = moveCursorX.bind(
@@ -87,7 +87,35 @@ let moveCursorX = function(
     if (node.elements.length == 0) {
       return start;
     }
+
     if (start == node.end) {
+      return start;
+    }
+  }
+
+  if (
+    (t.isArrayExpression(node) || t.isArrayExpression(parent)) &&
+    recursionDepth > 0
+  ) {
+    const arrayNode = t.isArrayExpression(node) ? node : parent;
+    const emptyElementIndexes = [];
+    const elementEnds = [];
+    for (let i = 0; i < arrayNode.elements.length; i++) {
+      const element = arrayNode.elements[i];
+      if (element) {
+        elementEnds.push(element.end);
+        continue;
+      }
+
+      emptyElementIndexes.push(i);
+      elementEnds.push(i == 0 ? arrayNode.start + 1 : elementEnds[i - 1] + 2);
+    }
+
+    if (
+      elementEnds
+        .filter((n, i) => emptyElementIndexes.includes(i))
+        .includes(start)
+    ) {
       return start;
     }
   }
@@ -101,16 +129,15 @@ let moveCursorX = function(
     return start;
   }
 
-  if (t.isForStatement(node)) {
+  if (t.isForStatement(node) && recursionDepth > 0) {
     const init = node.init ? node.init.end : node.start + 5;
     const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
     const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
 
     if (
-      ((!node.init && start == init) ||
-        (!node.test && start == test) ||
-        (!node.update && start == update)) &&
-      recursionDepth > 0
+      (!node.init && start == init) ||
+      (!node.test && start == test) ||
+      (!node.update && start == update)
     ) {
       return start;
     }
