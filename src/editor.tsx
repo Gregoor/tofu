@@ -84,7 +84,14 @@ export default class Editor extends React.Component<
     const { ast, code, cursor } = editorState;
     const [start] = cursor;
 
-    let action = this.actions
+    const searchable = this.state.actions.find(
+      s => s.searchable && s.ctrlModifier == event.ctrlKey && event.key == s.key
+    );
+    if (searchable) {
+      event.preventDefault();
+    }
+
+    let action = this.state.actions
       .filter(s => event.ctrlKey || !s.ctrlModifier)
       .map(s => s.children)
       .flat()
@@ -345,6 +352,7 @@ export default class Editor extends React.Component<
         ast = parse(code);
       }
     }
+    console.log(ast);
 
     if (cursorFromAST) {
       const cursor = spreadCursor(cursorFromAST(ast));

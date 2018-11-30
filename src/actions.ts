@@ -207,14 +207,17 @@ export type ActionSections = {
     key?: string;
     execute: Action;
   }[];
+  key?: string;
   ctrlModifier?: boolean;
+  searchable?: boolean;
 }[];
 
 export default function getAvailableActions({
   ast,
   cursor: [start, end]
 }: EditorState): ActionSections {
-  const [parents] = getFocusPath(ast, start);
+  const [parents, path] = getFocusPath(ast, start);
+  path.reverse();
   parents.reverse();
   const parentStatement = parents.find(node => t.isStatement(node));
   const insertMode = !parentStatement || t.isBlockStatement(parentStatement);
@@ -266,15 +269,16 @@ export default function getAvailableActions({
     });
   }
 
-  if (!insertMode) {
-    actions.push({
-      title: 'Wrap with',
-      children: keywords.map(({ name, label, create, getInitialCursor }) => ({
-        name: label || name,
-        execute: wrappingStatement(create, getInitialCursor)
-      }))
-    });
-  }
+  actions.push({
+    title: insertMode ? 'Insert' : 'Wrap with',
+    children: keywords.map(({ name, label, create, getInitialCursor }) => ({
+      name: label || name,
+      execute: wrappingStatement(create, getInitialCursor)
+    })),
+    ctrlModifier: true,
+    key: 'd',
+    searchable: true
+  });
 
   if (
     (t.isCallExpression(node) || t.isMemberExpression(node)) &&
@@ -311,6 +315,27 @@ export default function getAvailableActions({
     actions.push({
       title: alternate ? 'Change branch' : 'Add branch',
       children
+    });
+  }
+
+  const forIndex = parents.slice(0, 5).findIndex(n => t.isForOfStatement(n));
+  if (forIndex != -1) {
+    actions.push({
+      title: 'Change "for..of" to',
+      children: [
+        {
+          name: 'i++',
+          key: 'i',
+          execute: ({ ast }) => {
+            const forStatement = parents[forIndex];
+            getNodeFromPath(ast, path.slice(forIndex + 1).reverse())[
+              path[forIndex]
+            ] = t.forStatement(null, null, null, forStatement.body);
+            // t.forStatement();
+          }
+        }
+      ],
+      ctrlModifier: true
     });
   }
 

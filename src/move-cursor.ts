@@ -101,6 +101,21 @@ let moveCursorX = function(
     return start;
   }
 
+  if (t.isForStatement(node)) {
+    const init = node.init ? node.init.end : node.start + 5;
+    const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
+    const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
+
+    if (
+      ((!node.init && start == init) ||
+        (!node.test && start == test) ||
+        (!node.update && start == update)) &&
+      recursionDepth > 0
+    ) {
+      return start;
+    }
+  }
+
   const shouldEndBlock =
     t.isBlockStatement(node) &&
     t.isIfStatement(getParent(ast, start)) &&
