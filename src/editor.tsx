@@ -115,7 +115,11 @@ export default class Editor extends React.Component<
       return;
     }
 
-    const node = ast ? getNode(ast, start) : null;
+    if (!ast) {
+      return true;
+    }
+
+    const node = getNode(ast, start);
 
     if (event.key == 'Enter' && !t.isTemplateLiteral(node)) {
       event.preventDefault();
@@ -247,10 +251,20 @@ export default class Editor extends React.Component<
 
   executeAction = (action: { execute: Action }) => {
     let cursorFromAST;
+    let restoreAST = false;
     const nextState = produce(this.editorState, state => {
-      cursorFromAST = action.execute(state);
+      const result = action.execute(state);
+      if (typeof result == 'function') {
+        cursorFromAST = result;
+      } else if (result.restoreAST) {
+        restoreAST = true;
+      }
     });
-    this.updateCode({ ...nextState, cursorFromAST });
+    const fullNextState = { ...nextState, cursorFromAST };
+    if (restoreAST) {
+      fullNextState.ast = nextState.lastValidAST;
+    }
+    this.updateCode(fullNextState);
   };
 
   moveCursor = (direction: Direction, rangeSelect = false) => {
@@ -335,17 +349,6 @@ export default class Editor extends React.Component<
           }
           if (ast) {
             ast = null;
-          } else {
-            const { formatted, cursorOffset } = prettier.formatWithCursor(
-              generateCodeFromAST(lastValidAST),
-              {
-                ...prettierOptions,
-                cursorOffset: prevState.cursor[0] || start
-              }
-            );
-            ast = parse(formatted);
-            code = formatted;
-            start = end = cursorOffset;
           }
         }
       } else {
@@ -370,7 +373,7 @@ export default class Editor extends React.Component<
     });
 
     this.setState({
-      actions: ast ? getAvailableActions(this.editorState) : []
+      actions: getAvailableActions(this.editorState)
     });
 
     this.updateEditor();

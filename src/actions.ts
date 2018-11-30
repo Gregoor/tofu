@@ -68,7 +68,9 @@ export const keywords: {
   }))
 ];
 
-export type Action = ({ ast, cursor: Cursor }) => (ast) => number | Cursor;
+export type Action = (
+  { ast, cursor: Cursor }
+) => ((ast) => number | Cursor) | { restoreAST: true };
 
 const addVariableDeclaration: Action = ({ ast, cursor: [start] }) => {
   const [parents, path] = getFocusPath(ast, start);
@@ -214,8 +216,24 @@ export type ActionSections = {
 
 export default function getAvailableActions({
   ast,
+  lastValidAST,
   cursor: [start, end]
 }: EditorState): ActionSections {
+  if (!ast) {
+    return [
+      {
+        title: 'SyntaxError',
+        children: [
+          {
+            name: 'Restore last valid',
+            codes: ['Escape'],
+            execute: () => ({ restoreAST: true })
+          }
+        ]
+      }
+    ];
+  }
+
   const [parents, path] = getFocusPath(ast, start);
   path.reverse();
   parents.reverse();
