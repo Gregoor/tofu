@@ -1,6 +1,6 @@
-import { css, injectGlobal } from 'emotion';
+import styled, { css, createGlobalStyle } from 'styled-components';
 
-injectGlobal`
+export const GlobalStyle = createGlobalStyle`
   ::selection {
     background: yellow;
   }
@@ -16,7 +16,7 @@ const codeFontSize = css`
   font-size: 13.3333px;
 `;
 
-const action = css`
+export const ActionButton = styled.button`
   display: flex;
   justify-content: space-between;
   border: none;
@@ -33,7 +33,7 @@ const action = css`
   }
 `;
 
-const actionBar = css`
+export const ActionBar = styled.div`
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0 ${borderRadius} ${borderRadius} 0;
   border-left: none;
@@ -47,52 +47,49 @@ const actionBar = css`
   display: flex;
   flex-direction: column;
   background: white;
-
-  h4 {
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-  }
 `;
 
-const actionSection = css`
+export const ActionSection = styled.div`
   margin-bottom: 5px;
 `;
 
-const editor = css`
+export const Container = styled.div`
   display: flex;
   justify-content: center;
   ${font};
 `;
 
-const flaskContainer = css`
+export const FlaskContainer = styled.div`
   border-radius: ${borderRadius} 0 0 ${borderRadius};
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-right: none;
   display: flex;
   flex-direction: row;
   background: white;
+  overflow: hidden;
 
   .codeflask.codeflask {
     position: relative;
     width: initial;
     height: initial;
   }
-  
+
   .codeflask textarea {
     position: static;
   }
-  
+
   .codeflask pre {
     position: absolute;
   }
-  
+
   .keyword {
     font-weight: bold;
   }
 `;
 
-const handle = css`
+export const ResizeHandle = styled.div`
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-left: none;
   border-right: 2px dashed rgba(0, 0, 0, 0.1);
   width: 8px;
   background: white;
@@ -100,14 +97,13 @@ const handle = css`
   user-select: none;
 `;
 
-const key = css`
-  border: 1px solid grey;
-  padding: 0 4px;
-  ${codeFontSize};
-  font-weight: normal;
+export const SectionTitle = styled.h4`
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
 `;
 
-const keys = css`
+export const Keys = styled.div`
   display: flex;
   flex-direction: row;
 
@@ -116,13 +112,9 @@ const keys = css`
   }
 `;
 
-export default {
-  action,
-  actionBar,
-  actionSection,
-  editor,
-  flaskContainer,
-  handle,
-  key,
-  keys
-};
+export const Key = styled.span`
+  border: 1px solid grey;
+  padding: 0 4px;
+  ${codeFontSize};
+  font-weight: normal;
+`;

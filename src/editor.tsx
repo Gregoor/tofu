@@ -3,7 +3,7 @@ const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 const CodeFlask = require('codeflask').default;
 import prettier from 'prettier/standalone';
-import { el } from 'redom';
+import * as React from 'react';
 import produce from 'immer';
 import getAvailableActions, {
   Action,
@@ -17,7 +17,18 @@ import { spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import moveCursor, { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
-import styles from './styles';
+import {
+  ActionBar,
+  ActionButton,
+  ActionSection,
+  Container,
+  FlaskContainer,
+  GlobalStyle,
+  Key,
+  Keys,
+  ResizeHandle,
+  SectionTitle
+} from './ui';
 
 const babylon = require('prettier/parser-babylon');
 
@@ -25,47 +36,38 @@ function generateCodeFromAST(ast) {
   return generate(ast, { retainLines: true }).code;
 }
 
-export default class Editor {
-  textArea: HTMLTextAreaElement;
+export default class Editor extends React.Component<
+  { code: string },
+  {
+    actions: ActionSections;
+  }
+> {
+  flaskContainer: React.RefObject<HTMLDivElement> = React.createRef();
   flask: any;
-  actionBar: HTMLElement;
-  resizeHandle: HTMLElement;
-  history: EditorState[] = [];
+  textArea: HTMLTextAreaElement;
+
+  history: EditorState[] = [
+    { ast: null, lastValidAST: null, code: '', cursor: [0, 0], printWidth: 80 }
+  ];
   future: EditorState[] = [];
   rangeSelector = new RangeSelector();
 
-  renderIdleCallbackId: number;
-
   resizeStartX = null;
 
-  actions: ActionSections = [];
+  state = { actions: [] };
 
-  constructor(container: HTMLElement, code: string) {
-    const actionBar = (this.actionBar = el('div', { class: styles.actionBar }));
-    const flaskContainer = el('div', {class: styles.flaskContainer});
-
-    this.flask = new CodeFlask(flaskContainer, {
-      language: 'js',
-      lineNumbers: !true
+  componentDidMount() {
+    this.flask = new CodeFlask(this.flaskContainer.current, {
+      language: 'js'
     });
     const textArea = (this.textArea = this.flask.elTextarea);
-    this.resizeHandle = el('div', {
-      class: styles.handle
-    });
 
-    container.append(flaskContainer, this.resizeHandle, actionBar);
-    container.classList.add(styles.editor);
-
-    this.update({ code, cursor: [0, 0], printWidth: 80 });
+    this.updateCode({ code: this.props.code, cursor: [0, 0], printWidth: 80 });
 
     textArea.addEventListener('keydown', this.handleKeyDown);
     textArea.addEventListener('input', this.handleInput);
     textArea.addEventListener('click', this.handleClick);
 
-    this.resizeHandle.addEventListener(
-      'mousedown',
-      (event: MouseEvent) => (this.resizeStartX = event.clientX)
-    );
     document.addEventListener('mouseup', () => (this.resizeStartX = null));
     document.addEventListener(
       'mousemove',
@@ -73,13 +75,13 @@ export default class Editor {
     );
   }
 
-  get state() {
+  get editorState() {
     return this.history[this.history.length - 1];
   }
 
   handleKeyDown = (event: KeyboardEvent) => {
-    const { textArea, state } = this;
-    const { ast, code, cursor } = state;
+    const { textArea, editorState } = this;
+    const { ast, code, cursor } = editorState;
     const [start] = cursor;
 
     let action = this.actions
@@ -98,7 +100,7 @@ export default class Editor {
         this.history.push(this.future.pop());
         this.render();
       } else if (!event.shiftKey && this.history.length > 1) {
-        this.future.push(this.state);
+        this.future.push(this.editorState);
         this.history = this.history.slice(0, -1);
         this.render();
       }
@@ -119,7 +121,7 @@ export default class Editor {
         index -= 1;
       }
       const pos = event.shiftKey && index == 0 ? 0 : accuCharCounts[index];
-      this.update(
+      this.updateCode(
         {
           code: code.slice(0, pos) + '\n' + code.slice(pos),
           cursor: pos == 0 ? 0 : pos + 1
@@ -132,7 +134,7 @@ export default class Editor {
     if (event.key == 'Home' || event.key == 'End') {
       // don't judge me
       setTimeout(() => {
-        this.update({ cursor: textArea.selectionStart });
+        this.updateCode({ cursor: textArea.selectionStart });
         this.moveCursor(null);
       });
     }
@@ -143,10 +145,10 @@ export default class Editor {
       ArrowUp: 'UP',
       ArrowDown: 'DOWN'
     }[event.key];
-    if (!direction) return;
-
-    event.preventDefault();
-    this.moveCursor(direction, event.shiftKey);
+    if (direction) {
+      event.preventDefault();
+      this.moveCursor(direction, event.shiftKey);
+    }
   };
 
   handleInput = ({ data }: any) => {
@@ -154,7 +156,7 @@ export default class Editor {
       ast,
       code,
       cursor: [start, end]
-    } = this.state;
+    } = this.editorState;
     let { selectionStart, selectionEnd, value } = this.textArea;
 
     const [parents] = ast ? getFocusPath(ast, start) : [[], []];
@@ -167,9 +169,13 @@ export default class Editor {
       !t.isStringLiteral(node) &&
       !t.isTemplateLiteral(node)
     ) {
-      this.update({
-        code: replaceCode(code, start, data + { '(': ')', '[': ']' }[data]),
-        cursor: selectionStart
+      this.updateCode({
+        code: replaceCode(
+          code,
+          [start, end],
+          data + { '(': ')', '[': ']' }[data]
+        ),
+        cursor: start + 1
       });
       return;
     }
@@ -185,7 +191,7 @@ export default class Editor {
         const nextStart = start - name.length;
         const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
         const ast = parse(nextCode);
-        this.update({
+        this.updateCode({
           ast,
           cursorFromAST: wrappingStatement(create, getInitialCursor)({
             ast,
@@ -200,7 +206,7 @@ export default class Editor {
       data += data;
     }
 
-    this.update({
+    this.updateCode({
       code:
         data &&
         t.isArrayExpression(node) &&
@@ -214,7 +220,9 @@ export default class Editor {
 
   handleClick = () => {
     const { textArea } = this;
-    this.update({ cursor: [textArea.selectionStart, textArea.selectionEnd] });
+    this.updateCode({
+      cursor: [textArea.selectionStart, textArea.selectionEnd]
+    });
     this.moveCursor(null);
   };
 
@@ -225,32 +233,32 @@ export default class Editor {
     }
     this.resizeStartX = event.clientX;
 
-    this.update({
-      printWidth: Math.max(20, this.state.printWidth + colChange)
+    this.updateCode({
+      printWidth: Math.max(20, this.editorState.printWidth + colChange)
     });
   };
 
-  executeAction(action: { execute: Action }) {
+  executeAction = (action: { execute: Action }) => {
     let cursorFromAST;
-    const nextState = produce(this.state, state => {
+    const nextState = produce(this.editorState, state => {
       cursorFromAST = action.execute(state);
     });
-    this.update({ ...nextState, cursorFromAST });
-  }
+    this.updateCode({ ...nextState, cursorFromAST });
+  };
 
-  moveCursor(direction: Direction, rangeSelect = false) {
-    if (!this.state.ast) {
-      this.update({});
+  moveCursor = (direction: Direction, rangeSelect = false) => {
+    if (!this.editorState.ast) {
+      this.updateCode({});
     }
-    const { ast, code, cursor } = this.state;
+    const { ast, code, cursor } = this.editorState;
 
     if (rangeSelect) {
-      this.update({
+      this.updateCode({
         cursor: this.rangeSelector.run(ast, code, cursor, direction)
       });
     } else {
       this.rangeSelector.reset();
-      this.update({
+      this.updateCode({
         cursor: moveCursor(
           ast,
           code,
@@ -261,9 +269,9 @@ export default class Editor {
         )
       });
     }
-  }
+  };
 
-  update = (
+  updateCode = (
     state: Partial<
       {
         ast: any;
@@ -279,7 +287,7 @@ export default class Editor {
       ...options
     };
 
-    const prevState = this.state || ({} as any);
+    const prevState = this.editorState || ({} as any);
 
     const cursor =
       state.cursor !== undefined
@@ -352,72 +360,83 @@ export default class Editor {
       cursorFromAST: null,
       lastValidAST: ast || lastValidAST
     });
-    (window as any).cancelIdleCallback(this.renderIdleCallbackId);
-    this.renderIdleCallbackId = (window as any).requestIdleCallback(
-      this.render
-    );
+
+    this.setState({
+      actions: ast ? getAvailableActions(this.editorState) : []
+    });
+
+    this.updateEditor();
   };
 
-  render = () => {
-    const { actionBar, state, textArea } = this;
+  updateEditor = () => {
+    const { editorState, textArea } = this;
 
-    this.flask.updateCode(state.code);
+    this.flask.updateCode(editorState.code);
 
-    textArea.cols = state.printWidth;
-    this.resizeHandle.title = state.printWidth.toString();
+    textArea.cols = editorState.printWidth;
 
     this.textArea.blur();
     this.textArea.focus();
 
-    const [start, end] = state.cursor;
+    const [start, end] = editorState.cursor;
     textArea.selectionStart = start;
     textArea.selectionEnd = end || start;
 
     textArea.style.height = 'auto';
     textArea.style.height = textArea.scrollHeight + 'px';
-
-    this.actions = state.ast ? getAvailableActions(state) : [];
-    actionBar.innerHTML = '';
-    actionBar.append(
-      ...this.actions.filter(a => a.title).map(actionSection => {
-        const section = el('section', { class: styles.actionSection });
-
-        section.append(
-          el('h4', [
-            actionSection.title,
-            actionSection.ctrlModifier &&
-              el('span', { class: styles.key }, 'Ctrl')
-          ]),
-          ...actionSection.children.map(action => {
-            const keys = [];
-            if (action.key) {
-              keys.push(action.key);
-            }
-            if (action.codes) {
-              keys.push(
-                ...action.codes.map(code => ({ Comma: ',' }[code] || code))
-              );
-            }
-            return el(
-              'button',
-              {
-                class: styles.action,
-                onclick: () => this.executeAction(action)
-              },
-              [
-                el('div', action.name),
-                el(
-                  'div',
-                  { class: styles.keys },
-                  keys.map(key => el('div', { class: styles.key }, key))
-                )
-              ]
-            );
-          })
-        );
-
-        return section;
-      })
-    );
   };
+
+  render() {
+    const { editorState } = this;
+    return (
+      <Container>
+        <GlobalStyle />
+        <FlaskContainer ref={this.flaskContainer} />
+        <ResizeHandle
+          title={editorState.printWidth.toString()}
+          onMouseDown={event => (this.resizeStartX = event.clientX)}
+        />
+        <ActionBar>
+          {this.state.actions
+            .filter(a => a.title)
+            .map(({ title, ctrlModifier, children }, i) => {
+              return (
+                <ActionSection key={i}>
+                  <SectionTitle>
+                    {title}
+                    {ctrlModifier && <Key>Ctrl</Key>}
+                  </SectionTitle>
+                  {children.map((action, i) => {
+                    const keys = [];
+                    if (action.key) {
+                      keys.push(action.key);
+                    }
+                    if (action.codes) {
+                      keys.push(
+                        ...action.codes.map(
+                          code => ({ Comma: ',' }[code] || code)
+                        )
+                      );
+                    }
+                    return (
+                      <ActionButton
+                        key={i}
+                        onClick={() => this.executeAction(action)}
+                      >
+                        <div>{action.name}</div>
+                        <Keys>
+                          {keys.map(key => (
+                            <Key key={key}>{key}</Key>
+                          ))}
+                        </Keys>
+                      </ActionButton>
+                    );
+                  })}
+                </ActionSection>
+              );
+            })}
+        </ActionBar>
+      </Container>
+    );
+  }
 }

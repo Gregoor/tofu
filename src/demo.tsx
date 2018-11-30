@@ -1,3 +1,5 @@
+import * as React from 'react';
+import { render } from 'react-dom';
 import Editor from './editor';
 
 const WELCOME_CODE = [
@@ -7,4 +9,4 @@ const WELCOME_CODE = [
   'if (FEATURES.length > TODOS.length) { release(); }'
 ].join('\n');
 
-new Editor(document.querySelector('#editor'), WELCOME_CODE);
+render(<Editor code={WELCOME_CODE} />, document.querySelector('#editor'));
