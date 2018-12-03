@@ -355,7 +355,6 @@ export default class Editor extends React.Component<
         ast = parse(code);
       }
     }
-    console.log(ast);
 
     if (cursorFromAST) {
       const cursor = spreadCursor(cursorFromAST(ast));
@@ -408,6 +407,28 @@ export default class Editor extends React.Component<
           onMouseDown={event => (this.resizeStartX = event.clientX)}
         />
         <ActionBar>
+          <button
+            onClick={() => {
+              const stripLocs = a =>
+                Array.isArray(a)
+                  ? a.map(stripLocs)
+                  : typeof a == 'object' && a !== null
+                    ? Object.entries(a)
+                        .filter(([key]) => key != 'loc')
+                        .map(([k, v]) => [k, stripLocs(v)])
+                        .reduce((o, [k, v]) => {
+                          o[k] = v;
+                          return o;
+                        }, {})
+                    : a;
+
+              console.log(
+                JSON.stringify(stripLocs(this.editorState.ast), null, 2)
+              );
+            }}
+          >
+            Print AST
+          </button>
           {this.state.actions
             .filter(a => a.title)
             .map(({ title, ctrlModifier, children }, i) => {
