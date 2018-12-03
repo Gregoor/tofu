@@ -139,9 +139,10 @@ const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
 
 const changeDeclarationKindTo = (kind: string) =>
   (({ ast, cursor: [start] }) => {
-    const node = getNode(ast, start);
+    const [parents, path] = getFocusPath(ast, start);
+    const [node] = parents.reverse();
     node.kind = kind;
-    return ast => selectKind(getNode(ast, start));
+    return ast => selectKind(getNodeFromPath(ast, path));
   }) as Action;
 
 const removeCallOrMember: Action = ({ ast, cursor }) => {
