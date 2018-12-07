@@ -10,7 +10,8 @@ const isCursorable = node =>
     t.isTemplateElement,
     t.isIdentifier,
     t.isNumericLiteral,
-    t.isCallExpression
+    t.isCallExpression,
+    t.isExpressionStatement,
   ].some(check => check(node));
 
 export type Cursor = [number, number];

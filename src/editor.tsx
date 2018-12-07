@@ -32,10 +32,6 @@ import {
 
 const babylon = require('prettier/parser-babylon');
 
-function generateCodeFromAST(ast) {
-  return generate(ast, { retainLines: true }).code;
-}
-
 export default class Editor extends React.Component<
   { code: string },
   {
@@ -180,14 +176,18 @@ export default class Editor extends React.Component<
       !t.isStringLiteral(node) &&
       !t.isTemplateLiteral(node)
     ) {
-      this.updateCode({
-        code: replaceCode(
-          code,
-          [start, end],
-          data + { '(': ')', '[': ']' }[data]
-        ),
-        cursor: start + 1
-      });
+      this.updateCode(
+        {
+          code:
+            code.slice(0, start) +
+            data +
+            code.slice(start, end) +
+            { '(': ')', '[': ']' }[data] +
+            code.slice(end),
+          cursor: start + 1
+        },
+        { prettify: false }
+      );
       return;
     }
 
@@ -320,7 +320,7 @@ export default class Editor extends React.Component<
     let { ast, code, cursorFromAST, lastValidAST, printWidth } = newState;
 
     if (state.ast) {
-      code = generateCodeFromAST(state.ast);
+      code = generate(state.ast, { retainLines: true }).code;
     }
 
     const newWidth = printWidth !== prevState.printWidth;
