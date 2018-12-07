@@ -1,8 +1,7 @@
-import { spreadCursor } from './cursor-utils';
-
 const { parse } = require('@babel/parser');
 const fs = require('fs');
 const path = require('path');
+import { spreadCursor } from './cursor-utils';
 import moveCursor from './move-cursor';
 
 function testPath(ast, code, path, direction) {
@@ -22,21 +21,22 @@ const tests = [
   [
     'let i = 23;',
     {
+      X: [
+        //
+        [4, 5],
+        [5, 8],
+      ],
       RIGHT: [
         //
         [0, [0, 3]],
         [1, [0, 3]],
         [3, 4],
-        [4, 5],
-        [5, 8],
         [11, 11]
       ],
       LEFT: [
         //
         [0, 0],
-        [4, [0, 3]],
-        [5, 4],
-        [8, 5]
+        [4, [0, 3]]
       ],
       null: [
         //
@@ -126,16 +126,11 @@ const tests = [
   [
     'a[0];',
     {
-      RIGHT: [
+      X: [
         //
         [2, 3],
         [3, 4]
       ],
-      LEFT: [
-        //
-        [3, 2],
-        [4, 3]
-      ]
     }
   ],
   [
@@ -182,69 +177,45 @@ const tests = [
   [
     '[1, , 2];',
     {
-      RIGHT: [
+      X: [
         //
         [2, 4],
         [4, 6]
       ],
-      LEFT: [
-        //
-        [4, 2],
-        [6, 4]
-      ]
     }
   ],
   [
     '[, ,];',
     {
-      RIGHT: [
+      X: [
         //
         [0, 1],
         [1, 3],
         [3, 5]
       ],
-      LEFT: [
-        //
-        [1, 0],
-        [3, 1],
-        [5, 3]
-      ]
     }
   ],
   [
     'for (;;) {}',
     {
-      RIGHT: [
+      X: [
         //
         [0, 5],
         [5, 6],
         [6, 7],
         [7, 10]
       ],
-      LEFT: [
-        //
-        [5, 0],
-        [6, 5],
-        [7, 6],
-        [10, 7]
-      ]
     }
   ],
   [
     '(1);',
     {
-      RIGHT: [
+      X: [
         //
         [0, 1],
         [1, 2],
         [2, 3]
       ],
-      LEFT: [
-        //
-        [1, 0],
-        [2, 1],
-        [3, 2]
-      ]
     }
   ],
   [
@@ -293,7 +264,15 @@ const tests = [
 for (const [code, paths] of tests) {
   describe(code, () => {
     const ast = parse(code);
-    for (const [direction, path] of Object.entries(paths)) {
+    for (const [direction, path] of Object.entries(paths).reduce(
+      (a, [direction, path]) => [
+        ...a,
+        ...({ X: [['RIGHT', path], ['LEFT', path.map(([a, b]) => [b, a])]] }[
+          direction
+        ] || [[direction, path]])
+      ],
+      []
+    )) {
       testPath(ast, code, path, direction);
     }
   });
