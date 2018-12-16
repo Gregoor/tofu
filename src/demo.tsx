@@ -3,8 +3,8 @@ import { render } from 'react-dom';
 import Editor from './editor';
 
 const WELCOME_CODE = [
-  "const FEATURES = ['Edit code with few keystrokes', 'No syntax errors', 'Properly formatted code, no action required']",
-  "const TODOS = ['Side Panel', 'Support all the JS language features', 'Syntax Highlighting', 'Proper changes history']",
+  "const FEATURES = ['Edit code with few keystrokes', 'No syntax errors', 'Formatted code, no action required']",
+  "const TODOS = ['Support all the JS language features']",
   '',
   'if (FEATURES.length > TODOS.length) { release(); }'
 ].join('\n');
