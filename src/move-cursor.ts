@@ -11,7 +11,7 @@ const isCursorable = node =>
     t.isIdentifier,
     t.isNumericLiteral,
     t.isCallExpression,
-    t.isExpressionStatement,
+    t.isExpressionStatement
   ].some(check => check(node));
 
 export type Cursor = [number, number];
@@ -56,6 +56,15 @@ let moveCursorX = function(
       return nextStart;
     }
     return isRight ? nextStart : start;
+  }
+
+  if (
+    t.isExpression(node) &&
+    code[start] == ')' &&
+    recursionDepth === 0 &&
+    t.isExpression(getNode(ast, nextStart))
+  ) {
+    return nextStart;
   }
 
   if (t.isVariableDeclaration(node)) {
