@@ -191,6 +191,28 @@ export default class Editor extends React.Component<
       return;
     }
 
+    if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
+      let newOperator;
+      if (data == '=') {
+        newOperator =
+          node.operator == '>' || node.operator == '<'
+            ? node.operator + '='
+            : '='.repeat(node.operator == '==' ? 3 : 2);
+      } else if (data == '&' || data == '|') {
+        newOperator =
+          node.operator[0] == data
+            ? data.repeat(3 - node.operator.length)
+            : data;
+      }
+      this.updateCode({
+        code: newOperator
+          ? code.slice(0, start) + newOperator + code.slice(end)
+          : value
+      });
+      this.moveCursor(null);
+      return;
+    }
+
     if (!ast && (data == ' ' || data == '(')) {
       const keyword = keywords.find(
         ({ name }) => code.slice(start - name.length, start) == name
@@ -422,13 +444,14 @@ export default class Editor extends React.Component<
                         }, {})
                     : a;
 
-              console.log(
-                JSON.stringify(stripLocs(this.editorState.ast), null, 2)
-              );
-            }}
-          >
-            Print AST
-          </button>
+                console.log(
+                  JSON.stringify(stripLocs(this.editorState.ast), null, 2)
+                );
+              }}
+            >
+              Print AST
+            </button>
+          )}
           {this.state.actions
             .filter(a => a.title)
             .map(({ title, ctrlModifier, children }, i) => {
