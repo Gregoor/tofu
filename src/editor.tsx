@@ -11,7 +11,7 @@ import getAvailableActions, {
   keywords,
   wrappingStatement
 } from './actions';
-import { getFocusPath, getNode } from './ast-utils';
+import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
 import { spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
@@ -145,6 +145,13 @@ export default class Editor extends React.Component<
         this.moveCursor(null);
       });
     }
+    
+    if (event.key == 'Backspace') {
+      // stop judging me
+      setTimeout(() => {
+        this.moveCursor(null);
+      });
+    }
 
     const direction = {
       ArrowLeft: 'LEFT',
@@ -166,9 +173,21 @@ export default class Editor extends React.Component<
     } = this.editorState;
     let { selectionStart, selectionEnd, value } = this.textArea;
 
-    const [parents] = ast ? getFocusPath(ast, start) : [[], []];
+    const [parents, path] = ast ? getFocusPath(ast, start) : [[], []];
     parents.reverse();
     const node = Array.isArray(parents[0]) ? parents[1] : parents[0];
+
+    if (t.isNullLiteral(node) && data == '(') {
+      this.updateCode({
+        ast: produce(ast, ast => {
+          getNodeFromPath(ast, path.slice(0, -1))[
+            path[path.length - 1]
+          ] = t.arrowFunctionExpression([], t.nullLiteral());
+        })
+      });
+      this.moveCursor(null);
+      return;
+    }
 
     if (
       ['(', '['].includes(data) &&
@@ -249,6 +268,7 @@ export default class Editor extends React.Component<
           : value,
       cursor: [selectionStart, selectionEnd]
     });
+    this.moveCursor(null);
   };
 
   handleClick = () => {
@@ -429,20 +449,21 @@ export default class Editor extends React.Component<
           onMouseDown={event => (this.resizeStartX = event.clientX)}
         />
         <ActionBar>
-          <button
-            onClick={() => {
-              const stripLocs = a =>
-                Array.isArray(a)
-                  ? a.map(stripLocs)
-                  : typeof a == 'object' && a !== null
-                    ? Object.entries(a)
-                        .filter(([key]) => key != 'loc')
-                        .map(([k, v]) => [k, stripLocs(v)])
-                        .reduce((o, [k, v]) => {
-                          o[k] = v;
-                          return o;
-                        }, {})
-                    : a;
+          {location.hostname == 'localhost' && (
+            <button
+              onClick={() => {
+                const stripLocs = a =>
+                  Array.isArray(a)
+                    ? a.map(stripLocs)
+                    : typeof a == 'object' && a !== null
+                      ? Object.entries(a)
+                          .filter(([key]) => key != 'loc')
+                          .map(([k, v]) => [k, stripLocs(v)])
+                          .reduce((o, [k, v]) => {
+                            o[k] = v;
+                            return o;
+                          }, {})
+                      : a;
 
                 console.log(
                   JSON.stringify(stripLocs(this.editorState.ast), null, 2)

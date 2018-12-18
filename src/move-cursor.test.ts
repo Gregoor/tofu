@@ -228,6 +228,16 @@ const tests = [
     }
   ],
   [
+    '() => null',
+    {
+      X: [
+      //
+        [0, 1],
+        [1, 6] // fails because of code[start] == ')'
+      ]
+    }
+  ],
+  [
     testCode,
     {
       RIGHT: [

@@ -153,6 +153,15 @@ let moveCursorX = function(
     }
   }
 
+  if (
+    t.isArrowFunctionExpression(node) &&
+    node.params.length == 0 &&
+    recursionDepth > 0 &&
+    start == node.start + 1
+  ) {
+    return start;
+  }
+
   const shouldEndBlock =
     t.isBlockStatement(node) &&
     t.isIfStatement(getParent(ast, start)) &&

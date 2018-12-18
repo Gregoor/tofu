@@ -68,3 +68,7 @@ export function getNode(ast, start: number) {
   const [parents] = getFocusPath(ast, start);
   return parents[parents.length - 1];
 }
+
+export function getNodeFromPath(ast, path: (string | number)[]) {
+  return path.reduce((ast, property) => ast[property], ast);
+}

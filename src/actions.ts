@@ -1,12 +1,8 @@
 const t = require('@babel/types');
-import { getFocusPath, getNode } from './ast-utils';
+import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { selectKind, selectName, selectNode } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import { Cursor } from './move-cursor';
-
-function getNodeFromPath(ast, path: (string | number)[]) {
-  return path.reduce((ast, property) => ast[property], ast);
-}
 
 function findLastIndex(nodes: any[], check: (n) => boolean) {
   const reverseIndex = nodes
@@ -113,21 +109,24 @@ const isInCollection = ([start, end]: Cursor) => node =>
         node.arguments.reduce((sum, node) => sum + node.end - node.start, 0) -
         // ", " between arguments
         (node.arguments.length - 1) * 2 &&
-    end < node.end);
+    end < node.end) ||
+  t.isArrowFunctionExpression(node);
 
 const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
   const [parents, path] = getFocusPath(ast, start);
   const collectionIndex = findLastIndex(parents, isInCollection([start, end]));
   const collection = parents[collectionIndex];
   const node = parents[parents.length - 1];
-  const childKey = { ArrayExpression: 'elements', CallExpression: 'arguments' }[
-    collection.type
-  ];
+  const [childKey, init] = {
+    ArrayExpression: ['elements', t.nullLiteral()],
+    ArrowFunctionExpression: ['params', t.identifier('p')],
+    CallExpression: ['arguments', t.nullLiteral()]
+  }[collection.type];
   let index = findSlotIndex(collection[childKey], start);
   if (start == node.start && end == node.start) {
     index = Math.max(0, index - 1);
   }
-  collection[childKey].splice(index, 0, t.nullLiteral());
+  collection[childKey].splice(index, 0, init);
   return ast =>
     selectNode(
       getNodeFromPath(
@@ -226,7 +225,7 @@ export default function getAvailableActions({
         title: 'SyntaxError',
         children: [
           {
-            name: 'Restore last valid',
+            name: 'Restore AST',
             codes: ['Escape'],
             execute: () => ({ restoreAST: true })
           }
@@ -260,9 +259,11 @@ export default function getAvailableActions({
   const parentCollection = parents.find(isInCollection([start, end]));
   if (parentCollection) {
     actions.push({
-      title: { ArrayExpression: 'Array', CallExpression: 'Arguments' }[
-        parentCollection.type
-      ],
+      title: {
+        ArrayExpression: 'Array',
+        ArrowFunctionExpression: 'Parameters',
+        CallExpression: 'Arguments'
+      }[parentCollection.type],
       children: [
         {
           name: 'Add',
