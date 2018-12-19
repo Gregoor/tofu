@@ -49,6 +49,12 @@ export const keywords: {
         getNodeFromPath(ast, [...path, 'left', 'declarations', '0', 'id'])
       )
   },
+  {
+    name: 'return',
+    create: () => t.returnStatement(t.nullLiteral()),
+    getInitialCursor: (ast, path) =>
+      selectNode(getNodeFromPath(ast, path.concat('argument')))
+  },
 
   ...['const', 'let', 'var'].map(kind => ({
     name: kind,

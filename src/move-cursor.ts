@@ -53,18 +53,22 @@ let moveCursorX = function(
 
   if (start !== nextStart && code[start] == '\n' && code[nextStart] == '\n') {
     if (isLeft && recursionDepth == 0) {
-      return nextStart;
+      return moveCursorX(ast, code, null, recursionDepth, nextStart);
     }
     return isRight ? nextStart : start;
   }
 
   if (
     t.isExpression(node) &&
-    code[start] == ')' &&
-    recursionDepth === 0 &&
-    t.isExpression(getNode(ast, nextStart))
+    t.isExpression(getNode(ast, nextStart)) &&
+    !t.isArrowFunctionExpression(node)
   ) {
-    return nextStart;
+    if (code[start] == ')' && recursionDepth === 0) {
+      return nextStart;
+    }
+    if (code[nextStart] == ')' && recursionDepth > 0) {
+      return start;
+    }
   }
 
   if (t.isVariableDeclaration(node)) {
@@ -90,7 +94,9 @@ let moveCursorX = function(
     ((isRight && start == node.left.end + 1) ||
       (isLeft && start == node.right.start - 1))
   ) {
-    return [node.left.end + 1, node.right.start - 1];
+    const start =
+      node.left.end + code.slice(node.left.end).indexOf(node.operator);
+    return [start, start + node.operator.length];
   }
 
   if (t.isArrayExpression(node) && recursionDepth > 0) {
@@ -162,21 +168,34 @@ let moveCursorX = function(
     return start;
   }
 
+  if (
+    t.isReturnStatement(node) &&
+    recursionDepth > 0 &&
+    !node.argument &&
+    (isRight || start == node.end - 1)
+  ) {
+    return node.end - 1;
+  }
+
+  const isParentIf = t.isIfStatement(getParent(ast, start));
   const shouldEndBlock =
     t.isBlockStatement(node) &&
-    t.isIfStatement(getParent(ast, start)) &&
+    isParentIf &&
     ((isRight && start !== node.end) || recursionDepth > 0);
 
   if (t.isBlockStatement(node) && node.body.length == 0) {
-    const nextStart = node.start + 1;
-    const isRightOrDown = isRight || isDown;
-    if (start == nextStart || (start > nextStart && isRightOrDown)) {
+    const blockStart = node.start + 1;
+    if (start == blockStart || start > blockStart) {
       if (shouldEndBlock) {
         return node.end;
       }
-      return moveOn(isRightOrDown ? node.end + 1 : node.start - 1);
+      if (isRight || isDown) {
+        return moveOn(node.end + 1);
+      } else {
+        return moveOn(node.start - 1);
+      }
     }
-    return nextStart;
+    return blockStart;
   }
 
   if (start == node.end && shouldEndBlock) {

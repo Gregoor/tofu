@@ -24,7 +24,7 @@ const tests = [
       X: [
         //
         [4, 5],
-        [5, 8],
+        [5, 8]
       ],
       RIGHT: [
         //
@@ -130,7 +130,7 @@ const tests = [
         //
         [2, 3],
         [3, 4]
-      ],
+      ]
     }
   ],
   [
@@ -149,9 +149,10 @@ const tests = [
 }
 `,
     {
-      RIGHT: [
+      X: [
         //
-        [8, 10]
+        [8, 10],
+        [10, 11]
       ],
       DOWN: [
         //
@@ -181,7 +182,7 @@ const tests = [
         //
         [2, 4],
         [4, 6]
-      ],
+      ]
     }
   ],
   [
@@ -192,7 +193,7 @@ const tests = [
         [0, 1],
         [1, 3],
         [3, 5]
-      ],
+      ]
     }
   ],
   [
@@ -204,7 +205,7 @@ const tests = [
         [5, 6],
         [6, 7],
         [7, 10]
-      ],
+      ]
     }
   ],
   [
@@ -215,7 +216,7 @@ const tests = [
         [0, 1],
         [1, 2],
         [2, 3]
-      ],
+      ]
     }
   ],
   [
@@ -224,16 +225,38 @@ const tests = [
       X: [
         //
         [6, 7]
-      ],
+      ]
+    }
+  ],
+  [
+    '(1) + (2);',
+    {
+      X: [
+        //
+        [3, [4, 5]],
+        [[4, 5], 7]
+      ]
     }
   ],
   [
     '() => null',
     {
       X: [
-      //
+        //
         [0, 1],
-        [1, 6] // fails because of code[start] == ')'
+        [1, [6, 10]]
+      ]
+    }
+  ],
+  [
+    'const n = () => {\n' +
+    '  asd;\n' +
+    '  return;\n' +
+    '};\n',
+    {
+      X: [
+        //
+        [24, 33]
       ]
     }
   ],
@@ -286,9 +309,24 @@ for (const [code, paths] of tests) {
     for (const [direction, path] of Object.entries(paths).reduce(
       (a, [direction, path]) => [
         ...a,
-        ...({ X: [['RIGHT', path], ['LEFT', path.map(([a, b]) => [b, a])]] }[
-          direction
-        ] || [[direction, path]])
+        ...({
+          X: [
+            [
+              'RIGHT',
+              path.map(([from, to]) => [
+                Array.isArray(from) ? from[1] : from,
+                to
+              ])
+            ],
+            [
+              'LEFT',
+              path.map(([to, from]) => [
+                Array.isArray(from) ? from[0] : from,
+                to
+              ])
+            ]
+          ]
+        }[direction] || [[direction, path]])
       ],
       []
     )) {

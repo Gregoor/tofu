@@ -145,7 +145,7 @@ export default class Editor extends React.Component<
         this.moveCursor(null);
       });
     }
-    
+
     if (event.key == 'Backspace') {
       // stop judging me
       setTimeout(() => {
@@ -190,7 +190,7 @@ export default class Editor extends React.Component<
     }
 
     if (
-      ['(', '['].includes(data) &&
+      ['(', '[', '{'].includes(data) &&
       (t.isExpression(node) || t.isBlock(node)) &&
       !t.isStringLiteral(node) &&
       !t.isTemplateLiteral(node)
@@ -200,8 +200,8 @@ export default class Editor extends React.Component<
           code:
             code.slice(0, start) +
             data +
-            code.slice(start, end) +
-            { '(': ')', '[': ']' }[data] +
+            (data == '{' ? '' : code.slice(start, end)) +
+            { '(': ')', '[': ']', '{': '}' }[data] +
             code.slice(end),
           cursor: start + 1
         },
@@ -232,7 +232,7 @@ export default class Editor extends React.Component<
       return;
     }
 
-    if (!ast && (data == ' ' || data == '(')) {
+    if (data == ' ' || data == '(') {
       const keyword = keywords.find(
         ({ name }) => code.slice(start - name.length, start) == name
       );
@@ -310,26 +310,40 @@ export default class Editor extends React.Component<
   };
 
   moveCursor = (direction: Direction, rangeSelect = false) => {
-    if (!this.editorState.ast) {
-      this.updateCode({});
-    }
     const { ast, code, cursor } = this.editorState;
+
+    if (!ast) {
+      this.updateCode({});
+      return;
+    }
 
     if (rangeSelect) {
       this.updateCode({
         cursor: this.rangeSelector.run(ast, code, cursor, direction)
       });
     } else {
+      let nextCursor;
+      if (cursor[0] != cursor[1]) {
+        if (direction == 'LEFT') {
+          nextCursor = cursor[0];
+        } else if (direction == 'RIGHT') {
+          nextCursor = cursor[1];
+        }
+      }
+
       this.rangeSelector.reset();
-      this.updateCode({
-        cursor: moveCursor(
+
+      if (!nextCursor) {
+        nextCursor = moveCursor(
           ast,
           code,
           direction,
-          (direction == 'RIGHT' || direction == 'DOWN' ? Math.max : Math.min)(
-            ...cursor
-          )
-        )
+          (direction == 'DOWN' ? Math.max : Math.min)(...cursor)
+        );
+      }
+
+      this.updateCode({
+        cursor: nextCursor
       });
     }
   };
