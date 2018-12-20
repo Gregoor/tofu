@@ -1,3 +1,5 @@
+import memoizeOne from 'memoize-one';
+
 function isInRange([start, end], pos) {
   return pos >= start && pos <= end;
 }
@@ -33,7 +35,7 @@ function* forEachProperty(node) {
   }
 }
 
-export function getFocusPath(node, pos, seen = new Set()) {
+export const getFocusPath = memoizeOne((node, pos, seen = new Set()) => {
   seen.add(node);
 
   let parents = [];
@@ -57,7 +59,7 @@ export function getFocusPath(node, pos, seen = new Set()) {
     }
   }
   return [parents, path];
-}
+});
 
 export function getParent(ast, start: number) {
   const [parents] = getFocusPath(ast, start);
