@@ -101,11 +101,11 @@ export default class Editor extends React.Component<
     if (event.code == 'KeyZ' && event.ctrlKey) {
       if (event.shiftKey && this.future.length > 0) {
         this.history.push(this.future.pop());
-        this.render();
+        this.updateEditor();
       } else if (!event.shiftKey && this.history.length > 1) {
         this.future.push(this.editorState);
         this.history = this.history.slice(0, -1);
-        this.render();
+        this.updateEditor();
       }
       event.preventDefault();
       return;
@@ -365,9 +365,11 @@ export default class Editor extends React.Component<
         );
       }
 
-      this.updateCode({
-        cursor: nextCursor
-      });
+      if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
+        this.updateCode({
+          cursor: nextCursor
+        });
+      }
     }
   };
 
