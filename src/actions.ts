@@ -145,7 +145,7 @@ const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
 const changeDeclarationKindTo = (kind: string) =>
   (({ ast, cursor: [start] }) => {
     const [parents, path] = getFocusPath(ast, start);
-    const [node] = parents.reverse();
+    const [node] = parents.slice().reverse();
     node.kind = kind;
     return ast => selectKind(getNodeFromPath(ast, path));
   }) as Action;
@@ -161,7 +161,7 @@ const removeCallOrMember: Action = ({ ast, cursor }) => {
 const addElseBranch = block =>
   (({ ast, cursor: [start] }) => {
     const [parents, path] = getFocusPath(ast, start);
-    const [, ifStatement] = parents.reverse();
+    const [, ifStatement] = parents.slice().reverse();
     ifStatement.alternate = block || t.blockStatement([t.emptyStatement()]);
     return ast =>
       getNodeFromPath(ast, [...path.slice(0, -1), 'alternate']).start + 1;
@@ -170,7 +170,7 @@ const addElseBranch = block =>
 const addIfElseBranch = block =>
   (({ ast, cursor: [start] }) => {
     const [parents, path] = getFocusPath(ast, start);
-    const [, ifStatement] = parents.reverse();
+    const [, ifStatement] = parents.slice().reverse();
     ifStatement.alternate = t.ifStatement(
       t.identifier('test'),
       block || t.blockStatement([t.emptyStatement()])
@@ -240,9 +240,9 @@ export default function getAvailableActions({
     ];
   }
 
-  const [parents, path] = getFocusPath(ast, start);
-  path.reverse();
-  parents.reverse();
+  let [parents, path] = getFocusPath(ast, start);
+  path = path.slice().reverse();
+  parents = parents.slice().reverse();
   const parentStatement = parents.find(node => t.isStatement(node));
   const insertMode = !parentStatement || t.isBlockStatement(parentStatement);
   const [node, parent] = parents;

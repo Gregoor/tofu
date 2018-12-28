@@ -33,7 +33,9 @@ let moveCursorX = function(
     isDown: direction === 'DOWN',
     isUp: direction === 'UP'
   };
-  const [node, parent] = getFocusPath(ast, start)[0].reverse();
+  const [node, parent] = getFocusPath(ast, start)[0]
+    .slice()
+    .reverse();
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
   const moveOn = moveCursorX.bind(
@@ -177,25 +179,19 @@ let moveCursorX = function(
     return node.end - 1;
   }
 
-  const isParentIf = t.isIfStatement(getParent(ast, start));
   const shouldEndBlock =
     t.isBlockStatement(node) &&
-    isParentIf &&
+    t.isIfStatement(getParent(ast, start)) &&
     ((isRight && start !== node.end) || recursionDepth > 0);
 
   if (t.isBlockStatement(node) && node.body.length == 0) {
     const blockStart = node.start + 1;
-    if (start == blockStart || start > blockStart) {
-      if (shouldEndBlock) {
-        return node.end;
-      }
-      if (isRight || isDown) {
-        return moveOn(node.end + 1);
-      } else {
-        return moveOn(node.start - 1);
-      }
-    }
-    return blockStart;
+    return start >= blockStart &&
+      !(isLeft && start == node.end && recursionDepth == 0)
+      ? shouldEndBlock
+        ? node.end
+        : moveOn(isRight || isDown ? node.end + 1 : node.start - 1)
+      : blockStart;
   }
 
   if (start == node.end && shouldEndBlock) {
@@ -220,7 +216,10 @@ let moveCursorX = function(
     const rightBreak = code.slice(start, right[0]).includes('\n');
     if (leftBreak) return right;
     if (rightBreak) return left;
-    return start - left[0] < right[0] - start ? left : right;
+    return Math.min(start - left[0], start - left[1]) <
+      Math.min(right[0] - start, right[1] - start)
+      ? left
+      : right;
   }
 
   return moveOn(nextStart);

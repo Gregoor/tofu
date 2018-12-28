@@ -17,7 +17,7 @@ export default class RangeSelector {
     }
 
     if (direction == 'UP') {
-      for (const node of getFocusPath(ast, cursor[0])[0].reverse()) {
+      for (const node of getFocusPath(ast, cursor[0])[0].slice().reverse()) {
         const nextCursor = selectNode(node);
 
         if (cursor[0] > nextCursor[0] || cursor[1] < nextCursor[1]) {
@@ -39,7 +39,7 @@ export default class RangeSelector {
       return cursor;
     }
 
-    const parents = getFocusPath(ast, cursor[0])[0].reverse();
+    const parents = getFocusPath(ast, cursor[0])[0].slice().reverse();
     const node = getNode(ast, cursor[0]);
 
     const isRight = direction == 'RIGHT';

@@ -13,7 +13,7 @@ import getAvailableActions, {
 } from './actions';
 import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
-import { spreadCursor } from './cursor-utils';
+import { selectNode, spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import moveCursor, { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
@@ -173,9 +173,17 @@ export default class Editor extends React.Component<
     } = this.editorState;
     let { selectionStart, selectionEnd, value } = this.textArea;
 
-    const [parents, path] = ast ? getFocusPath(ast, start) : [[], []];
-    parents.reverse();
-    const node = Array.isArray(parents[0]) ? parents[1] : parents[0];
+    let [parents, path] = ast ? getFocusPath(ast, start) : [[], []];
+    parents = parents.slice().reverse();
+    let node;
+    let parent;
+    if (Array.isArray(parents[0])) {
+      node = parents[1];
+      parent = parents[2];
+    } else {
+      node = parents[0];
+      parent = parents[1];
+    }
 
     if (t.isNullLiteral(node) && data == '(') {
       this.updateCode({
@@ -249,6 +257,21 @@ export default class Editor extends React.Component<
             ast,
             cursor: [nextStart, nextStart]
           })
+        });
+        return;
+      }
+
+      if (t.isVariableDeclarator(parent) && !parent.init) {
+        const varPath = path.slice(0, -1);
+        this.updateCode({
+          ast: produce(ast, ast => {
+            getNodeFromPath(ast, varPath).init = t.nullLiteral();
+          }),
+          cursorFromAST: () => {
+            //???
+            console.log(getNodeFromPath(ast, varPath.concat('init')));
+            return selectNode(getNodeFromPath(ast, varPath.concat('init')));
+          }
         });
         return;
       }
