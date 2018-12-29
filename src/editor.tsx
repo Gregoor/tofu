@@ -197,12 +197,12 @@ export default class Editor extends React.Component<
       return;
     }
 
-    if (
-      ['(', '[', '{'].includes(data) &&
+    const isExpressionOrBlock =
       (t.isExpression(node) || t.isBlock(node)) &&
       !t.isStringLiteral(node) &&
-      !t.isTemplateLiteral(node)
-    ) {
+      !t.isTemplateLiteral(node);
+
+    if (isExpressionOrBlock && ['(', '[', '{'].includes(data)) {
       this.updateCode(
         {
           code:
@@ -215,6 +215,22 @@ export default class Editor extends React.Component<
         },
         { prettify: false }
       );
+      return;
+    }
+
+    if (isExpressionOrBlock && data == '?') {
+      this.updateCode({
+        ast: produce(ast, ast => {
+          getNodeFromPath(ast, path.slice(0, -1))[
+            path[path.length - 1]
+          ] = t.conditionalExpression(
+            getNodeFromPath(ast, path),
+            t.nullLiteral(),
+            t.nullLiteral()
+          );
+        })
+      });
+      this.moveCursor(null);
       return;
     }
 
