@@ -106,7 +106,9 @@ const toggleLogicalExpression = (node, newOperator) =>
   }) as Action;
 
 const isInCollection = ([start, end]: Cursor) => node =>
-  (t.isArrayExpression(node) && start > node.start && end < node.end) ||
+  ((t.isArrayExpression(node) || t.isObjectExpression(node)) &&
+    start > node.start &&
+    end < node.end) ||
   (t.isCallExpression(node) &&
     start >
       node.end -
@@ -126,7 +128,11 @@ const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
   const [childKey, init] = {
     ArrayExpression: ['elements', t.nullLiteral()],
     ArrowFunctionExpression: ['params', t.identifier('p')],
-    CallExpression: ['arguments', t.nullLiteral()]
+    CallExpression: ['arguments', t.nullLiteral()],
+    ObjectExpression: [
+      'properties',
+      t.objectProperty(t.identifier('p'), t.identifier('p'), false, true)
+    ]
   }[collection.type];
   let index = findSlotIndex(collection[childKey], start);
   if (start == node.start && end == node.start) {
@@ -268,7 +274,8 @@ export default function getAvailableActions({
       title: {
         ArrayExpression: 'Array',
         ArrowFunctionExpression: 'Parameters',
-        CallExpression: 'Arguments'
+        CallExpression: 'Arguments',
+        ObjectExpression: 'Properties'
       }[parentCollection.type],
       children: [
         {

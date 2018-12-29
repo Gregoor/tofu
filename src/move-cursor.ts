@@ -101,8 +101,8 @@ let moveCursorX = function(
     return [start, start + node.operator.length];
   }
 
-  if (t.isArrayExpression(node) && recursionDepth > 0) {
-    if (node.elements.length == 0) {
+  if ((t.isArrayExpression(node) || t.isObjectExpression(node)) && recursionDepth > 0) {
+    if ((node.elements || node.properties).length == 0) {
       return start;
     }
 
