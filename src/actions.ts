@@ -25,6 +25,7 @@ export const keywords: {
   label?: string;
   create: (child?) => any;
   getInitialCursor: (ast, path) => [number, number];
+  hidden?: boolean;
 }[] = [
   {
     name: 'if',
@@ -53,7 +54,8 @@ export const keywords: {
     name: 'return',
     create: () => t.returnStatement(t.nullLiteral()),
     getInitialCursor: (ast, path) =>
-      selectNode(getNodeFromPath(ast, path.concat('argument')))
+      selectNode(getNodeFromPath(ast, path.concat('argument'))),
+    hidden: true
   },
 
   ...['const', 'let', 'var'].map(kind => ({
@@ -66,7 +68,8 @@ export const keywords: {
         )
       ]),
     getInitialCursor: (ast, path) =>
-      selectName(getNodeFromPath(ast, [...path, 'declarations', '0', 'id']))
+      selectName(getNodeFromPath(ast, [...path, 'declarations', '0', 'id'])),
+    hidden: true
   }))
 ];
 
@@ -222,7 +225,9 @@ export type ActionSections = {
     execute: Action;
   }[];
   key?: string;
-  ctrlModifier?: boolean;
+  alt?: boolean;
+  ctrl?: boolean;
+  shift?: boolean;
   searchable?: boolean;
 }[];
 
@@ -284,7 +289,7 @@ export default function getAvailableActions({
           execute: addToCollection
         }
       ],
-      ctrlModifier:
+      ctrl:
         parentCollection !== node && start !== node.start && start !== node.end
     });
   }
@@ -304,12 +309,15 @@ export default function getAvailableActions({
 
   actions.push({
     title: insertMode ? 'Insert' : 'Wrap with',
-    children: keywords.map(({ name, label, create, getInitialCursor }) => ({
-      name: label || name,
-      execute: wrappingStatement(create, getInitialCursor)
-    })),
-    ctrlModifier: true,
-    key: 'd',
+    children: keywords
+      .filter(a => insertMode || !a.hidden)
+      .map(({ name, label, create, getInitialCursor }) => ({
+        name: label || name,
+        execute: wrappingStatement(create, getInitialCursor)
+      })),
+    alt: true,
+    shift: true,
+    key: 'W',
     searchable: true
   });
 
@@ -368,7 +376,7 @@ export default function getAvailableActions({
           }
         }
       ],
-      ctrlModifier: true
+      ctrl: true
     });
   }
 

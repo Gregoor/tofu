@@ -16,7 +16,23 @@ const codeFontSize = css`
   font-size: 13.3333px;
 `;
 
-export const ActionButton = styled.button`
+export const ActionBar = styled.div`
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0 ${borderRadius} ${borderRadius} 0;
+  border-left: none;
+  padding: 20px;
+  padding-right: 30px;
+  min-width: 300px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  background: white;
+`;
+
+export const ActionItem = styled.li`
   display: flex;
   justify-content: space-between;
   border: none;
@@ -27,26 +43,18 @@ export const ActionButton = styled.button`
   ${codeFontSize};
   background: none;
   cursor: pointer;
+  ${props => props.highlighted && 'background: yellow;'}
+  ${props => props.hidden && 'display: none;'}
 
   &:hover {
     font-weight: bold;
   }
 `;
 
-export const ActionBar = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 0 ${borderRadius} ${borderRadius} 0;
-  border-left: none;
-  padding: 20px;
-  padding-right: 30px;
-  min-width: 230px;
-  box-sizing: border-box;
-  position: sticky;
-  top: 0;
-  height: fit-content;
-  display: flex;
-  flex-direction: column;
-  background: white;
+export const ActionList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
 `;
 
 export const ActionSection = styled.div`

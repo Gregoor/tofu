@@ -2,6 +2,7 @@ const generate = require('@babel/generator').default;
 const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 const CodeFlask = require('codeflask').default;
+import Downshift from 'downshift';
 import prettier from 'prettier/standalone';
 import * as React from 'react';
 import produce from 'immer';
@@ -19,7 +20,8 @@ import moveCursor, { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
 import {
   ActionBar,
-  ActionButton,
+  ActionItem,
+  ActionList,
   ActionSection,
   Container,
   FlaskContainer,
@@ -36,6 +38,7 @@ export default class Editor extends React.Component<
   { code: string },
   {
     actions: ActionSections;
+    searchIn: string;
   }
 > {
   flaskContainer: React.RefObject<HTMLDivElement> = React.createRef();
@@ -50,7 +53,9 @@ export default class Editor extends React.Component<
 
   resizeStartX = null;
 
-  state = { actions: [] };
+  state = { actions: [], searchIn: null };
+
+  searchRef: React.RefObject<HTMLInputElement> = React.createRef();
 
   componentDidMount() {
     this.flask = new CodeFlask(this.flaskContainer.current, {
@@ -81,14 +86,23 @@ export default class Editor extends React.Component<
     const [start] = cursor;
 
     const searchable = this.state.actions.find(
-      s => s.searchable && s.ctrlModifier == event.ctrlKey && event.key == s.key
+      s =>
+        s.searchable &&
+        Boolean(s.alt) == event.altKey &&
+        Boolean(s.ctrl) == event.ctrlKey &&
+        Boolean(s.shift) == event.shiftKey &&
+        event.key == s.key
     );
     if (searchable) {
+      this.setState({ searchIn: searchable.title }, () => {
+        this.searchRef.current.focus();
+      });
       event.preventDefault();
+      return;
     }
 
     let action = this.state.actions
-      .filter(s => event.ctrlKey || !s.ctrlModifier)
+      .filter(s => event.ctrlKey || !s.ctrl)
       .map(s => s.children)
       .flat()
       .find(a => a.key == event.key || (a.codes || []).includes(event.code));
@@ -357,35 +371,43 @@ export default class Editor extends React.Component<
     }
 
     if (rangeSelect) {
+      let nextCursor = this.rangeSelector.run(ast, code, cursor, direction);
+      if (
+        (direction == 'LEFT' || direction == 'RIGHT') &&
+        JSON.stringify(cursor) == JSON.stringify(nextCursor)
+      ) {
+        nextCursor = this.rangeSelector.run(ast, code, cursor, 'UP');
+      }
       this.updateCode({
-        cursor: this.rangeSelector.run(ast, code, cursor, direction)
+        cursor: nextCursor
       });
-    } else {
-      let nextCursor;
-      if (cursor[0] != cursor[1]) {
-        if (direction == 'LEFT') {
-          nextCursor = cursor[0];
-        } else if (direction == 'RIGHT') {
-          nextCursor = cursor[1];
-        }
-      }
+      return;
+    }
 
-      this.rangeSelector.reset();
-
-      if (!nextCursor) {
-        nextCursor = moveCursor(
-          ast,
-          code,
-          direction,
-          (direction == 'DOWN' ? Math.max : Math.min)(...cursor)
-        );
+    let nextCursor;
+    if (cursor[0] != cursor[1]) {
+      if (direction == 'LEFT') {
+        nextCursor = cursor[0];
+      } else if (direction == 'RIGHT') {
+        nextCursor = cursor[1];
       }
+    }
 
-      if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
-        this.updateCode({
-          cursor: nextCursor
-        });
-      }
+    this.rangeSelector.reset();
+
+    if (!nextCursor) {
+      nextCursor = moveCursor(
+        ast,
+        code,
+        direction,
+        (direction == 'DOWN' ? Math.max : Math.min)(...cursor)
+      );
+    }
+
+    if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
+      this.updateCode({
+        cursor: nextCursor
+      });
     }
   };
 
@@ -469,7 +491,8 @@ export default class Editor extends React.Component<
     });
 
     this.setState({
-      actions: getAvailableActions(this.editorState)
+      actions: getAvailableActions(this.editorState),
+      searchIn: null
     });
 
     this.updateEditor();
@@ -494,7 +517,8 @@ export default class Editor extends React.Component<
   };
 
   render() {
-    const { editorState } = this;
+    const { editorState, state } = this;
+    const { actions, searchIn } = state;
     return (
       <Container>
         <GlobalStyle />
@@ -528,44 +552,93 @@ export default class Editor extends React.Component<
               Print AST
             </button>
           )}
-          {this.state.actions
+          {actions
             .filter(a => a.title)
-            .map(({ title, ctrlModifier, children }, i) => {
-              return (
-                <ActionSection key={i}>
-                  <SectionTitle>
-                    {title}
-                    {ctrlModifier && <Key>Ctrl</Key>}
-                  </SectionTitle>
-                  {children.map((action, i) => {
-                    const keys = [];
-                    if (action.key) {
-                      keys.push(action.key);
-                    }
-                    if (action.codes) {
-                      keys.push(
-                        ...action.codes.map(
-                          code => ({ Comma: ',' }[code] || code)
-                        )
-                      );
-                    }
-                    return (
-                      <ActionButton
-                        key={i}
-                        onClick={() => this.executeAction(action)}
-                      >
-                        <div>{action.name}</div>
-                        <Keys>
-                          {keys.map(key => (
-                            <Key key={key}>{key}</Key>
-                          ))}
-                        </Keys>
-                      </ActionButton>
-                    );
-                  })}
-                </ActionSection>
-              );
-            })}
+            .map(({ title, alt, ctrl, shift, key, children }, i) => (
+              <ActionSection key={i}>
+                <Downshift
+                  defaultHighlightedIndex={0}
+                  onChange={selection =>
+                    this.executeAction(children.find(a => a.name == selection))
+                  }
+                >
+                  {({
+                    getInputProps,
+                    getItemProps,
+                    getLabelProps,
+                    getMenuProps,
+                    inputValue,
+                    highlightedIndex
+                  }) => (
+                    <div>
+                      {searchIn == title ? (
+                        <input
+                          {...getInputProps({
+                            type: 'text',
+                            placeholder: `Search "${title}"`,
+                            ref: this.searchRef,
+                            onBlur: () =>
+                              this.setState({
+                                searchIn: null
+                              })
+                          })}
+                        />
+                      ) : (
+                        <SectionTitle>
+                          {title}
+                          <div>
+                            {alt && <Key>Alt</Key>}
+                            {ctrl && <Key>Ctrl</Key>}
+                            {shift && <Key>Shift</Key>}
+                            {key && <Key>{key}</Key>}
+                          </div>
+                        </SectionTitle>
+                      )}
+                      <ActionList {...getMenuProps()}>
+                        {children
+                          .filter(
+                            a =>
+                              searchIn != title ||
+                              a.name
+                                .toLowerCase()
+                                .includes(inputValue.toLowerCase())
+                          )
+                          .map((action, i) => {
+                            const keys = [];
+                            if (action.key) {
+                              keys.push(action.key);
+                            }
+                            if (action.codes) {
+                              keys.push(
+                                ...action.codes.map(
+                                  code => ({ Comma: ',' }[code] || code)
+                                )
+                              );
+                            }
+                            return (
+                              <ActionItem
+                                {...getItemProps({
+                                  key: i,
+                                  item: action.name,
+                                  highlighted:
+                                    searchIn == title && highlightedIndex == i
+                                })}
+                              >
+                                <div>{action.name}</div>
+                                <Keys>
+                                  {keys.map(key => (
+                                    <Key key={key}>{key}</Key>
+                                  ))}
+                                </Keys>
+                              </ActionItem>
+                            );
+                          })}
+                      </ActionList>
+                    </div>
+                  )}
+                </Downshift>
+              </ActionSection>
+            ))}
         </ActionBar>
       </Container>
     );
