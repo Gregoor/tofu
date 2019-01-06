@@ -102,7 +102,12 @@ export default class Editor extends React.Component<
     }
 
     let action = this.state.actions
-      .filter(s => event.ctrlKey || !s.ctrl)
+      .filter(
+        s =>
+          Boolean(s.alt) == event.altKey &&
+          Boolean(s.ctrl) == event.ctrlKey &&
+          Boolean(s.shift) == event.shiftKey
+      )
       .map(s => s.children)
       .flat()
       .find(a => a.key == event.key || (a.codes || []).includes(event.code));
@@ -626,7 +631,11 @@ export default class Editor extends React.Component<
                                 <div>{action.name}</div>
                                 <Keys>
                                   {keys.map(key => (
-                                    <Key key={key}>{key}</Key>
+                                    <Key key={key}>
+                                      {{ ArrowLeft: '🡄', ArrowRight: '🡆' }[
+                                        key
+                                      ] || key}
+                                    </Key>
                                   ))}
                                 </Keys>
                               </ActionItem>

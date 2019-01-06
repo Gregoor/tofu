@@ -112,7 +112,7 @@ const toggleLogicalExpression = (node, newOperator) =>
     };
   }) as Action;
 
-const isInCollection = ([start, end]: Cursor) => node =>
+const isInCollectionExpression = ([start, end]: Cursor) => node =>
   ((t.isArrayExpression(node) || t.isObjectExpression(node)) &&
     start > node.start &&
     end < node.end) ||
@@ -129,7 +129,10 @@ const isInCollection = ([start, end]: Cursor) => node =>
 
 const addToCollection: Action = ({ ast, cursor: [start, end] }) => {
   const [parents, path] = getFocusPath(ast, start);
-  const collectionIndex = findLastIndex(parents, isInCollection([start, end]));
+  const collectionIndex = findLastIndex(
+    parents,
+    isInCollectionExpression([start, end])
+  );
   const collection = parents[collectionIndex];
   const node = parents[parents.length - 1];
   const [childKey, init] = {
@@ -276,15 +279,58 @@ export default function getAvailableActions({
     });
   }
 
-  const parentCollection = parents.find(isInCollection([start, end]));
-  if (parentCollection) {
+  const moveChildren = [];
+  let moveType = 'statement';
+  const collectionIndex = parents.findIndex(
+    n => t.isBlockStatement(n) || t.isProgram(n)
+  );
+  const collection = parents[collectionIndex][path[collectionIndex - 1]];
+  const itemIndex = Number(path[collectionIndex - 2]);
+  const move = (direction: -1 | 1) => {
+    const newIndex = itemIndex + direction;
+    const target = collection[newIndex];
+    collection[newIndex] = collection[itemIndex];
+    collection[itemIndex] = target;
+    return ast => {
+      const newPath = path.slice();
+      newPath[collectionIndex - 2] = newIndex.toString();
+      return getNodeFromPath(ast, newPath.reverse()).start;
+    };
+  };
+
+  if (itemIndex > 0) {
+    moveChildren.push({
+      name: 'backwards',
+      key: 'ArrowLeft',
+      execute: () => move(-1)
+    });
+  }
+  if (collection && itemIndex < collection.length - 1) {
+    moveChildren.push({
+      name: 'forwards',
+      key: 'ArrowRight',
+      execute: () => move(1)
+    });
+  }
+  if (moveChildren.length > 0) {
+    actions.push({
+      title: 'Move ' + moveType,
+      children: moveChildren,
+      alt: true
+    });
+  }
+
+  const parentCollectionExpression = parents.find(
+    isInCollectionExpression([start, end])
+  );
+  if (parentCollectionExpression) {
     actions.push({
       title: {
         ArrayExpression: 'Array',
         ArrowFunctionExpression: 'Parameters',
         CallExpression: 'Arguments',
         ObjectExpression: 'Properties'
-      }[parentCollection.type],
+      }[parentCollectionExpression.type],
       children: [
         {
           name: 'Add',
@@ -293,7 +339,9 @@ export default function getAvailableActions({
         }
       ],
       ctrl:
-        parentCollection !== node && start !== node.start && start !== node.end
+        parentCollectionExpression !== node &&
+        start !== node.start &&
+        start !== node.end
     });
   }
 
