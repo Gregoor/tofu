@@ -557,7 +557,6 @@ export default class Editor extends React.Component<
             .map(({ title, alt, ctrl, shift, key, children }, i) => (
               <ActionSection key={i}>
                 <Downshift
-                  defaultHighlightedIndex={0}
                   onChange={selection =>
                     this.executeAction(children.find(a => a.name == selection))
                   }

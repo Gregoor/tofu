@@ -25,6 +25,7 @@ export const keywords: {
   label?: string;
   create: (child?) => any;
   getInitialCursor: (ast, path) => [number, number];
+  canWrapStatement: boolean;
   hidden?: boolean;
 }[] = [
   {
@@ -32,7 +33,8 @@ export const keywords: {
     create: (child = t.blockStatement([t.emptyStatement()])) =>
       t.ifStatement(t.identifier('someCondition'), child),
     getInitialCursor: (ast, path) =>
-      selectName(getNodeFromPath(ast, [...path, 'test']))
+      selectName(getNodeFromPath(ast, [...path, 'test'])),
+    canWrapStatement: true
   },
   {
     name: 'for',
@@ -48,14 +50,16 @@ export const keywords: {
     getInitialCursor: (ast, path) =>
       selectName(
         getNodeFromPath(ast, [...path, 'left', 'declarations', '0', 'id'])
-      )
+      ),
+    canWrapStatement: true
   },
   {
     name: 'return',
     create: () => t.returnStatement(t.nullLiteral()),
     getInitialCursor: (ast, path) =>
       selectNode(getNodeFromPath(ast, path.concat('argument'))),
-    hidden: true
+    hidden: true,
+    canWrapStatement: false
   },
 
   ...['const', 'let', 'var'].map(kind => ({
@@ -69,7 +73,7 @@ export const keywords: {
       ]),
     getInitialCursor: (ast, path) =>
       selectName(getNodeFromPath(ast, [...path, 'declarations', '0', 'id'])),
-    hidden: true
+    canWrapStatement: false
   }))
 ];
 
@@ -310,7 +314,7 @@ export default function getAvailableActions({
   actions.push({
     title: insertMode ? 'Insert' : 'Wrap with',
     children: keywords
-      .filter(a => insertMode || !a.hidden)
+      .filter(a => (insertMode || a.canWrapStatement) && !a.hidden)
       .map(({ name, label, create, getInitialCursor }) => ({
         name: label || name,
         execute: wrappingStatement(create, getInitialCursor)
