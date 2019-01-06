@@ -201,6 +201,9 @@ let moveCursorX = function(
   // Only skip over the starting quote, we might want to call functions on that
   // string so we need the cursor after the closing quote
   if (t.isStringLiteral(node) && start == node.start) {
+    if (start == nextStart) {
+      return start + 1;
+    }
     return moveOn(nextStart);
   }
   const isHorizontal = isLeft || isRight;

@@ -197,6 +197,18 @@ const tests = [
     }
   ],
   [
+    'const a = [\n' +
+      '  "a very very long line of text resulting in the array being split",\n' +
+      '  asd,\n' +
+      '];\n',
+    {
+      UP: [
+        //
+        [84, 15]
+      ]
+    }
+  ],
+  [
     '{};',
     {
       RIGHT: [
@@ -258,10 +270,7 @@ const tests = [
     }
   ],
   [
-    'const n = () => {\n' +
-    '  asd;\n' +
-    '  return;\n' +
-    '};\n',
+    'const n = () => {\n' + '  asd;\n' + '  return;\n' + '};\n',
     {
       X: [
         //
