@@ -197,28 +197,27 @@ const addIfElseBranch = block =>
 export const wrappingStatement = (
   wrapper: (child?) => any,
   getInitialCursor: (ast, path: string[]) => Cursor
-) =>
-  (({ ast, cursor: [start] }) => {
-    const [parents, path] = getFocusPath(ast, start);
-    const parentStatementIndex = findLastIndex(parents, n => t.isStatement(n));
-    const parentStatement = parents[parentStatementIndex];
+) => ({ ast, cursor: [start] }: { ast: any; cursor: Cursor }) => {
+  const [parents, path] = getFocusPath(ast, start);
+  const parentStatementIndex = findLastIndex(parents, n => t.isStatement(n));
+  const parentStatement = parents[parentStatementIndex];
 
-    let basePath;
-    if (parentStatement && !t.isBlockStatement(parentStatement)) {
-      basePath = path.slice(0, parentStatementIndex);
-      getNodeFromPath(ast, basePath.slice(0, -1))[
-        basePath[basePath.length - 1]
-      ] = wrapper(t.blockStatement([parentStatement]));
-    } else {
-      const parent = getNodeFromPath(ast, path);
-      const siblings = Array.isArray(parent) ? parent : parent.body;
-      const index = findSlotIndex(siblings, start);
-      basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
-      getNodeFromPath(ast, basePath.slice(0, -1)).splice(index, 0, wrapper());
-    }
+  let basePath;
+  if (parentStatement && !t.isBlockStatement(parentStatement)) {
+    basePath = path.slice(0, parentStatementIndex);
+    getNodeFromPath(ast, basePath.slice(0, -1))[
+      basePath[basePath.length - 1]
+    ] = wrapper(t.blockStatement([parentStatement]));
+  } else {
+    const parent = getNodeFromPath(ast, path);
+    const siblings = Array.isArray(parent) ? parent : parent.body;
+    const index = findSlotIndex(siblings, start);
+    basePath = path.concat(Array.isArray(parent) ? [] : 'body', index);
+    getNodeFromPath(ast, basePath.slice(0, -1)).splice(index, 0, wrapper());
+  }
 
-    return ast => getInitialCursor(ast, basePath);
-  }) as Action;
+  return ast => getInitialCursor(ast, basePath);
+};
 
 export type ActionSections = {
   title?: string;
