@@ -136,11 +136,13 @@ export default class Editor extends React.Component<
         .split('\n')
         .map((s, i) => s.length + (i == 0 ? 0 : 1))
         .reduce((accu, n) => accu.concat((accu[accu.length - 1] || 0) + n), []);
-      let index = accuCharCounts.findIndex(n => n >= textArea.selectionStart);
+      let index = accuCharCounts.findIndex(
+        n => n >= textArea.selectionStart - 2 // I don't quite get this one
+      );
       if (event.shiftKey && index > 0) {
         index -= 1;
       }
-      const pos = event.shiftKey && index == 0 ? 0 : accuCharCounts[index];
+      const pos = index == -1 ? 0 : accuCharCounts[index];
       this.updateCode(
         {
           code: code.slice(0, pos) + '\n' + code.slice(pos),
