@@ -2,7 +2,6 @@ const generate = require('@babel/generator').default;
 const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 const CodeFlask = require('codeflask').default;
-import Downshift from 'downshift';
 import prettier from 'prettier/standalone';
 import * as React from 'react';
 import produce from 'immer';
@@ -16,20 +15,15 @@ import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
 import { selectNode, spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
+import Keymap from './keymap';
 import moveCursor, { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
 import {
   ActionBar,
-  ActionItem,
-  ActionList,
-  ActionSection,
   Container,
   FlaskContainer,
   GlobalStyle,
-  Key,
-  Keys,
-  ResizeHandle,
-  SectionTitle
+  ResizeHandle
 } from './ui';
 
 const babylon = require('prettier/parser-babylon');
@@ -557,96 +551,17 @@ export default class Editor extends React.Component<
               Print AST
             </button>
           )}
-          {actions
-            .filter(a => a.title)
-            .map(({ title, alt, ctrl, shift, key, children }, i) => (
-              <ActionSection key={i}>
-                <Downshift
-                  onChange={selection =>
-                    this.executeAction(children.find(a => a.name == selection))
-                  }
-                >
-                  {({
-                    getInputProps,
-                    getItemProps,
-                    getLabelProps,
-                    getMenuProps,
-                    inputValue,
-                    highlightedIndex
-                  }) => (
-                    <div>
-                      {searchIn == title ? (
-                        <input
-                          {...getInputProps({
-                            type: 'text',
-                            placeholder: `Search "${title}"`,
-                            ref: this.searchRef,
-                            onBlur: () =>
-                              this.setState({
-                                searchIn: null
-                              })
-                          })}
-                        />
-                      ) : (
-                        <SectionTitle>
-                          {title}
-                          <div>
-                            {alt && <Key>Alt</Key>}
-                            {ctrl && <Key>Ctrl</Key>}
-                            {shift && <Key>Shift</Key>}
-                            {key && <Key>{key}</Key>}
-                          </div>
-                        </SectionTitle>
-                      )}
-                      <ActionList {...getMenuProps()}>
-                        {children
-                          .filter(
-                            a =>
-                              searchIn != title ||
-                              a.name
-                                .toLowerCase()
-                                .includes(inputValue.toLowerCase())
-                          )
-                          .map((action, i) => {
-                            const keys = [];
-                            if (action.key) {
-                              keys.push(action.key);
-                            }
-                            if (action.codes) {
-                              keys.push(
-                                ...action.codes.map(
-                                  code => ({ Comma: ',' }[code] || code)
-                                )
-                              );
-                            }
-                            return (
-                              <ActionItem
-                                {...getItemProps({
-                                  key: i,
-                                  item: action.name,
-                                  highlighted:
-                                    searchIn == title && highlightedIndex == i
-                                })}
-                              >
-                                <div>{action.name}</div>
-                                <Keys>
-                                  {keys.map(key => (
-                                    <Key key={key}>
-                                      {{ ArrowLeft: '🡄', ArrowRight: '🡆' }[
-                                        key
-                                      ] || key}
-                                    </Key>
-                                  ))}
-                                </Keys>
-                              </ActionItem>
-                            );
-                          })}
-                      </ActionList>
-                    </div>
-                  )}
-                </Downshift>
-              </ActionSection>
-            ))}
+          <Keymap
+            actions={actions}
+            onExecute={this.executeAction}
+            onSearchBlur={() =>
+              this.setState({
+                searchIn: null
+              })
+            }
+            searchIn={searchIn}
+            searchRef={this.searchRef}
+          />
         </ActionBar>
       </Container>
     );

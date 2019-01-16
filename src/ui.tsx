@@ -109,6 +109,7 @@ export const SectionTitle = styled.h4`
   margin: 0;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 `;
 
 export const Keys = styled.div`
