@@ -280,21 +280,35 @@ export default function getAvailableActions({
   }
 
   const moveChildren = [];
-  let moveType = 'statement';
   const collectionIndex = parents.findIndex(
-    n => t.isBlockStatement(n) || t.isProgram(n)
+    n => t.isProgram(n) || t.isBlockStatement(n) || t.isArrayExpression(n)
   );
-  const collection = parents[collectionIndex][path[collectionIndex - 1]];
+  const collectionNode = parents[collectionIndex];
+  const collection = collectionNode[path[collectionIndex - 1]];
   const itemIndex = Number(path[collectionIndex - 2]);
   const move = (direction: -1 | 1) => {
+    const innerStart = start - parents[0].start;
+
     const newIndex = itemIndex + direction;
+    const node = collection[itemIndex];
     const target = collection[newIndex];
-    collection[newIndex] = collection[itemIndex];
+
+    // const [first, second] =
+    //   itemIndex > newIndex ? [node, target] : [target, node];
+    // const firstLength = first.end - first.start;
+    // const secondLength = second.end - second.start;
+    // second.start = first.start;
+    // second.end = first.start + secondLength;
+    // first.start += secondLength;
+    // first.end = first.start + firstLength;
+
+    collection[newIndex] = node;
     collection[itemIndex] = target;
+
     return ast => {
       const newPath = path.slice();
       newPath[collectionIndex - 2] = newIndex.toString();
-      return getNodeFromPath(ast, newPath.reverse()).start;
+      return getNodeFromPath(ast, [...newPath.reverse()]).start + innerStart;
     };
   };
 
@@ -314,7 +328,9 @@ export default function getAvailableActions({
   }
   if (moveChildren.length > 0) {
     actions.push({
-      title: 'Move ' + moveType,
+      title:
+        'Move ' +
+        (t.isArrayExpression(collectionNode) ? 'element' : 'statement'),
       children: moveChildren,
       alt: true
     });
