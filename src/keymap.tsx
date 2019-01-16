@@ -31,6 +31,7 @@ export default class Keymap extends React.Component<{
       .map(({ title, alt, ctrl, shift, key, children }, i) => (
         <ActionSection key={i}>
           <Downshift
+            defaultHighlightedIndex={0}
             onChange={selection =>
               onExecute(children.find(a => a.name == selection))
             }

@@ -383,8 +383,7 @@ export default function getAvailableActions({
         execute: wrappingStatement(create, getInitialCursor)
       })),
     alt: true,
-    shift: true,
-    key: 'W',
+    key: 'w',
     searchable: true
   });
 
