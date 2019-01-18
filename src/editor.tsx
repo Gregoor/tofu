@@ -106,43 +106,45 @@ export default class Editor extends React.Component<
       return;
     }
 
-    const isExpressionOrBlock =
-      (t.isExpression(node) || t.isBlock(node)) &&
-      !t.isStringLiteral(node) &&
-      !t.isTemplateLiteral(node);
+    {
+      const isExpressionOrBlock =
+        (t.isExpression(node) || t.isBlock(node)) &&
+        !t.isStringLiteral(node) &&
+        !t.isTemplateLiteral(node);
 
-    if (isExpressionOrBlock && ['(', '[', '{'].includes(key)) {
-      this.updateCode(
-        {
-          code:
-            code.slice(0, start) +
-            key +
-            (key == '{' ? '' : code.slice(start, end)) +
-            { '(': ')', '[': ']', '{': '}' }[key] +
-            code.slice(end),
-          cursor: start + 1
-        },
-        { prettify: false }
-      );
-      event.preventDefault();
-      return;
-    }
+      if (isExpressionOrBlock && ['(', '[', '{'].includes(key)) {
+        this.updateCode(
+          {
+            code:
+              code.slice(0, start) +
+              key +
+              (key == '{' ? '' : code.slice(start, end)) +
+              { '(': ')', '[': ']', '{': '}' }[key] +
+              code.slice(end),
+            cursor: start + 1
+          },
+          { prettify: false }
+        );
+        event.preventDefault();
+        return;
+      }
 
-    if (isExpressionOrBlock && key == '?') {
-      this.updateCode({
-        ast: produce(ast, ast => {
-          getNodeFromPath(ast, path.slice(0, -1))[
-            path[path.length - 1]
-          ] = t.conditionalExpression(
-            getNodeFromPath(ast, path),
-            t.nullLiteral(),
-            t.nullLiteral()
-          );
-        })
-      });
-      this.moveCursor(null);
-      event.preventDefault();
-      return;
+      if (isExpressionOrBlock && key == '?') {
+        this.updateCode({
+          ast: produce(ast, ast => {
+            getNodeFromPath(ast, path.slice(0, -1))[
+              path[path.length - 1]
+            ] = t.conditionalExpression(
+              getNodeFromPath(ast, path),
+              t.nullLiteral(),
+              t.nullLiteral()
+            );
+          })
+        });
+        this.moveCursor(null);
+        event.preventDefault();
+        return;
+      }
     }
 
     if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
@@ -250,30 +252,58 @@ export default class Editor extends React.Component<
       return;
     }
 
-    let data = key;
-    if (["'", '"', '`'].includes(key)) {
-      data += data;
+    {
+      let data = key;
+      if (["'", '"', '`'].includes(key)) {
+        data += data;
+      }
+
+      if (
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        key.length == 1
+      ) {
+        this.updateCode({
+          code: replaceCode(
+            code,
+            [selectionStart, selectionEnd],
+            data +
+              (t.isArrayExpression(node) && start > node.start && end < node.end
+                ? ','
+                : '')
+          ),
+          cursor: [selectionStart + data.length, selectionEnd + data.length]
+        });
+        this.moveCursor(null);
+        event.preventDefault();
+        return;
+      }
     }
 
-    if (!event.ctrlKey && !event.altKey && !event.metaKey && key.length == 1) {
-      this.updateCode({
-        code: replaceCode(
-          code,
-          cursor,
-          data +
-            (t.isArrayExpression(node) && start > node.start && end < node.end
-              ? ','
-              : '')
-        ),
-        cursor: [selectionStart + data.length, selectionEnd + data.length]
-      });
-      this.moveCursor(null);
-      event.preventDefault();
-      return;
-    }
+    {
+      const isBackspace = key == 'Backspace';
+      const isDelete = key == 'Delete';
+      if (isBackspace || isDelete) {
+        const isRange = selectionStart !== selectionEnd;
+        this.updateCode({
+          code: isRange
+            ? code.substr(0, selectionStart - 1) + code.substr(selectionEnd)
+            : isBackspace
+              ? code.substr(0, selectionStart - 1) + code.substr(selectionStart)
+              : code.substr(0, selectionStart) +
+                code.substr(selectionStart + 1),
+          cursor: !isRange && isBackspace ? selectionStart - 1 : selectionStart
+        });
+        event.preventDefault();
 
-    if (!ast) {
-      return true;
+        this.moveCursor(null);
+        return;
+      }
+
+      if (!ast) {
+        return true;
+      }
     }
 
     if (key == 'Enter' && !t.isTemplateLiteral(node)) {
@@ -303,13 +333,6 @@ export default class Editor extends React.Component<
       // don't judge me
       setTimeout(() => {
         this.updateCode({ cursor: textArea.selectionStart });
-        this.moveCursor(null);
-      });
-    }
-
-    if (key == 'Backspace') {
-      // stop judging me
-      setTimeout(() => {
         this.moveCursor(null);
       });
     }
