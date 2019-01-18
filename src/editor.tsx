@@ -11,8 +11,9 @@ import getAvailableActions, {
   keywords,
   wrappingStatement
 } from './actions';
-import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
+import { getFocusPath, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
+import { PrintASTButton } from './components';
 import { selectNode, spreadCursor } from './cursor-utils';
 import { EditorState } from './edtior-state';
 import Keymap from './keymap';
@@ -260,9 +261,9 @@ export default class Editor extends React.Component<
           code,
           cursor,
           data +
-          (t.isArrayExpression(node) && start > node.start && end < node.end
-            ? ','
-            : '')
+            (t.isArrayExpression(node) && start > node.start && end < node.end
+              ? ','
+              : '')
         ),
         cursor: [selectionStart + data.length, selectionEnd + data.length]
       });
@@ -530,30 +531,7 @@ export default class Editor extends React.Component<
           onMouseDown={event => (this.resizeStartX = event.clientX)}
         />
         <ActionBar>
-          {location.hostname == 'localhost' && (
-            <button
-              onClick={() => {
-                const stripLocs = a =>
-                  Array.isArray(a)
-                    ? a.map(stripLocs)
-                    : typeof a == 'object' && a !== null
-                      ? Object.entries(a)
-                          .filter(([key]) => key != 'loc')
-                          .map(([k, v]) => [k, stripLocs(v)])
-                          .reduce((o, [k, v]) => {
-                            o[k] = v;
-                            return o;
-                          }, {})
-                      : a;
-
-                console.log(
-                  JSON.stringify(stripLocs(this.editorState.ast), null, 2)
-                );
-              }}
-            >
-              Print AST
-            </button>
-          )}
+          <PrintASTButton ast={this.editorState.ast} />
           <Keymap
             actions={actions}
             onExecute={this.executeAction}
