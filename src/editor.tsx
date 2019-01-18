@@ -60,7 +60,6 @@ export default class Editor extends React.Component<
     this.updateCode({ code: this.props.code, cursor: [0, 0], printWidth: 80 });
 
     textArea.addEventListener('keydown', this.handleKeyDown);
-    textArea.addEventListener('input', this.handleInput);
     textArea.addEventListener('click', this.handleClick);
 
     document.addEventListener('mouseup', () => (this.resizeStartX = null));
@@ -75,9 +74,135 @@ export default class Editor extends React.Component<
   }
 
   handleKeyDown = (event: KeyboardEvent) => {
+    const { key } = event;
     const { textArea, editorState } = this;
     const { ast, code, cursor } = editorState;
-    const [start] = cursor;
+    const [start, end] = cursor;
+    let { selectionStart, selectionEnd, value } = this.textArea;
+
+    let [parents, path] = ast ? getFocusPath(ast, start) : [[], []];
+    parents = parents.slice().reverse();
+    let node;
+    let parent;
+    if (Array.isArray(parents[0])) {
+      node = parents[1];
+      parent = parents[2];
+    } else {
+      node = parents[0];
+      parent = parents[1];
+    }
+
+    if (t.isNullLiteral(node) && key == '(') {
+      this.updateCode({
+        ast: produce(ast, ast => {
+          getNodeFromPath(ast, path.slice(0, -1))[
+            path[path.length - 1]
+          ] = t.arrowFunctionExpression([], t.nullLiteral());
+        })
+      });
+      this.moveCursor(null);
+      event.preventDefault();
+      return;
+    }
+
+    const isExpressionOrBlock =
+      (t.isExpression(node) || t.isBlock(node)) &&
+      !t.isStringLiteral(node) &&
+      !t.isTemplateLiteral(node);
+
+    if (isExpressionOrBlock && ['(', '[', '{'].includes(key)) {
+      this.updateCode(
+        {
+          code:
+            code.slice(0, start) +
+            key +
+            (key == '{' ? '' : code.slice(start, end)) +
+            { '(': ')', '[': ']', '{': '}' }[key] +
+            code.slice(end),
+          cursor: start + 1
+        },
+        { prettify: false }
+      );
+      event.preventDefault();
+      return;
+    }
+
+    if (isExpressionOrBlock && key == '?') {
+      this.updateCode({
+        ast: produce(ast, ast => {
+          getNodeFromPath(ast, path.slice(0, -1))[
+            path[path.length - 1]
+          ] = t.conditionalExpression(
+            getNodeFromPath(ast, path),
+            t.nullLiteral(),
+            t.nullLiteral()
+          );
+        })
+      });
+      this.moveCursor(null);
+      event.preventDefault();
+      return;
+    }
+
+    if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
+      let newOperator;
+      if (key == '=') {
+        newOperator =
+          node.operator == '>' || node.operator == '<'
+            ? node.operator + '='
+            : '='.repeat(node.operator == '==' ? 3 : 2);
+      } else if (key == '&' || key == '|') {
+        newOperator =
+          node.operator[0] == key ? key.repeat(3 - node.operator.length) : key;
+      }
+      this.updateCode({
+        code: newOperator
+          ? code.slice(0, start) + newOperator + code.slice(end)
+          : value
+      });
+      this.moveCursor(null);
+      event.preventDefault();
+      return;
+    }
+
+    if (key == ' ' || key == '(') {
+      const keyword = keywords.find(
+        ({ name }) => code.slice(start - name.length, start) == name
+      );
+      if (keyword) {
+        event.preventDefault();
+        const { name, create, getInitialCursor } = keyword;
+
+        const nextStart = start - name.length;
+        const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
+        const ast = parse(nextCode);
+        this.updateCode({
+          ast,
+          cursorFromAST: wrappingStatement(create, getInitialCursor)({
+            ast,
+            cursor: [nextStart, nextStart]
+          })
+        });
+        event.preventDefault();
+        return;
+      }
+
+      if (t.isVariableDeclarator(parent) && !parent.init) {
+        const varPath = path.slice(0, -1);
+        this.updateCode({
+          ast: produce(ast, ast => {
+            getNodeFromPath(ast, varPath).init = t.nullLiteral();
+          }),
+          cursorFromAST: () => {
+            //???
+            console.log(getNodeFromPath(ast, varPath.concat('init')));
+            return selectNode(getNodeFromPath(ast, varPath.concat('init')));
+          }
+        });
+        event.preventDefault();
+        return;
+      }
+    }
 
     const searchable = this.state.actions.find(
       s =>
@@ -85,7 +210,7 @@ export default class Editor extends React.Component<
         Boolean(s.alt) == event.altKey &&
         Boolean(s.ctrl) == event.ctrlKey &&
         Boolean(s.shift) == event.shiftKey &&
-        event.key == s.key
+        key == s.key
     );
     if (searchable) {
       this.setState({ searchIn: searchable.title }, () => {
@@ -104,7 +229,7 @@ export default class Editor extends React.Component<
       )
       .map(s => s.children)
       .flat()
-      .find(a => a.key == event.key || (a.codes || []).includes(event.code));
+      .find(a => a.key == key || (a.codes || []).includes(event.code));
     if (action) {
       this.executeAction(action);
       event.preventDefault();
@@ -124,13 +249,33 @@ export default class Editor extends React.Component<
       return;
     }
 
+    let data = key;
+    if (["'", '"', '`'].includes(key)) {
+      data += data;
+    }
+
+    if (!event.ctrlKey && !event.altKey && !event.metaKey && key.length == 1) {
+      this.updateCode({
+        code: replaceCode(
+          code,
+          cursor,
+          data +
+          (t.isArrayExpression(node) && start > node.start && end < node.end
+            ? ','
+            : '')
+        ),
+        cursor: [selectionStart + data.length, selectionEnd + data.length]
+      });
+      this.moveCursor(null);
+      event.preventDefault();
+      return;
+    }
+
     if (!ast) {
       return true;
     }
 
-    const node = getNode(ast, start);
-
-    if (event.key == 'Enter' && !t.isTemplateLiteral(node)) {
+    if (key == 'Enter' && !t.isTemplateLiteral(node)) {
       event.preventDefault();
       const accuCharCounts = code
         .split('\n')
@@ -153,7 +298,7 @@ export default class Editor extends React.Component<
       return;
     }
 
-    if (event.key == 'Home' || event.key == 'End') {
+    if (key == 'Home' || key == 'End') {
       // don't judge me
       setTimeout(() => {
         this.updateCode({ cursor: textArea.selectionStart });
@@ -161,7 +306,7 @@ export default class Editor extends React.Component<
       });
     }
 
-    if (event.key == 'Backspace') {
+    if (key == 'Backspace') {
       // stop judging me
       setTimeout(() => {
         this.moveCursor(null);
@@ -173,156 +318,12 @@ export default class Editor extends React.Component<
       ArrowRight: 'RIGHT',
       ArrowUp: 'UP',
       ArrowDown: 'DOWN'
-    }[event.key];
+    }[key];
     if (direction) {
-      event.preventDefault();
       this.moveCursor(direction, event.shiftKey);
-    }
-  };
-
-  handleInput = ({ data }: any) => {
-    const {
-      ast,
-      code,
-      cursor: [start, end]
-    } = this.editorState;
-    let { selectionStart, selectionEnd, value } = this.textArea;
-
-    let [parents, path] = ast ? getFocusPath(ast, start) : [[], []];
-    parents = parents.slice().reverse();
-    let node;
-    let parent;
-    if (Array.isArray(parents[0])) {
-      node = parents[1];
-      parent = parents[2];
-    } else {
-      node = parents[0];
-      parent = parents[1];
-    }
-
-    if (t.isNullLiteral(node) && data == '(') {
-      this.updateCode({
-        ast: produce(ast, ast => {
-          getNodeFromPath(ast, path.slice(0, -1))[
-            path[path.length - 1]
-          ] = t.arrowFunctionExpression([], t.nullLiteral());
-        })
-      });
-      this.moveCursor(null);
+      event.preventDefault();
       return;
     }
-
-    const isExpressionOrBlock =
-      (t.isExpression(node) || t.isBlock(node)) &&
-      !t.isStringLiteral(node) &&
-      !t.isTemplateLiteral(node);
-
-    if (isExpressionOrBlock && ['(', '[', '{'].includes(data)) {
-      this.updateCode(
-        {
-          code:
-            code.slice(0, start) +
-            data +
-            (data == '{' ? '' : code.slice(start, end)) +
-            { '(': ')', '[': ']', '{': '}' }[data] +
-            code.slice(end),
-          cursor: start + 1
-        },
-        { prettify: false }
-      );
-      return;
-    }
-
-    if (isExpressionOrBlock && data == '?') {
-      this.updateCode({
-        ast: produce(ast, ast => {
-          getNodeFromPath(ast, path.slice(0, -1))[
-            path[path.length - 1]
-          ] = t.conditionalExpression(
-            getNodeFromPath(ast, path),
-            t.nullLiteral(),
-            t.nullLiteral()
-          );
-        })
-      });
-      this.moveCursor(null);
-      return;
-    }
-
-    if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
-      let newOperator;
-      if (data == '=') {
-        newOperator =
-          node.operator == '>' || node.operator == '<'
-            ? node.operator + '='
-            : '='.repeat(node.operator == '==' ? 3 : 2);
-      } else if (data == '&' || data == '|') {
-        newOperator =
-          node.operator[0] == data
-            ? data.repeat(3 - node.operator.length)
-            : data;
-      }
-      this.updateCode({
-        code: newOperator
-          ? code.slice(0, start) + newOperator + code.slice(end)
-          : value
-      });
-      this.moveCursor(null);
-      return;
-    }
-
-    if (data == ' ' || data == '(') {
-      const keyword = keywords.find(
-        ({ name }) => code.slice(start - name.length, start) == name
-      );
-      if (keyword) {
-        event.preventDefault();
-        const { name, create, getInitialCursor } = keyword;
-
-        const nextStart = start - name.length;
-        const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
-        const ast = parse(nextCode);
-        this.updateCode({
-          ast,
-          cursorFromAST: wrappingStatement(create, getInitialCursor)({
-            ast,
-            cursor: [nextStart, nextStart]
-          })
-        });
-        return;
-      }
-
-      if (t.isVariableDeclarator(parent) && !parent.init) {
-        const varPath = path.slice(0, -1);
-        this.updateCode({
-          ast: produce(ast, ast => {
-            getNodeFromPath(ast, varPath).init = t.nullLiteral();
-          }),
-          cursorFromAST: () => {
-            //???
-            console.log(getNodeFromPath(ast, varPath.concat('init')));
-            return selectNode(getNodeFromPath(ast, varPath.concat('init')));
-          }
-        });
-        return;
-      }
-    }
-
-    if (["'", '"', '`'].includes(data)) {
-      data += data;
-    }
-
-    this.updateCode({
-      code:
-        data &&
-        t.isArrayExpression(node) &&
-        start > node.start &&
-        end < node.end
-          ? replaceCode(code, start, data + ',')
-          : value,
-      cursor: [selectionStart, selectionEnd]
-    });
-    this.moveCursor(null);
   };
 
   handleClick = () => {
