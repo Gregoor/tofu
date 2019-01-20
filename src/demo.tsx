@@ -41,12 +41,12 @@ render(
       </p>
       <ul>
         <li>
-          Cursor keys only take you to the places where you can make meaningful
+          Cursor keys only take you to places where you can make meaningful
           edits.
         </li>
         <li>
-          Switching between <Keyword>var</Keyword>/<Keyword>let</Keyword>/
-          <Keyword>const</Keyword> declaration only requires a single keypress.
+          Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{' '}
+          declaration requires only a single keypress.
         </li>
         <li>
           Putting a space after <Keyword>if</Keyword> always creates a complete
