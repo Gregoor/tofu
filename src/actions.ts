@@ -2,7 +2,8 @@ const t = require('@babel/types');
 import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { selectKind, selectName, selectNode } from './cursor-utils';
 import { EditorState } from './edtior-state';
-import { Cursor } from './move-cursor';
+import { Cursor, Direction } from './move-cursor';
+import RangeSelector from './range-selector';
 
 function findLastIndex(nodes: any[], check: (n) => boolean) {
   const reverseIndex = nodes
@@ -237,11 +238,11 @@ export type ActionSections = {
   searchable?: boolean;
 }[];
 
-export default function getAvailableActions({
-  ast,
-  lastValidAST,
-  cursor: [start, end]
-}: EditorState): ActionSections {
+export default function getAvailableActions(
+  { ast, lastValidAST, code, cursor }: EditorState,
+  rangeSelector: RangeSelector
+): ActionSections {
+  const [start, end] = cursor;
   if (!ast) {
     return [
       {
@@ -265,6 +266,27 @@ export default function getAvailableActions({
   const [node, parent] = parents;
   const actions = [];
 
+  actions.push({
+    title: 'Range Select',
+    children: ['LEFT', 'RIGHT', 'UP', 'DOWN'].map(direction => ({
+      name: {
+        LEFT: 'Previous',
+        RIGHT: 'Next',
+        UP: 'Surrounding',
+        DOWN: 'Inner'
+      }[direction],
+      key: {
+        LEFT: 'ArrowLeft',
+        RIGHT: 'ArrowRight',
+        UP: 'ArrowUp',
+        DOWN: 'ArrowDown'
+      }[direction],
+      execute: () => () =>
+        rangeSelector.run(ast, code, cursor, direction as Direction)
+    })),
+    shift: true
+  });
+
   if (t.isLogicalExpression(node)) {
     const newOperator = node.operator == '||' ? '&' : '|';
     actions.push({
@@ -279,86 +301,90 @@ export default function getAvailableActions({
     });
   }
 
-  const moveChildren = [];
-  const collectionIndex = parents.findIndex(
-    n => t.isProgram(n) || t.isBlockStatement(n) || t.isArrayExpression(n)
-  );
-  const collectionNode = parents[collectionIndex];
-  const collection = collectionNode[path[collectionIndex - 1]];
-  const itemIndex = Number(path[collectionIndex - 2]);
-  const move = (direction: -1 | 1) => {
-    const innerStart = start - parents[0].start;
+  {
+    const moveChildren = [];
+    const collectionIndex = parents.findIndex(
+      n => t.isProgram(n) || t.isBlockStatement(n) || t.isArrayExpression(n)
+    );
+    const collectionNode = parents[collectionIndex];
+    const collection = collectionNode[path[collectionIndex - 1]];
+    const itemIndex = Number(path[collectionIndex - 2]);
+    const move = (direction: -1 | 1) => {
+      const innerStart = start - parents[0].start;
 
-    const newIndex = itemIndex + direction;
-    const node = collection[itemIndex];
-    const target = collection[newIndex];
+      const newIndex = itemIndex + direction;
+      const node = collection[itemIndex];
+      const target = collection[newIndex];
 
-    // const [first, second] =
-    //   itemIndex > newIndex ? [node, target] : [target, node];
-    // const firstLength = first.end - first.start;
-    // const secondLength = second.end - second.start;
-    // second.start = first.start;
-    // second.end = first.start + secondLength;
-    // first.start += secondLength;
-    // first.end = first.start + firstLength;
+      // const [first, second] =
+      //   itemIndex > newIndex ? [node, target] : [target, node];
+      // const firstLength = first.end - first.start;
+      // const secondLength = second.end - second.start;
+      // second.start = first.start;
+      // second.end = first.start + secondLength;
+      // first.start += secondLength;
+      // first.end = first.start + firstLength;
 
-    collection[newIndex] = node;
-    collection[itemIndex] = target;
+      collection[newIndex] = node;
+      collection[itemIndex] = target;
 
-    return ast => {
-      const newPath = path.slice();
-      newPath[collectionIndex - 2] = newIndex.toString();
-      return getNodeFromPath(ast, [...newPath.reverse()]).start + innerStart;
+      return ast => {
+        const newPath = path.slice();
+        newPath[collectionIndex - 2] = newIndex.toString();
+        return getNodeFromPath(ast, [...newPath.reverse()]).start + innerStart;
+      };
     };
-  };
 
-  if (itemIndex > 0) {
-    moveChildren.push({
-      name: 'backwards',
-      key: 'ArrowLeft',
-      execute: () => move(-1)
-    });
-  }
-  if (collection && itemIndex < collection.length - 1) {
-    moveChildren.push({
-      name: 'forwards',
-      key: 'ArrowRight',
-      execute: () => move(1)
-    });
-  }
-  if (moveChildren.length > 0) {
-    actions.push({
-      title:
-        'Move ' +
-        (t.isArrayExpression(collectionNode) ? 'element' : 'statement'),
-      children: moveChildren,
-      alt: true
-    });
+    if (itemIndex > 0) {
+      moveChildren.push({
+        name: 'backwards',
+        key: 'ArrowLeft',
+        execute: () => move(-1)
+      });
+    }
+    if (collection && itemIndex < collection.length - 1) {
+      moveChildren.push({
+        name: 'forwards',
+        key: 'ArrowRight',
+        execute: () => move(1)
+      });
+    }
+    if (moveChildren.length > 0) {
+      actions.push({
+        title:
+          'Move ' +
+          (t.isArrayExpression(collectionNode) ? 'element' : 'statement'),
+        children: moveChildren,
+        alt: true
+      });
+    }
   }
 
-  const parentCollectionExpression = parents.find(
-    isInCollectionExpression([start, end])
-  );
-  if (parentCollectionExpression) {
-    actions.push({
-      title: {
-        ArrayExpression: 'Array',
-        ArrowFunctionExpression: 'Parameters',
-        CallExpression: 'Arguments',
-        ObjectExpression: 'Properties'
-      }[parentCollectionExpression.type],
-      children: [
-        {
-          name: 'Add',
-          codes: ['Comma', 'Space'],
-          execute: addToCollection
-        }
-      ],
-      ctrl:
-        parentCollectionExpression !== node &&
-        start !== node.start &&
-        start !== node.end
-    });
+  {
+    const parentCollectionExpression = parents.find(
+      isInCollectionExpression([start, end])
+    );
+    if (parentCollectionExpression) {
+      actions.push({
+        title: {
+          ArrayExpression: 'Array',
+          ArrowFunctionExpression: 'Parameters',
+          CallExpression: 'Arguments',
+          ObjectExpression: 'Properties'
+        }[parentCollectionExpression.type],
+        children: [
+          {
+            name: 'Add',
+            codes: ['Comma', 'Space'],
+            execute: addToCollection
+          }
+        ],
+        ctrl:
+          parentCollectionExpression !== node &&
+          start !== node.start &&
+          start !== node.end
+      });
+    }
   }
 
   if (t.isVariableDeclaration(node)) {
@@ -425,25 +451,27 @@ export default function getAvailableActions({
     });
   }
 
-  const forIndex = parents.slice(0, 5).findIndex(n => t.isForOfStatement(n));
-  if (forIndex != -1) {
-    actions.push({
-      title: 'Change "for..of" to',
-      children: [
-        {
-          name: 'i++',
-          key: 'i',
-          execute: ({ ast }) => {
-            const forStatement = parents[forIndex];
-            getNodeFromPath(ast, path.slice(forIndex + 1).reverse())[
-              path[forIndex]
-            ] = t.forStatement(null, null, null, forStatement.body);
-            // t.forStatement();
+  {
+    const forIndex = parents.slice(0, 5).findIndex(n => t.isForOfStatement(n));
+    if (forIndex != -1) {
+      actions.push({
+        title: 'Change "for..of" to',
+        children: [
+          {
+            name: 'i++',
+            key: 'i',
+            execute: ({ ast }) => {
+              const forStatement = parents[forIndex];
+              getNodeFromPath(ast, path.slice(forIndex + 1).reverse())[
+                path[forIndex]
+              ] = t.forStatement(null, null, null, forStatement.body);
+              // t.forStatement();
+            }
           }
-        }
-      ],
-      ctrl: true
-    });
+        ],
+        ctrl: true
+      });
+    }
   }
 
   return actions;

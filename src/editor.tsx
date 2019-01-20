@@ -344,7 +344,7 @@ export default class Editor extends React.Component<
       ArrowDown: 'DOWN'
     }[key];
     if (direction) {
-      this.moveCursor(direction, event.shiftKey);
+      this.moveCursor(direction);
       event.preventDefault();
       return;
     }
@@ -388,25 +388,11 @@ export default class Editor extends React.Component<
     this.updateCode(fullNextState);
   };
 
-  moveCursor = (direction: Direction, rangeSelect = false) => {
+  moveCursor = (direction: Direction) => {
     const { ast, code, cursor } = this.editorState;
 
     if (!ast) {
       this.updateCode({});
-      return;
-    }
-
-    if (rangeSelect) {
-      let nextCursor = this.rangeSelector.run(ast, code, cursor, direction);
-      if (
-        (direction == 'LEFT' || direction == 'RIGHT') &&
-        JSON.stringify(cursor) == JSON.stringify(nextCursor)
-      ) {
-        nextCursor = this.rangeSelector.run(ast, code, cursor, 'UP');
-      }
-      this.updateCode({
-        cursor: nextCursor
-      });
       return;
     }
 
@@ -517,7 +503,7 @@ export default class Editor extends React.Component<
     });
 
     this.setState({
-      actions: getAvailableActions(this.editorState),
+      actions: getAvailableActions(this.editorState, this.rangeSelector),
       searchIn: null
     });
 
