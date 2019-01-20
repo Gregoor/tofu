@@ -43,8 +43,8 @@ export const ActionItem = styled.li`
   ${codeFontSize};
   background: none;
   cursor: pointer;
-  ${props => props.highlighted && 'background: yellow;'}
-  ${props => props.hidden && 'display: none;'}
+  ${props => props.highlighted && 'background: yellow;'} ${props =>
+    props.hidden && 'display: none;'}
 
   &:hover {
     font-weight: bold;
@@ -124,6 +124,12 @@ export const Keys = styled.div`
 export const Key = styled.span`
   border: 1px solid grey;
   padding: 0 4px;
-  ${codeFontSize};
   font-weight: normal;
+  ${codeFontSize};
+  ${font}
+`;
+
+export const Keyword = styled.span`
+  font-weight: bold;
+  ${font};
 `;
