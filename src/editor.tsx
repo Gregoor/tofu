@@ -179,15 +179,17 @@ export default class Editor extends React.Component<
         const nextStart = start - name.length;
         const nextCode = code.slice(0, nextStart) + code.slice(start + 1);
         const ast = parse(nextCode);
-        this.updateCode({
-          ast,
-          cursorFromAST: wrappingStatement(create, getInitialCursor)({
+        if (code[start + 1] == '\n') {
+          this.updateCode({
             ast,
-            cursor: [nextStart, nextStart]
-          })
-        });
-        event.preventDefault();
-        return;
+            cursorFromAST: wrappingStatement(create, getInitialCursor)({
+              ast,
+              cursor: [nextStart, nextStart]
+            })
+          });
+          event.preventDefault();
+          return;
+        }
       }
 
       if (t.isVariableDeclarator(parent) && !parent.init) {
@@ -217,6 +219,7 @@ export default class Editor extends React.Component<
     );
     if (searchable) {
       this.setState({ searchIn: searchable.title }, () => {
+        this.searchRef.current.value = '';
         this.searchRef.current.focus();
       });
       event.preventDefault();
