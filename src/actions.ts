@@ -460,10 +460,34 @@ export default function getAvailableActions(
             key: 'i',
             execute: ({ ast }) => {
               const forStatement = parents[forIndex];
+              const iterableLength = t.memberExpression(
+                forStatement.right,
+                t.identifier('length')
+              );
+              const i = t.identifier('i');
               getNodeFromPath(ast, path.slice(forIndex + 1).reverse())[
                 path[forIndex]
-              ] = t.forStatement(null, null, null, forStatement.body);
-              // t.forStatement();
+              ] = t.forStatement(
+                t.variableDeclaration('let', [
+                  t.variableDeclarator(i, t.numericLiteral(0))
+                ]),
+                t.binaryExpression(
+                  '<',
+                  i,
+                  t.memberExpression(forStatement.right, t.identifier('length'))
+                ),
+                t.updateExpression('++', i),
+                t.blockStatement([
+                  t.variableDeclaration('const', [
+                    t.variableDeclarator(
+                      forStatement.left.declarations[0].id,
+                      t.memberExpression(forStatement.right, i, true)
+                    )
+                  ]),
+                  ...forStatement.body.body
+                ])
+              );
+              return start;
             }
           }
         ],
