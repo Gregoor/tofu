@@ -147,8 +147,11 @@ export default class Editor extends React.Component<
       }
     }
 
-    if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
-      let newOperator;
+    if (
+      (t.isBinaryExpression(node) || t.isLogicalExpression(node)) &&
+      key.length == 1
+    ) {
+      let newOperator = key;
       if (key == '=') {
         newOperator =
           node.operator == '>' || node.operator == '<'
@@ -159,9 +162,7 @@ export default class Editor extends React.Component<
           node.operator[0] == key ? key.repeat(3 - node.operator.length) : key;
       }
       this.updateCode({
-        code: newOperator
-          ? code.slice(0, start) + newOperator + code.slice(end)
-          : value
+        code: code.slice(0, start) + newOperator + code.slice(end)
       });
       this.moveCursor(null);
       event.preventDefault();
