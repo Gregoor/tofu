@@ -385,7 +385,11 @@ export default class Editor extends React.Component<
     if (restoreAST) {
       fullNextState.ast = nextState.lastValidAST;
     }
-    this.updateCode(fullNextState);
+    try {
+      this.updateCode(fullNextState);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   moveCursor = (direction: Direction) => {

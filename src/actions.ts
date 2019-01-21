@@ -82,28 +82,6 @@ export type Action = (
   { ast, cursor: Cursor }
 ) => ((ast) => number | Cursor) | { restoreAST: true };
 
-const addVariableDeclaration: Action = ({ ast, cursor: [start] }) => {
-  const [parents, path] = getFocusPath(ast, start);
-  const parent = parents
-    .reverse()
-    .find(node => t.isBlockStatement(node) || t.isProgram(node));
-  const index = findSlotIndex(parent.body, start);
-  parent.body.splice(
-    index,
-    0,
-    t.variableDeclaration('const', [
-      t.variableDeclarator(t.identifier('name'), t.nullLiteral())
-    ])
-  );
-  return ast =>
-    selectKind(
-      getNodeFromPath(
-        ast,
-        path.concat(path[path.length - 1] == 'body' ? [] : 'body', index)
-      )
-    );
-};
-
 const toggleLogicalExpression = (node, newOperator) =>
   (({ ast, cursor: [start] }) => {
     node.operator = newOperator;
@@ -402,12 +380,32 @@ export default function getAvailableActions(
 
   actions.push({
     title: insertMode ? 'Insert' : 'Wrap with',
-    children: keywords
-      .filter(a => (insertMode || a.canWrapStatement) && !a.hidden)
-      .map(({ name, label, create, getInitialCursor }) => ({
-        name: label || name,
-        execute: wrappingStatement(create, getInitialCursor)
-      })),
+    children: [
+      ...(t.isExpression(node) &&
+      !(t.isVariableDeclarator(parent) && path[0] == 'id')
+        ? [
+            {
+              name: 'Function Call',
+              execute: ({ ast }) => {
+                const expressionPath = path.slice().reverse();
+                getNodeFromPath(ast, expressionPath.slice(0, -1))[
+                  expressionPath[expressionPath.length - 1]
+                ] = t.callExpression(t.identifier('call'), [node]);
+                return ast =>
+                  selectName(
+                    getNodeFromPath(ast, expressionPath.concat('callee'))
+                  );
+              }
+            }
+          ]
+        : []),
+      ...keywords
+        .filter(a => (insertMode || a.canWrapStatement) && !a.hidden)
+        .map(({ name, label, create, getInitialCursor }) => ({
+          name: label || name,
+          execute: wrappingStatement(create, getInitialCursor)
+        }))
+    ],
     alt: true,
     key: 'w',
     searchable: true
