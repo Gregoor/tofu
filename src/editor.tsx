@@ -60,6 +60,9 @@ export default class Editor extends React.Component<
 
     this.updateCode({ code: this.props.code, cursor: [0, 0], printWidth: 80 });
 
+    textArea.addEventListener('copy', this.handleCopy);
+    textArea.addEventListener('cut', this.handleCut);
+    textArea.addEventListener('paste', this.handlePaste);
     textArea.addEventListener('keydown', this.handleKeyDown);
     textArea.addEventListener('click', this.handleClick);
 
@@ -73,6 +76,45 @@ export default class Editor extends React.Component<
   get editorState() {
     return this.history[this.history.length - 1];
   }
+
+  handleCopy = (event: ClipboardEvent) => {
+    const { code } = this.editorState;
+    const { selectionStart, selectionEnd } = this.textArea;
+    event.clipboardData.setData(
+      'text/plain',
+      code.substr(selectionStart, selectionEnd)
+    );
+    event.preventDefault();
+  };
+
+  handleCut = (event: ClipboardEvent) => {
+    const { code } = this.editorState;
+    const { selectionStart, selectionEnd } = this.textArea;
+    const isRange = selectionStart !== selectionEnd;
+    this.updateCode({
+      code: isRange
+        ? code.substr(0, selectionStart - 1) + code.substr(selectionEnd)
+        : code.substr(0, selectionStart) + code.substr(selectionStart + 1),
+      cursor: selectionStart
+    });
+    event.clipboardData.setData(
+      'text/plain',
+      code.substr(selectionStart, selectionEnd)
+    );
+    event.preventDefault();
+  };
+
+  handlePaste = (event: ClipboardEvent) => {
+    const { code } = this.editorState;
+    const { selectionStart, selectionEnd } = this.textArea;
+    this.updateCode({
+      code:
+        code.slice(0, selectionStart) +
+        event.clipboardData.getData('text/plain') +
+        code.slice(selectionEnd)
+    });
+    event.preventDefault();
+  };
 
   handleKeyDown = (event: KeyboardEvent) => {
     const { key } = event;
@@ -98,7 +140,7 @@ export default class Editor extends React.Component<
         code:
           code.slice(0, start) +
           generate(t.arrowFunctionExpression([], t.nullLiteral())).code +
-          code.slice(end),
+          code.slice(end)
       });
       event.preventDefault();
       return;
