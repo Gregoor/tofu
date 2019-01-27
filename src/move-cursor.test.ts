@@ -14,7 +14,7 @@ function testPath(ast, code, path, direction) {
   }
 }
 
-const testCode = fs.readFileSync(path.join(__dirname, 'test.js'), 'utf-8');
+const testCode = fs.readFileSync(path.join(__dirname, 'sample.js'), 'utf-8');
 
 type Path = (number | [number, number])[][];
 const tests = [
