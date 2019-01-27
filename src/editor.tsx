@@ -11,7 +11,7 @@ import getAvailableActions, {
   keywords,
   wrappingStatement
 } from './actions';
-import { getFocusPath, getNodeFromPath } from './ast-utils';
+import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
 import { PrintASTButton } from './components';
 import { selectNode, spreadCursor } from './cursor-utils';
@@ -91,6 +91,17 @@ export default class Editor extends React.Component<
     } else {
       node = parents[0];
       parent = parents[1];
+    }
+
+    if (t.isBlock(node) && key == '(') {
+      this.updateCode({
+        code:
+          code.slice(0, start) +
+          generate(t.arrowFunctionExpression([], t.nullLiteral())).code +
+          code.slice(end),
+      });
+      event.preventDefault();
+      return;
     }
 
     if (t.isNullLiteral(node) && key == '(') {
