@@ -285,6 +285,19 @@ export default class Editor extends React.Component<
       }
     }
 
+    if (key == 'Tab') {
+      this.updateCode({
+        cursor: moveCursor(
+          ast,
+          code,
+          ...(event.shiftKey
+            ? ['LEFT', node.start]
+            : ['RIGHT', start == end ? node.end : end])
+        )
+      });
+      return;
+    }
+
     {
       const isBackspace = key == 'Backspace';
       const isDelete = key == 'Delete';
