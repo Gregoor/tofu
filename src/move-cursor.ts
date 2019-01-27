@@ -181,7 +181,6 @@ let moveCursorX = function(
 
   const shouldEndBlock =
     t.isBlockStatement(node) &&
-    t.isIfStatement(getParent(ast, start)) &&
     ((isRight && start !== node.end) || recursionDepth > 0);
 
   if (t.isBlockStatement(node) && node.body.length == 0) {
