@@ -108,7 +108,7 @@ export default class Editor extends React.Component<
 
     {
       const isExpressionOrBlock =
-        (t.isExpression(node) || t.isBlock(node)) &&
+        t.isExpression(node) &&
         !t.isStringLiteral(node) &&
         !t.isTemplateLiteral(node);
 
@@ -504,7 +504,13 @@ export default class Editor extends React.Component<
           }
         }
       } else {
-        ast = parse(code);
+        try {
+          ast = parse(code);
+        } catch (e) {
+          if (!(e instanceof SyntaxError)) {
+            throw e;
+          }
+        }
       }
     }
 
