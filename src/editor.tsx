@@ -465,7 +465,7 @@ export default class Editor extends React.Component<
     const newWidth = printWidth !== prevState.printWidth;
 
     const prettierOptions = {
-      parser: 'babylon',
+      parser: 'babel',
       plugins: [babylon],
       cursorOffset: start,
       printWidth,
