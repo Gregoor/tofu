@@ -69,6 +69,31 @@ render(
         people rewrite code.
       </p>
     </Card>
+
+    <Spacer />
+
+    <Card>
+      <h3 style={{ marginTop: 0 }}>Links</h3>
+      <ul>
+        <li>
+          <a href="https://github.com/Gregoor/tofu">Source</a>
+        </li>
+        <li>
+          <a href="https://github.com/Gregoor/tofu/issues">Issues</a>
+        </li>
+        <li>
+          <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - My
+          previous attempt at tackling this
+        </li>
+        <li>
+          <a href="https://medium.com/@grgtwt/code-is-not-just-text-1082981ae27f">
+            Code is not just text
+          </a>{' '}
+          - A blog post I wrote in early 2017, lining out my thinking at the
+          time about code editor
+        </li>
+      </ul>
+    </Card>
   </>,
   document.querySelector('#root')
 );
