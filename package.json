@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "parcel --no-hmr src/index.html",
-    "deploy": "git checkout gh-pages && parcel build index.html --public-url /tofu/",
+    "deploy": "git checkout gh-pages && parcel build src/index.html --public-url /tofu/ && cp -r dist/* . && git add -A . && git commit -am. && git push origin gh-pages --force && git checkout master",
     "test": "jest"
   },
   "dependencies": {
