@@ -98,10 +98,10 @@ export default class Keymap extends React.Component<{
                             {keys.map(key => (
                               <Key key={key}>
                                 {{
-                                  ArrowLeft: '🡄',
-                                  ArrowRight: '🡆',
-                                  ArrowDown: '🡇',
-                                  ArrowUp: '🡅'
+                                  ArrowLeft: '⬅',
+                                  ArrowRight: '➡',
+                                  ArrowDown: '⬇',
+                                  ArrowUp: '⬆'
                                 }[key] || key}
                               </Key>
                             ))}
