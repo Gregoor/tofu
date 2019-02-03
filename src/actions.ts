@@ -1,6 +1,8 @@
+const generate = require('@babel/generator').default;
 const t = require('@babel/types');
 import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { selectKind, selectName, selectNode } from './cursor-utils';
+import { replaceCode } from './code-utils';
 import { EditorState } from './edtior-state';
 import { Cursor, Direction } from './move-cursor';
 import RangeSelector from './range-selector';
@@ -287,24 +289,20 @@ export default function getAvailableActions(
     const collectionNode = parents[collectionIndex];
     const collection = collectionNode[path[collectionIndex - 1]];
     const itemIndex = Number(path[collectionIndex - 2]);
-    const move = (direction: -1 | 1) => {
+    const move = (direction: -1 | 1, state) => {
       const innerStart = start - parents[0].start;
 
       const newIndex = itemIndex + direction;
-      const node = collection[itemIndex];
-      const target = collection[newIndex];
+      const first = collection[Math.min(itemIndex, newIndex)];
+      const second = collection[Math.max(itemIndex, newIndex)];
 
-      // const [first, second] =
-      //   itemIndex > newIndex ? [node, target] : [target, node];
-      // const firstLength = first.end - first.start;
-      // const secondLength = second.end - second.start;
-      // second.start = first.start;
-      // second.end = first.start + secondLength;
-      // first.start += secondLength;
-      // first.end = first.start + firstLength;
-
-      collection[newIndex] = node;
-      collection[itemIndex] = target;
+      state.code = replaceCode(
+        code,
+        [first.start, second.end],
+        generate(second, { retainLines: true }).code.trim() +
+          (t.isArrayExpression(collectionNode) ? ',' : '') +
+          generate(first, { retainLines: true }).code.trim()
+      );
 
       return ast => {
         const newPath = path.slice();
@@ -317,14 +315,14 @@ export default function getAvailableActions(
       moveChildren.push({
         name: 'backwards',
         key: 'ArrowLeft',
-        execute: () => move(-1)
+        execute: move.bind(null, -1)
       });
     }
     if (collection && itemIndex < collection.length - 1) {
       moveChildren.push({
         name: 'forwards',
         key: 'ArrowRight',
-        execute: () => move(1)
+        execute: move.bind(null, 1)
       });
     }
     if (moveChildren.length > 0) {

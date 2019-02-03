@@ -11,7 +11,7 @@ import getAvailableActions, {
   keywords,
   wrappingStatement
 } from './actions';
-import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
+import { getFocusPath, getNodeFromPath } from './ast-utils';
 import { replaceCode } from './code-utils';
 import { PrintASTButton } from './components';
 import { selectNode, spreadCursor } from './cursor-utils';
@@ -455,6 +455,11 @@ export default class Editor extends React.Component<
     if (restoreAST) {
       fullNextState.ast = nextState.lastValidAST;
     }
+
+    if (fullNextState.ast && this.editorState.code == fullNextState.code) {
+      delete fullNextState.code;
+    }
+
     try {
       this.updateCode(fullNextState);
     } catch (e) {
@@ -524,27 +529,21 @@ export default class Editor extends React.Component<
     const newState = { ...prevState, ...{ ...state, cursor } };
     let { ast, code, cursorFromAST, lastValidAST, printWidth } = newState;
 
-    if (state.ast) {
+    if (!state.code && state.ast) {
       code = generate(state.ast, { retainLines: true }).code;
     }
 
     const newWidth = printWidth !== prevState.printWidth;
-
-    const prettierOptions = {
-      parser: 'babel',
-      plugins: [babylon],
-      cursorOffset: start,
-      printWidth,
-      trailingComma: 'all'
-    };
-
     if (!ast || code !== prevState.code || newWidth) {
       if (prettify) {
         try {
-          const { formatted, cursorOffset } = prettier.formatWithCursor(
-            code,
-            prettierOptions
-          );
+          const { formatted, cursorOffset } = prettier.formatWithCursor(code, {
+            parser: 'babel',
+            plugins: [babylon],
+            cursorOffset: start,
+            printWidth,
+            trailingComma: 'all'
+          });
           ast = parse(formatted);
           code = formatted;
           start = end = cursorOffset;
