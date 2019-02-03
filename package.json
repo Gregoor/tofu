@@ -36,6 +36,9 @@
     "ts-jest": "^23.10.3",
     "typescript": "^3.3.1"
   },
+  "engines": {
+    "node": ">=8.12.0"
+  },
   "browserslist": [
     "last 2 firefox versions",
     "last 2 chrome versions",
