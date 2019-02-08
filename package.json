@@ -6,7 +6,7 @@
   "scripts": {
     "start": "parcel --no-hmr src/index.html",
     "deploy": "git stash && git branch -f gh-pages && git checkout gh-pages && parcel build src/index.html --public-url /tofu/ && cp -r dist/* . && git add -A . && git commit -am. && git push origin gh-pages --force && git checkout master && git stash apply",
-    "test": "jest"
+    "test": "tsc --noEmit && jest"
   },
   "dependencies": {
     "@babel/generator": "^7.3.0",
@@ -15,7 +15,7 @@
     "@types/jest": "^23.3.13",
     "@types/memoize-one": "^4.1.0",
     "@types/react": "^16.8.1",
-    "@types/react-dom": "^16.0.9",
+    "@types/react-dom": "^16.0.11",
     "@types/redom": "^3.12.0",
     "@types/styled-components": "^4.1.6",
     "codeflask": "^1.4.0",
@@ -35,6 +35,9 @@
     "parcel-bundler": "^1.11.0",
     "ts-jest": "^23.10.3",
     "typescript": "^3.3.1"
+  },
+  "resolutions": {
+    "@types/react": "^16.8.1"
   },
   "engines": {
     "node": ">=8.12.0"

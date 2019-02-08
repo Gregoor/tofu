@@ -32,7 +32,7 @@ export const ActionBar = styled.div`
   background: white;
 `;
 
-export const ActionItem = styled.li`
+export const ActionItem = styled.li<{ highlighted: boolean; hidden: boolean }>`
   display: flex;
   justify-content: space-between;
   border: none;
@@ -43,10 +43,8 @@ export const ActionItem = styled.li`
   ${codeFontSize};
   background: none;
   cursor: pointer;
-  ${props => props.highlighted && 'background: yellow;'} ${props =>
-    props.hidden && 'display: none;'}
-
-  &:hover {
+  ${props => props.highlighted && 'background: yellow;'};
+  ${props => props.hidden && 'display: none;'} &:hover {
     font-weight: bold;
   }
 `;
@@ -126,7 +124,7 @@ export const Key = styled.span`
   padding: 0 4px;
   font-weight: normal;
   ${codeFontSize};
-  ${font}
+  ${font};
 `;
 
 export const Keyword = styled.span`

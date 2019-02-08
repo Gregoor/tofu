@@ -88,10 +88,11 @@ export default class Keymap extends React.Component<{
                         <ActionItem
                           {...getItemProps({
                             key: i,
-                            item: action.name,
-                            highlighted:
-                              searchIn == title && highlightedIndex == i
+                            item: action.name
                           })}
+                          highlighted={
+                            searchIn == title && highlightedIndex == i
+                          }
                         >
                           <div>{action.name}</div>
                           <Keys>
