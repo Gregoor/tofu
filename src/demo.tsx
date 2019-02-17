@@ -92,7 +92,7 @@ render(
             Code is not just text
           </a>{' '}
           - A blog post I wrote in early 2017, lining out my thinking at the
-          time about code editor
+          time about code editing
         </li>
       </ul>
     </Card>
