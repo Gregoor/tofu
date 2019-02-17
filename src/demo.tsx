@@ -54,12 +54,14 @@ render(
           keywords behave similarly.
         </li>
         <li>
-          <Key>Enter</Key> always creates a new line underneath.
+          <Key>Enter</Key> always creates a new line underneath. Compare that to
+          other editors, where Enter either breaks syntax or code style (unless
+          you're already at the start/end of a line).
         </li>
       </ul>
     </Card>
 
-    <Spacer />
+    {/*<Spacer />
 
     <Card>
       <h3 style={{ marginTop: 0 }}>Try it!</h3>
@@ -68,7 +70,7 @@ render(
         with changing requirements. I.e. don't just make people write code, make
         people rewrite code.
       </p>
-    </Card>
+    </Card>*/}
 
     <Spacer />
 
