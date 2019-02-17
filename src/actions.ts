@@ -1,4 +1,5 @@
 const generate = require('@babel/generator').default;
+const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
 import { selectKind, selectName, selectNode } from './cursor-utils';
@@ -203,20 +204,20 @@ export const wrappingStatement = (
   return ast => getInitialCursor(ast, basePath);
 };
 
-export type ActionSections = {
-  title?: string;
-  children: {
-    name: string;
-    codes?: string[];
-    key?: string;
-    execute: Action;
-  }[];
+type Keys = {
   key?: string;
-  alt?: boolean;
-  ctrl?: boolean;
-  shift?: boolean;
-  searchable?: boolean;
-}[];
+  codes?: string[];
+  modifiers?: ('altKey' | 'ctrlKey' | 'shiftKey')[];
+};
+
+export type ActionSections = ({
+  title?: string;
+  children: ({
+    name: string;
+    execute: Action;
+  } & Keys)[];
+  searchKeys?: Keys;
+} & Keys)[];
 
 export default function getAvailableActions(
   { ast, lastValidAST, code, cursor }: EditorState,
@@ -264,7 +265,7 @@ export default function getAvailableActions(
       execute: () => () =>
         rangeSelector.run(ast, code, cursor, direction as Direction)
     })),
-    shift: true
+    modifiers: ['shiftKey']
   });
 
   if (t.isLogicalExpression(node)) {
@@ -331,7 +332,7 @@ export default function getAvailableActions(
           'Move ' +
           (t.isArrayExpression(collectionNode) ? 'element' : 'statement'),
         children: moveChildren,
-        alt: true
+        modifiers: ['altKey']
       });
     }
   }
@@ -343,7 +344,7 @@ export default function getAvailableActions(
     if (parentCollectionExpression) {
       actions.push({
         title: {
-          ArrayExpression: 'Array',
+          ArrayExpression: 'Elements',
           ArrowFunctionExpression: 'Parameters',
           CallExpression: 'Arguments',
           ObjectExpression: 'Properties'
@@ -355,10 +356,12 @@ export default function getAvailableActions(
             execute: addToCollection
           }
         ],
-        ctrl:
+        modifiers:
           parentCollectionExpression !== node &&
           start !== node.start &&
           start !== node.end
+            ? ['altKey']
+            : []
       });
     }
   }
@@ -379,6 +382,28 @@ export default function getAvailableActions(
   actions.push({
     title: insertMode ? 'Insert' : 'Wrap with',
     children: [
+      ...(t.isStringLiteral(node)
+        ? []
+        : [
+            {
+              name: 'Function',
+              execute: state => {
+                state.code = replaceCode(
+                  code,
+                  [start, end],
+                  start == end || t.isNullLiteral(node)
+                    ? generate(t.arrowFunctionExpression([], t.nullLiteral()), {
+                        retainLines: true
+                      }).code.trim()
+                    : `() => {${code.slice(start, end)}}`
+                );
+                return ast =>
+                  getNodeFromPath(ast, path.slice().reverse()).start || start;
+              },
+              key: '>',
+              modifiers: ['shiftKey']
+            }
+          ]),
       ...(t.isExpression(node) &&
       !(t.isVariableDeclarator(parent) && path[0] == 'id')
         ? [
@@ -404,9 +429,10 @@ export default function getAvailableActions(
           execute: wrappingStatement(create, getInitialCursor)
         }))
     ],
-    alt: true,
-    key: 'w',
-    searchable: true
+    searchKeys: {
+      modifiers: ['altKey'],
+      key: 'w'
+    }
   });
 
   if (
@@ -489,7 +515,7 @@ export default function getAvailableActions(
             }
           }
         ],
-        ctrl: true
+        modifiers: ['altKey']
       });
     }
   }

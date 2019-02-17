@@ -264,12 +264,8 @@ export default class Editor extends React.Component<
     }
 
     const searchable = this.state.actions.find(
-      s =>
-        s.searchable &&
-        Boolean(s.alt) == event.altKey &&
-        Boolean(s.ctrl) == event.ctrlKey &&
-        Boolean(s.shift) == event.shiftKey &&
-        key == s.key
+      ({ searchKeys: s }) =>
+        s && key == s.key && (s.modifiers || []).every(m => event[m])
     );
     if (searchable) {
       this.setState({ searchIn: searchable.title }, () => {
@@ -280,16 +276,20 @@ export default class Editor extends React.Component<
       return;
     }
 
-    let action = this.state.actions
-      .filter(
-        s =>
-          Boolean(s.alt) == event.altKey &&
-          Boolean(s.ctrl) == event.ctrlKey &&
-          Boolean(s.shift) == event.shiftKey
-      )
-      .map(s => s.children)
-      .flat()
-      .find(a => a.key == key || (a.codes || []).includes(event.code));
+    let action;
+    outer: for (const section of this.state.actions) {
+      for (const a of section.children) {
+        if (
+          (a.key == key || (a.codes || []).includes(event.code)) &&
+          (section.modifiers || [])
+            .concat(a.modifiers || [])
+            .every(m => event[m])
+        ) {
+          action = a;
+          break outer;
+        }
+      }
+    }
     if (action) {
       this.executeAction(action);
       event.preventDefault();

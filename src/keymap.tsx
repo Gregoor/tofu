@@ -10,6 +10,9 @@ import {
   SectionTitle
 } from './ui';
 
+const Modifiers = ({ children }) =>
+  (children || []).map(m => <Key key={m}>{m.substr(0, m.length - 3)}</Key>);
+
 export default function Keymap(props: {
   actions: any;
   onExecute: (action: { execute: Action }) => any;
@@ -21,7 +24,7 @@ export default function Keymap(props: {
 
   return actions
     .filter(a => a.title)
-    .map(({ title, alt, ctrl, shift, key, children }, i) => (
+    .map(({ title, key, modifiers, children, searchKeys }, i) => (
       <ActionSection key={i}>
         <Downshift
           defaultHighlightedIndex={0}
@@ -51,10 +54,16 @@ export default function Keymap(props: {
                 <SectionTitle>
                   {title}
                   <div>
-                    {alt && <Key>Alt</Key>}
-                    {ctrl && <Key>Ctrl</Key>}
-                    {shift && <Key>Shift</Key>}
-                    {key && <Key>{key}</Key>}
+                    {searchKeys && (
+                      <div>
+                        <Modifiers>{searchKeys.modifiers}</Modifiers>
+                        {searchKeys.key && <Key>{searchKeys.key}</Key>}
+                      </div>
+                    )}
+                    <div>
+                      <Modifiers>{modifiers}</Modifiers>
+                      {key && <Key>{key}</Key>}
+                    </div>
                   </div>
                 </SectionTitle>
               )}
