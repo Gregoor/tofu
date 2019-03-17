@@ -15,7 +15,7 @@ function debounce(func, wait) {
     };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
-  };
+  } as any;
 }
 
 const Card = styled.section`
@@ -80,13 +80,12 @@ class Demo extends React.Component {
   }
 
   updateP5 = debounce(code => {
+    const el = this.canvasRef.current;
     if (this.p5Instance) {
       this.p5Instance.remove();
+      el.innerHTML = '';
     }
-    this.p5Instance = new (window as any).p5(
-      new Function('sketch', code),
-      this.canvasRef.current
-    );
+    this.p5Instance = new (window as any).p5(new Function('sketch', code), el);
   }, 1000);
 
   render() {
