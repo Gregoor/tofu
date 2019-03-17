@@ -4,6 +4,20 @@ import styled from 'styled-components';
 import Editor from './editor';
 import { Key, Keyword } from './ui';
 
+function debounce(func, wait) {
+  let timeout;
+  return function() {
+    const context = this;
+    const args = arguments;
+    const later = function() {
+      timeout = null;
+      func.apply(context, args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 const Card = styled.section`
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -18,50 +32,105 @@ const Spacer = styled.div`
   margin-bottom: 20px;
 `;
 
-const WELCOME_CODE = [
-  "const FEATURES = ['Edit code with few keystrokes', 'No syntax errors', 'Formatted code, no action required']",
-  "const TODOS = ['Support all the JS language features', 'Squash all dem bugs', 'Make it speedy']",
-  '',
-  'if (FEATURES.length > 10 * TODOS.length) { release(); }'
-].join('\n');
+const CanvasContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+`;
 
-render(
-  <>
-    <Editor code={WELCOME_CODE} />
+const WELCOME_CODE = `// Demo using p5js (https://p5js.org)
+let pg;
 
-    <Spacer />
+sketch.setup = () => {
+  sketch.createCanvas(710, 300);
+  // offscreen canvas
+  pg = sketch.createGraphics(1, 1);
+}
 
-    <Card>
-      <h3 style={{ marginTop: 0 }}>What is this?</h3>
-      <p>
-        Tofu is a code editor that frees you from making meaningless changes to
-        your code, that is you don't have to manage syntax or code style. Thus
-        common keys can trigger more meaningful actions. Here are a few
-        examples:
-      </p>
-      <ul>
-        <li>
-          Cursor keys only take you to places where you can make meaningful
-          edits.
-        </li>
-        <li>
-          Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{' '}
-          declaration requires only a single keypress.
-        </li>
-        <li>
-          Putting a space after <Keyword>if</Keyword> always creates a complete
-          if-block (as that is the only syntactically valid option). Other
-          keywords behave similarly.
-        </li>
-        <li>
-          <Key>Enter</Key> always creates a new line underneath. Compare that to
-          other editors, where Enter either breaks syntax or code style (unless
-          you're already at the start/end of a line).
-        </li>
-      </ul>
-    </Card>
+sketch.draw = () => {
+  sketch.fill(0, 12);
+  sketch.rect(0, 0, sketch.width, sketch.height);
+  sketch.fill(255);
+  sketch.noStroke();
+  sketch.ellipse(sketch.mouseX, sketch.mouseY, 60, 60);
 
-    {/*<Spacer />
+  pg.background(51);
+  pg.noFill();
+  pg.stroke(255);
+  pg.ellipse(sketch.mouseX - 150, sketch.mouseY - 75, 60, 60);
+
+  //Draw the offscreen buffer to the screen with image()
+  sketch.image(pg, 150, 75);
+} `;
+
+class Demo extends React.Component {
+  canvasRef = React.createRef<HTMLDivElement>();
+  p5Instance = null;
+
+  componentDidMount() {
+    const script = document.createElement('script');
+
+    script.onload = () => {
+      this.updateP5(WELCOME_CODE);
+    };
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.js';
+    script.async = true;
+
+    document.body.appendChild(script);
+  }
+
+  updateP5 = debounce(code => {
+    if (this.p5Instance) {
+      this.p5Instance.remove();
+    }
+    this.p5Instance = new (window as any).p5(
+      new Function('sketch', code),
+      this.canvasRef.current
+    );
+  }, 1000);
+
+  render() {
+    return (
+      <>
+        <CanvasContainer ref={this.canvasRef} />
+
+        <Spacer />
+
+        <Editor value={WELCOME_CODE} onChange={this.updateP5} />
+
+        <Spacer />
+
+        <Card>
+          <h3 style={{ marginTop: 0 }}>What is this?</h3>
+          <p>
+            Tofu is a code editor that frees you from making meaningless changes
+            to your code, that is you don't have to manage syntax or code style.
+            Thus common keys can trigger more meaningful actions. Here are a few
+            examples:
+          </p>
+          <ul>
+            <li>
+              Cursor keys only take you to places where you can make meaningful
+              edits.
+            </li>
+            <li>
+              Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{' '}
+              declaration requires only a single keypress.
+            </li>
+            <li>
+              Putting a space after <Keyword>if</Keyword> always creates a
+              complete if-block (as that is the only syntactically valid
+              option). Other keywords behave similarly.
+            </li>
+            <li>
+              <Key>Enter</Key> always creates a new line underneath. Compare
+              that to other editors, where Enter either breaks syntax or code
+              style (unless you're already at the start/end of a line).
+            </li>
+          </ul>
+        </Card>
+
+        {/*<Spacer />
 
     <Card>
       <h3 style={{ marginTop: 0 }}>Try it!</h3>
@@ -72,30 +141,33 @@ render(
       </p>
     </Card>*/}
 
-    <Spacer />
+        <Spacer />
 
-    <Card>
-      <h3 style={{ marginTop: 0 }}>Links</h3>
-      <ul>
-        <li>
-          <a href="https://github.com/Gregoor/tofu">Source</a>
-        </li>
-        <li>
-          <a href="https://github.com/Gregoor/tofu/issues">Issues</a>
-        </li>
-        <li>
-          <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - My
-          previous attempt at tackling this
-        </li>
-        <li>
-          <a href="https://medium.com/@grgtwt/code-is-not-just-text-1082981ae27f">
-            Code is not just text
-          </a>{' '}
-          - A blog post I wrote in early 2017, lining out my thinking at the
-          time about code editing
-        </li>
-      </ul>
-    </Card>
-  </>,
-  document.querySelector('#root')
-);
+        <Card>
+          <h3 style={{ marginTop: 0 }}>Links</h3>
+          <ul>
+            <li>
+              <a href="https://github.com/Gregoor/tofu">Source</a>
+            </li>
+            <li>
+              <a href="https://github.com/Gregoor/tofu/issues">Issues</a>
+            </li>
+            <li>
+              <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - My
+              previous attempt at tackling this
+            </li>
+            <li>
+              <a href="https://medium.com/@grgtwt/code-is-not-just-text-1082981ae27f">
+                Code is not just text
+              </a>{' '}
+              - A blog post I wrote in early 2017, lining out my thinking at the
+              time about code editing
+            </li>
+          </ul>
+        </Card>
+      </>
+    );
+  }
+}
+
+render(<Demo />, document.querySelector('#root'));

@@ -30,7 +30,7 @@ import {
 const babylon = require('prettier/parser-babylon');
 
 export default class Editor extends React.Component<
-  { code: string },
+  { value: string; onChange?: (value: string) => any },
   {
     actions: ActionSections;
     searchIn: string;
@@ -58,7 +58,7 @@ export default class Editor extends React.Component<
     });
     const textArea = (this.textArea = this.flask.elTextarea);
 
-    this.updateCode({ code: this.props.code, cursor: [0, 0], printWidth: 80 });
+    this.updateCode({ code: this.props.value, cursor: [0, 0], printWidth: 80 });
 
     textArea.addEventListener('copy', this.handleCopy);
     textArea.addEventListener('cut', this.handleCut);
@@ -572,6 +572,15 @@ export default class Editor extends React.Component<
       end = cursor[1];
     }
 
+    if (
+      code == prevState.code &&
+      ast == prevState.ast &&
+      start == prevState.cursor[0] &&
+      end == prevState.cursor[1]
+    ) {
+      return;
+    }
+
     this.history.push({
       ...newState,
       ast,
@@ -580,13 +589,15 @@ export default class Editor extends React.Component<
       cursorFromAST: null,
       lastValidAST: ast || lastValidAST
     });
-
     this.setState({
       actions: getAvailableActions(this.editorState, this.rangeSelector),
       searchIn: null
     });
-
     this.updateEditor();
+
+    if (this.props.onChange && prevState.code && prevState.code != code) {
+      this.props.onChange(code);
+    }
   };
 
   updateEditor = () => {
