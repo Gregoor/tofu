@@ -596,8 +596,10 @@ export default class Editor extends React.Component<
 
     textArea.cols = editorState.printWidth;
 
+    const [scrollX, scrollY] = [window.scrollX, window.scrollY];
     this.textArea.blur();
     this.textArea.focus();
+    window.scrollTo(scrollX, scrollY);
 
     const [start, end] = editorState.cursor;
     textArea.selectionStart = start;
