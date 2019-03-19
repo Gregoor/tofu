@@ -82,7 +82,7 @@ export default class Editor extends React.Component<
     const { selectionStart, selectionEnd } = this.textArea;
     event.clipboardData.setData(
       'text/plain',
-      code.substr(selectionStart, selectionEnd)
+      code.substr(selectionStart, selectionEnd - selectionStart)
     );
     event.preventDefault();
   };
