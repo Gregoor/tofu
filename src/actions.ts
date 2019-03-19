@@ -399,9 +399,7 @@ export default function getAvailableActions(
                 );
                 return ast =>
                   getNodeFromPath(ast, path.slice().reverse()).start || start;
-              },
-              key: '>',
-              modifiers: ['shiftKey']
+              }
             }
           ]),
       ...(t.isExpression(node) &&
