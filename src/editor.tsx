@@ -296,6 +296,22 @@ export default class Editor extends React.Component<
       return;
     }
 
+    if (
+      ['+', '-', '/', '*', '&', '|', '>', '<', '%', '^'].includes(key) &&
+      !t.isStringLiteral(node)
+    ) {
+      this.updateCode({
+        code: code.slice(0, start) + key + code.slice(end),
+        cursorFromAST: ast => {
+          if (!ast) return start + 1;
+          const { left, right } = getNodeFromPath(ast, path);
+          return [left.end + 1, right.start - 1];
+        }
+      });
+      event.preventDefault();
+      return;
+    }
+
     if (event.code == 'KeyZ' && event.ctrlKey) {
       if (event.shiftKey && this.future.length > 0) {
         this.history.push(this.future.pop());
