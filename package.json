@@ -9,32 +9,32 @@
     "test": "tsc --noEmit && jest"
   },
   "dependencies": {
-    "@babel/generator": "^7.3.4",
-    "@babel/parser": "^7.3.4",
-    "@babel/types": "^7.3.4",
+    "@babel/generator": "^7.4.0",
+    "@babel/parser": "^7.4.2",
+    "@babel/types": "^7.4.0",
     "@types/jest": "^24.0.11",
     "@types/memoize-one": "^4.1.1",
     "@types/react": "^16.8.8",
-    "@types/react-dom": "^16.8.2",
+    "@types/react-dom": "^16.8.3",
     "@types/redom": "^3.12.1",
     "@types/styled-components": "^4.1.12",
     "codeflask": "^1.4.0",
     "downshift": "^3.2.7",
-    "immer": "^2.1.3",
+    "immer": "^2.1.4",
     "memoize-one": "^5.0.0",
     "prettier": "^1.16.4",
-    "react": "^16.8.4",
-    "react-dom": "^16.8.4",
-    "styled-components": "^4.1.3"
+    "react": "^16.8.5",
+    "react-dom": "^16.8.5",
+    "styled-components": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^11.11.3",
+    "@types/node": "^11.11.6",
     "babel-core": "^6.26.3",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "jest": "^24.5.0",
-    "parcel-bundler": "^1.12.2",
+    "parcel-bundler": "^1.12.3",
     "ts-jest": "^24.0.0",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.3.4000"
   },
   "resolutions": {
     "@types/react": "^16.8.2"
