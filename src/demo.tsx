@@ -38,30 +38,41 @@ const CanvasContainer = styled.div`
   justify-content: center;
 `;
 
-const WELCOME_CODE = `// Demo using p5js (https://p5js.org)
-let pg;
+const WELCOME_CODE =
+  localStorage.getItem('code') ||
+  `// Demo using p5js (https://p5js.org)
+const TOTAL = 42;
+const EXPONENT = 23;
+const WEIGHT = 7;
+const MODULO = 5000;
+
+let factor;
 
 sketch.setup = () => {
-  sketch.createCanvas(710, 300);
-  // offscreen canvas
-  pg = sketch.createGraphics(1, 1);
-}
+  sketch.createCanvas(300, 300);
+  sketch.fill(255);
+  factor = (sketch.width - WEIGHT) / 2 / Math.pow(2, EXPONENT);
+};
 
 sketch.draw = () => {
-  sketch.fill(0, 12);
-  sketch.rect(0, 0, sketch.width, sketch.height);
-  sketch.fill(255);
+  const now = performance.now();
+
   sketch.noStroke();
-  sketch.ellipse(sketch.mouseX, sketch.mouseY, 60, 60);
+  sketch.rect(0, 0, sketch.width, sketch.height);
+  sketch.stroke(0);
+  sketch.strokeWeight(WEIGHT);
 
-  pg.background(51);
-  pg.noFill();
-  pg.stroke(255);
-  pg.ellipse(sketch.mouseX - 150, sketch.mouseY - 75, 60, 60);
-
-  //Draw the offscreen buffer to the screen with image()
-  sketch.image(pg, 150, 75);
-} `;
+  for (let i = 0; i < TOTAL; i++) {
+    let n = 1 - i / TOTAL;
+    sketch.circle(
+      sketch.width / 2,
+      sketch.height / 2,
+      Math.sin((2 * Math.PI * (performance.now() % MODULO)) / MODULO) *
+        Math.pow(1 + n, EXPONENT) *
+        factor,
+    );
+  }
+};`;
 
 class Demo extends React.Component {
   canvasRef = React.createRef<HTMLDivElement>();
@@ -80,6 +91,7 @@ class Demo extends React.Component {
   }
 
   updateP5 = debounce(code => {
+    localStorage.setItem('code', code);
     const el = this.canvasRef.current;
     if (this.p5Instance) {
       this.p5Instance.remove();
