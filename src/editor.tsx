@@ -166,14 +166,15 @@ export default class Editor extends React.Component<
         !t.isTemplateLiteral(node);
 
       if (isExpressionOrBlock && ['(', '[', '{'].includes(key)) {
+        const wrapEnd = start == end && start != node.end ? node.end : end;
         this.updateCode(
           {
             code:
               code.slice(0, start) +
               key +
-              (key == '{' ? '' : code.slice(start, end)) +
+              (key == '{' ? '' : code.slice(start, wrapEnd)) +
               { '(': ')', '[': ']', '{': '}' }[key] +
-              code.slice(end),
+              code.slice(wrapEnd),
             cursor: start + 1
           },
           { prettify: false }
