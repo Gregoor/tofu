@@ -387,10 +387,32 @@ export default class Editor extends React.Component<
         this.moveCursor(null);
         return;
       }
+    }
 
-      if (!ast) {
-        return true;
-      }
+    const direction = {
+      ArrowLeft: 'LEFT',
+      ArrowRight: 'RIGHT',
+      ArrowUp: 'UP',
+      ArrowDown: 'DOWN'
+    }[key];
+    if (direction && ast) {
+      this.moveCursor(direction);
+      event.preventDefault();
+      return;
+    }
+
+    if (key == 'Home' || key == 'End' || (direction && !ast)) {
+      // don't judge me
+      setTimeout(() => {
+        this.updateCode({
+          cursor: [textArea.selectionStart, textArea.selectionEnd]
+        });
+        this.moveCursor(null);
+      });
+    }
+
+    if (!ast) {
+      return true;
     }
 
     if (key == 'Enter' && !t.isTemplateLiteral(node)) {
@@ -413,26 +435,6 @@ export default class Editor extends React.Component<
         },
         { prettify: false }
       );
-      return;
-    }
-
-    if (key == 'Home' || key == 'End') {
-      // don't judge me
-      setTimeout(() => {
-        this.updateCode({ cursor: textArea.selectionStart });
-        this.moveCursor(null);
-      });
-    }
-
-    const direction = {
-      ArrowLeft: 'LEFT',
-      ArrowRight: 'RIGHT',
-      ArrowUp: 'UP',
-      ArrowDown: 'DOWN'
-    }[key];
-    if (direction) {
-      this.moveCursor(direction);
-      event.preventDefault();
       return;
     }
   };
