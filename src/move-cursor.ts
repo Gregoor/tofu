@@ -65,7 +65,10 @@ let moveCursorX = function(
     t.isExpression(getNode(ast, nextStart)) &&
     !t.isArrowFunctionExpression(node)
   ) {
-    if (code[start] == ')' && recursionDepth === 0) {
+    if (
+      (code[nextStart] == '(' && recursionDepth === 0) ||
+      (code[start] == ')' && recursionDepth === 0)
+    ) {
       return nextStart;
     }
     if (code[nextStart] == ')' && recursionDepth > 0) {
@@ -101,7 +104,10 @@ let moveCursorX = function(
     return [start, start + node.operator.length];
   }
 
-  if ((t.isArrayExpression(node) || t.isObjectExpression(node)) && recursionDepth > 0) {
+  if (
+    (t.isArrayExpression(node) || t.isObjectExpression(node)) &&
+    recursionDepth > 0
+  ) {
     if ((node.elements || node.properties).length == 0) {
       return start;
     }
