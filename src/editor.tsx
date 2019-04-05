@@ -584,9 +584,13 @@ export default class Editor extends React.Component<
     }
 
     if (cursorFromAST) {
-      const cursor = spreadCursor(cursorFromAST(ast));
-      start = cursor[0];
-      end = cursor[1];
+      try {
+        const cursor = spreadCursor(cursorFromAST(ast));
+        start = cursor[0];
+        end = cursor[1];
+      } catch (e) {
+        console.error('cursor from AST failed:', e);
+      }
     }
 
     if (
