@@ -168,7 +168,7 @@ class Demo extends React.Component {
               previous attempt at tackling this
             </li>
             <li>
-              <a href="https://medium.com/@grgtwt/code-is-not-just-text-1082981ae27f">
+              <a href="https://dflate.io/code-is-not-just-text">
                 Code is not just text
               </a>{' '}
               - A blog post I wrote in early 2017, lining out my thinking at the
