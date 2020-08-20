@@ -1,7 +1,7 @@
 const generate = require('@babel/generator').default;
 const { parse } = require('@babel/parser');
 const t = require('@babel/types');
-const CodeFlask = require('codeflask').default;
+const CodeFlask = require('codeflask');
 import prettier from 'prettier/standalone';
 import * as React from 'react';
 import produce from 'immer';
@@ -27,7 +27,7 @@ import {
   ResizeHandle
 } from './ui';
 
-const babylon = require('prettier/parser-babylon');
+const babel = require('prettier/parser-babel');
 
 export default class Editor extends React.Component<
   { value: string; onChange?: (value: string) => any },
@@ -558,7 +558,7 @@ export default class Editor extends React.Component<
         try {
           const { formatted, cursorOffset } = prettier.formatWithCursor(code, {
             parser: 'babel',
-            plugins: [babylon],
+            plugins: [babel],
             cursorOffset: start,
             printWidth,
             trailingComma: 'all'

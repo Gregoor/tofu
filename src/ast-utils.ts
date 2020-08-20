@@ -23,7 +23,7 @@ export function nodeToRange(node) {
 }
 
 function* forEachProperty(node) {
-  for (let prop in node) {
+  for (const prop in node) {
     if (new Set(['__clone']).has(prop)) {
       continue;
     }
