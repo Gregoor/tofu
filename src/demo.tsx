@@ -103,11 +103,11 @@ class Demo extends React.Component {
   render() {
     return (
       <>
-        <CanvasContainer ref={this.canvasRef} />
+        {/*<CanvasContainer ref={this.canvasRef} />*/}
 
         <Spacer />
 
-        <Editor value={WELCOME_CODE} onChange={this.updateP5} />
+        <Editor initialValue={WELCOME_CODE} onChange={this.updateP5} />
 
         <Spacer />
 

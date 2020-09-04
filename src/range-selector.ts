@@ -1,11 +1,12 @@
-const t = require('@babel/types');
-import { getFocusPath, getNode } from './ast-utils';
-import { selectNode, spreadCursor } from './cursor-utils';
-import moveCursor, { Cursor, Direction } from './move-cursor';
+const t = require("@babel/types");
+import { getFocusPath, getNode } from "./ast-utils";
+import { findCursor } from "./cursor/find";
+import { Cursor, Direction } from "./cursor/types";
+import { selectNode, spreadCursor } from "./cursor/utils";
 
 function findIndexForCursor(collection, cursor: number | [number, number]) {
   const [start, end] = spreadCursor(cursor);
-  return collection.findIndex(node => node.start <= start && node.end >= end);
+  return collection.findIndex((node) => node.start <= start && node.end >= end);
 }
 
 export default class RangeSelector {
@@ -16,10 +17,8 @@ export default class RangeSelector {
       this.initialRange = cursor;
     }
 
-    if (direction == 'UP') {
-      for (const node of getFocusPath(ast, cursor[0])[0]
-        .slice()
-        .reverse()) {
+    if (direction == "UP") {
+      for (const node of getFocusPath(ast, cursor[0])[0].slice().reverse()) {
         const nextCursor = selectNode(node);
 
         if (cursor[0] > nextCursor[0] || cursor[1] < nextCursor[1]) {
@@ -27,7 +26,7 @@ export default class RangeSelector {
         }
       }
       return cursor;
-    } else if (direction == 'DOWN') {
+    } else if (direction == "DOWN") {
       let selectedNodeFound = false;
       for (const node of getFocusPath(ast, this.initialRange[0])[0]) {
         const nodeCursor = selectNode(node);
@@ -41,13 +40,11 @@ export default class RangeSelector {
       return cursor;
     }
 
-    const parents = getFocusPath(ast, cursor[0])[0]
-      .slice()
-      .reverse();
+    const parents = getFocusPath(ast, cursor[0])[0].slice().reverse();
     const node = getNode(ast, cursor[0]);
 
-    const isRight = direction == 'RIGHT';
-    const nextCursor = moveCursor(
+    const isRight = direction == "RIGHT";
+    const nextCursor = findCursor(
       ast,
       code,
       direction,
@@ -63,16 +60,16 @@ export default class RangeSelector {
     ) {
       return [
         Math.min(cursor[0], nextCursor[0]),
-        Math.max(cursor[1], nextCursor[1])
+        Math.max(cursor[1], nextCursor[1]),
       ];
     } else {
-      const collection = parents.find(node => Array.isArray(node));
+      const collection = parents.find((node) => Array.isArray(node));
       if (!collection) return cursor;
 
       const [initialIndex, startIndex, endIndex] = [
         this.initialRange,
         cursor[0],
-        cursor[1]
+        cursor[1],
       ].map(findIndexForCursor.bind(null, collection));
 
       let nextStartIndex, nextEndIndex;

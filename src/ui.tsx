@@ -1,4 +1,4 @@
-import styled, { css, createGlobalStyle } from 'styled-components';
+import styled, { css, createGlobalStyle } from "styled-components";
 
 export const GlobalStyle = createGlobalStyle`
   ::selection {
@@ -6,10 +6,10 @@ export const GlobalStyle = createGlobalStyle`
   }
 `;
 
-const borderRadius = '10px';
+const borderRadius = "10px";
 
 const font = css`
-  font-family: 'Roboto Mono', monospace;
+  font-family: "Roboto Mono", monospace;
 `;
 
 const codeFontSize = css`
@@ -43,8 +43,8 @@ export const ActionItem = styled.li<{ highlighted: boolean; hidden: boolean }>`
   ${codeFontSize};
   background: none;
   cursor: pointer;
-  ${props => props.highlighted && 'background: yellow;'};
-  ${props => props.hidden && 'display: none;'} &:hover {
+  ${(props) => props.highlighted && "background: yellow;"};
+  ${(props) => props.hidden && "display: none;"} &:hover {
     font-weight: bold;
   }
 `;
@@ -65,7 +65,7 @@ export const Container = styled.div`
   ${font};
 `;
 
-export const FlaskContainer = styled.div`
+export const CodeWrap = styled.div`
   border-radius: ${borderRadius} 0 0 ${borderRadius};
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-right: none;
@@ -73,11 +73,14 @@ export const FlaskContainer = styled.div`
   flex-direction: row;
   background: white;
   overflow: hidden;
+  min-width: 300px;
+  min-height: 300px;
 
   .codeflask.codeflask {
     position: relative;
     width: initial;
     height: initial;
+    min-width: 600px;
   }
 
   .codeflask textarea {

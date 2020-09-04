@@ -1,9 +1,10 @@
-import { getFocusPath, getNode, getParent } from './ast-utils';
-import { spreadCursor } from './cursor-utils';
+import { getFocusPath, getNode } from "../ast-utils";
+import { spreadCursor } from "./utils";
+import { Cursor, Direction } from "./types";
 
-const t = require('@babel/types');
+const t = require("@babel/types");
 
-const isCursorable = node =>
+const isCursorable = (node) =>
   [
     t.isStringLiteral,
     t.isTemplateLiteral,
@@ -11,34 +12,30 @@ const isCursorable = node =>
     t.isIdentifier,
     t.isNumericLiteral,
     t.isCallExpression,
-    t.isExpressionStatement
-  ].some(check => check(node));
-
-export type Cursor = [number, number];
+    t.isExpressionStatement,
+  ].some((check) => check(node));
 
 function withSpreadCursor<T>(fn: (...args: T[]) => number | Cursor) {
   return (...args: T[]) => spreadCursor(fn(...args));
 }
 
-let moveCursorX = function(
+let findCursorX = function (
   ast,
   code: string,
-  direction: 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null,
+  direction: "LEFT" | "RIGHT" | "UP" | "DOWN" | null,
   recursionDepth: number,
   start: number
 ): number | Cursor {
   const { isLeft, isRight, isDown, isUp } = {
-    isLeft: direction === 'LEFT',
-    isRight: direction === 'RIGHT',
-    isDown: direction === 'DOWN',
-    isUp: direction === 'UP'
+    isLeft: direction === "LEFT",
+    isRight: direction === "RIGHT",
+    isDown: direction === "DOWN",
+    isUp: direction === "UP",
   };
-  const [node, parent] = getFocusPath(ast, start)[0]
-    .slice()
-    .reverse();
+  const [node, parent] = getFocusPath(ast, start)[0].slice().reverse();
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
-  const moveOn = moveCursorX.bind(
+  const moveOn = findCursorX.bind(
     null,
     ast,
     code,
@@ -53,9 +50,9 @@ let moveCursorX = function(
     return ast.end;
   }
 
-  if (start !== nextStart && code[start] == '\n' && code[nextStart] == '\n') {
+  if (start !== nextStart && code[start] == "\n" && code[nextStart] == "\n") {
     if (isLeft && recursionDepth == 0) {
-      return moveCursorX(ast, code, null, recursionDepth, nextStart);
+      return findCursorX(ast, code, null, recursionDepth, nextStart);
     }
     return isRight ? nextStart : start;
   }
@@ -66,12 +63,12 @@ let moveCursorX = function(
     !t.isArrowFunctionExpression(node)
   ) {
     if (
-      (code[nextStart] == '(' && recursionDepth === 0) ||
-      (code[start] == ')' && recursionDepth === 0)
+      (code[nextStart] == "(" && recursionDepth === 0) ||
+      (code[start] == ")" && recursionDepth === 0)
     ) {
       return nextStart;
     }
-    if (code[nextStart] == ')' && recursionDepth > 0) {
+    if (code[nextStart] == ")" && recursionDepth > 0) {
       return start;
     }
   }
@@ -218,10 +215,10 @@ let moveCursorX = function(
   }
 
   if (!isHorizontal) {
-    const left = moveCursorX(ast, code, 'LEFT', 1, start);
-    const right = moveCursorX(ast, code, 'RIGHT', 1, start);
-    const leftBreak = code.slice(left[0], start).includes('\n');
-    const rightBreak = code.slice(start, right[0]).includes('\n');
+    const left = findCursorX(ast, code, "LEFT", 1, start);
+    const right = findCursorX(ast, code, "RIGHT", 1, start);
+    const leftBreak = code.slice(left[0], start).includes("\n");
+    const rightBreak = code.slice(start, right[0]).includes("\n");
     if (leftBreak) return right;
     if (rightBreak) return left;
     return Math.min(start - left[0], start - left[1]) <
@@ -233,25 +230,28 @@ let moveCursorX = function(
   return moveOn(nextStart);
 };
 
-moveCursorX = withSpreadCursor(moveCursorX);
+findCursorX = withSpreadCursor(findCursorX);
 
-export type Direction = 'LEFT' | 'RIGHT' | 'UP' | 'DOWN' | null;
-
-let moveCursor = function(ast, code, direction: Direction, start: number) {
-  if (direction != 'UP' && direction != 'DOWN') {
-    return moveCursorX(ast, code, direction, 0, start);
+let findCursorInternal = function (
+  ast,
+  code,
+  direction: Direction,
+  start: number
+) {
+  if (direction != "UP" && direction != "DOWN") {
+    return findCursorX(ast, code, direction, 0, start);
   }
 
-  const isUp = direction == 'UP';
+  const isUp = direction == "UP";
   const charCounts = code
-    .split('\n')
+    .split("\n")
     .map((s, i) => s.length + (i == 0 ? 0 : 1));
   const accuCharCounts = charCounts.reduce(
     (accu, n) => accu.concat((accu[accu.length - 1] || 0) + n),
     []
   );
 
-  const line = accuCharCounts.findIndex(n => n >= start);
+  const line = accuCharCounts.findIndex((n) => n >= start);
   const nextLine = line + (isUp ? -1 : 1);
   if (line == -1) {
     return ast.end;
@@ -271,7 +271,7 @@ let moveCursor = function(ast, code, direction: Direction, start: number) {
         : charCounts[line] + (line == 0 ? 1 : 0));
   }
 
-  return moveCursorX(ast, code, direction, 1, nextStart);
+  return findCursorX(ast, code, direction, 1, nextStart);
 };
 
-export default withSpreadCursor(moveCursor);
+export const findCursor = withSpreadCursor(findCursorInternal);

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "parcel --no-hmr src/index.html",
     "deploy": "git stash && git branch -f gh-pages && git checkout gh-pages && parcel build src/index.html --public-url /tofu/ && cp -r dist/* . && git add -A . && git commit -am. && git push origin gh-pages --force && git checkout master && git stash apply",
-    "test": "tsc --noEmit && jest"
+    "test": "tsc --noEmit && uvu -r ts-node/register",
+    "watch:test": "watchlist src -- uvu -r ts-node/register"
   },
   "dependencies": {
     "@babel/generator": "^7.11.4",
@@ -14,6 +15,7 @@
     "@babel/types": "^7.11.0",
     "@types/jest": "^26.0.10",
     "@types/memoize-one": "^5.1.2",
+    "@types/prettier": "^2.1.0",
     "@types/react": "^16.9.46",
     "@types/react-dom": "^16.9.8",
     "@types/redom": "^3.23.1",
@@ -28,11 +30,12 @@
     "styled-components": "^5.1.1"
   },
   "devDependencies": {
-    "@types/node": "^14.6.0",
-    "jest": "^26.4.1",
+    "@types/node": "^14.6.2",
     "parcel": "2.0.0-beta.1",
-    "ts-jest": "^26.2.0",
-    "typescript": "^4.0.2"
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.2",
+    "uvu": "^0.3.3",
+    "watchlist": "^0.2.3"
   },
   "engines": {
     "node": ">=8.12.0"
@@ -42,8 +45,5 @@
     "last 2 chrome versions",
     "last 1 edge version",
     "last 1 safari version"
-  ],
-  "jest": {
-    "preset": "ts-jest"
-  }
+  ]
 }

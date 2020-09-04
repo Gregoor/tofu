@@ -1,11 +1,12 @@
+// @ts-nocheck
 const generate = require('@babel/generator').default;
 const { parse } = require('@babel/parser');
 const t = require('@babel/types');
 import { getFocusPath, getNode, getNodeFromPath } from './ast-utils';
-import { selectKind, selectName, selectNode } from './cursor-utils';
+import { selectKind, selectName, selectNode } from './cursor/utils';
 import { replaceCode } from './code-utils';
 import { EditorState } from './edtior-state';
-import { Cursor, Direction } from './move-cursor';
+import { Cursor, Direction } from './cursor/find';
 import RangeSelector from './range-selector';
 
 function findLastIndex(nodes: any[], check: (n) => boolean) {

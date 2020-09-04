@@ -1,63 +1,68 @@
-const { parse } = require('@babel/parser');
-const fs = require('fs');
-const path = require('path');
-import { spreadCursor } from './cursor-utils';
-import moveCursor from './move-cursor';
+const fs = require("fs");
+const path = require("path");
+
+const { parse } = require("@babel/parser");
+import { test } from "uvu";
+import * as assert from "uvu/assert";
+
+import { spreadCursor } from "./utils";
+import { findCursor } from "./find";
 
 function testPath(ast, code, path, direction) {
   for (let [before, after] of path) {
     test(`${direction}: ${before} => ${after}`, () => {
-      expect(
-        moveCursor(ast, code, direction == 'null' ? null : direction, before)
-      ).toEqual(spreadCursor(after));
+      assert.equal(
+        findCursor(ast, code, direction == "null" ? null : direction, before),
+        spreadCursor(after)
+      );
     });
   }
 }
 
-const testCode = fs.readFileSync(path.join(__dirname, 'sample.js'), 'utf-8');
+const testCode = fs.readFileSync(path.join(__dirname, "sample.js"), "utf-8");
 
 type Path = (number | [number, number])[][];
 const tests = [
   [
-    'let i = 23;',
+    "let i = 23;",
     {
       X: [
         //
         [4, 5],
-        [5, 8]
+        [5, 8],
       ],
       RIGHT: [
         //
         [0, [0, 3]],
         [1, [0, 3]],
         [3, 4],
-        [11, 11]
+        [11, 11],
       ],
       LEFT: [
         //
         [0, 0],
-        [4, [0, 3]]
+        [4, [0, 3]],
       ],
       null: [
         //
         [0, [0, 3]],
         [1, [0, 3]],
         [2, [0, 3]],
-        [3, [0, 3]]
-      ]
-    }
+        [3, [0, 3]],
+      ],
+    },
   ],
   [
-    'const wat = true;',
+    "const wat = true;",
     {
       RIGHT: [
         //
         [0, [0, 5]],
         [5, 6],
         [5, 6],
-        [9, [12, 16]]
-      ]
-    }
+        [9, [12, 16]],
+      ],
+    },
   ],
   [
     "23 > 'wat'",
@@ -65,14 +70,14 @@ const tests = [
       RIGHT: [
         //
         [2, [3, 4]],
-        [4, 6]
+        [4, 6],
       ],
       LEFT: [
         //
         [3, 2],
-        [6, [3, 4]]
-      ]
-    }
+        [6, [3, 4]],
+      ],
+    },
   ],
   [
     "'you' > 'me'",
@@ -81,68 +86,68 @@ const tests = [
         //
         [4, 5],
         [5, [6, 7]],
-        [7, 9]
+        [7, 9],
       ],
       LEFT: [
         //
-        [6, 5]
-      ]
-    }
+        [6, 5],
+      ],
+    },
   ],
   [
-    'let a = [1, 2, 3] + false;',
+    "let a = [1, 2, 3] + false;",
     {
       RIGHT: [
         //
         [5, 9],
         [16, 17],
-        [17, [18, 19]]
+        [17, [18, 19]],
       ],
       LEFT: [
         //
         [17, 16],
-        [18, 17]
-      ]
-    }
+        [18, 17],
+      ],
+    },
   ],
   [
-    'true + false',
+    "true + false",
     {
       RIGHT: [
         //
-        [4, [5, 6]]
-      ]
-    }
+        [4, [5, 6]],
+      ],
+    },
   ],
   [
-    'a || b',
+    "a || b",
     {
       RIGHT: [
         //
-        [1, [2, 4]]
-      ]
-    }
+        [1, [2, 4]],
+      ],
+    },
   ],
   [
-    'a[0];',
+    "a[0];",
     {
       X: [
         //
         [2, 3],
-        [3, 4]
-      ]
-    }
+        [3, 4],
+      ],
+    },
   ],
   [
-    ['let i;', '', '', 'let x;'].join('\n'),
+    ["let i;", "", "", "let x;"].join("\n"),
     {
       RIGHT: [
         //
         [5, 7],
         [7, 8],
-        [8, [9, 12]]
-      ]
-    }
+        [8, [9, 12]],
+      ],
+    },
   ],
   [
     `if (t) {
@@ -152,141 +157,141 @@ const tests = [
       X: [
         //
         [8, 10],
-        [10, 11]
+        [10, 11],
       ],
       DOWN: [
         //
         [8, 10],
-        [10, 11]
+        [10, 11],
       ],
       UP: [
         //
         [10, 0],
-        [11, 10]
-      ]
-    }
+        [11, 10],
+      ],
+    },
   ],
   [
-    '[];',
+    "[];",
     {
       RIGHT: [
         //
-        [0, 1]
-      ]
-    }
+        [0, 1],
+      ],
+    },
   ],
   [
-    '[1, , 2];',
+    "[1, , 2];",
     {
       X: [
         //
         [2, 4],
-        [4, 6]
-      ]
-    }
+        [4, 6],
+      ],
+    },
   ],
   [
-    '[, ,];',
+    "[, ,];",
     {
       X: [
         //
         [0, 1],
         [1, 3],
-        [3, 5]
-      ]
-    }
+        [3, 5],
+      ],
+    },
   ],
   [
-    'const a = [\n' +
+    "const a = [\n" +
       '  "a very very long line of text resulting in the array being split",\n' +
-      '  asd,\n' +
-      '];\n',
+      "  asd,\n" +
+      "];\n",
     {
       UP: [
         //
-        [84, 15]
-      ]
-    }
+        [84, 15],
+      ],
+    },
   ],
   [
-    '{};',
+    "{};",
     {
       RIGHT: [
         //
-        [0, 1]
-      ]
-    }
+        [0, 1],
+      ],
+    },
   ],
   [
-    'for (;;) {}',
+    "for (;;) {}",
     {
       X: [
         //
         [0, 5],
         [5, 6],
         [6, 7],
-        [7, 10]
-      ]
-    }
+        [7, 10],
+      ],
+    },
   ],
   [
-    '(1);',
+    "(1);",
     {
       X: [
         //
         [0, 1],
         [1, 2],
-        [2, 3]
-      ]
-    }
+        [2, 3],
+      ],
+    },
   ],
   [
-    'n = (1);',
+    "n = (1);",
     {
       X: [
         //
-        [6, 7]
-      ]
-    }
+        [6, 7],
+      ],
+    },
   ],
   [
-    '(1) + (2);',
+    "(1) + (2);",
     {
       X: [
         //
         [3, [4, 5]],
-        [[4, 5], 6]
-      ]
-    }
+        [[4, 5], 6],
+      ],
+    },
   ],
   [
-    '() => null',
+    "() => null",
     {
       X: [
         //
         [0, 1],
-        [1, [6, 10]]
-      ]
-    }
+        [1, [6, 10]],
+      ],
+    },
   ],
   [
-    'const n = () => {\n' + '  asd;\n' + '  return;\n' + '};\n',
+    "const n = () => {\n" + "  asd;\n" + "  return;\n" + "};\n",
     {
       X: [
         //
-        [24, 33]
-      ]
-    }
+        [24, 33],
+      ],
+    },
   ],
   [
-    '1 + (1)',
+    "1 + (1)",
     {
       X: [
         //
         [[2, 3], 4],
-        [4, 5]
-      ]
-    }
+        [4, 5],
+      ],
+    },
   ],
   [
     testCode,
@@ -298,7 +303,7 @@ const tests = [
         [19, 23],
         [55, 56],
         [85, 87],
-        [150, 153]
+        [150, 153],
       ],
       LEFT: [
         //
@@ -306,7 +311,7 @@ const tests = [
         [73, 70],
         [87, 85],
         [92, 87],
-        [153, 150]
+        [153, 150],
       ],
       UP: [
         //
@@ -316,23 +321,23 @@ const tests = [
         [43, 16],
         [55, 26],
         [74, 41],
-        [93, 87]
+        [93, 87],
       ],
       DOWN: [
         //
         [10, 24],
         [104, 125],
-        [105, 126]
-      ]
-    }
-  ]
+        [105, 126],
+      ],
+    },
+  ],
 ].map(
   ([code, paths]) =>
-    [code.replace(/\r/g, ''), paths] as [string, { [direction: string]: Path }]
+    [code.replace(/\r/g, ""), paths] as [string, { [direction: string]: Path }]
 );
 
 for (const [code, paths] of tests) {
-  describe(code, () => {
+  test(code, () => {
     const ast = parse(code);
     for (const [direction, path] of Object.entries(paths).reduce(
       (a, [direction, path]) => [
@@ -340,21 +345,21 @@ for (const [code, paths] of tests) {
         ...({
           X: [
             [
-              'RIGHT',
+              "RIGHT",
               path.map(([from, to]) => [
                 Array.isArray(from) ? from[1] : from,
-                to
-              ])
+                to,
+              ]),
             ],
             [
-              'LEFT',
+              "LEFT",
               path.map(([to, from]) => [
                 Array.isArray(from) ? from[0] : from,
-                to
-              ])
-            ]
-          ]
-        }[direction] || [[direction, path]])
+                to,
+              ]),
+            ],
+          ],
+        }[direction] || [[direction, path]]),
       ],
       []
     )) {
@@ -362,3 +367,5 @@ for (const [code, paths] of tests) {
     }
   });
 }
+
+test.run();

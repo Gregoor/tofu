@@ -1,7 +1,7 @@
-import { Cursor } from './move-cursor';
+import { Cursor } from './types';
 
 export function spreadCursor(cursor: number | Cursor): [number, number] {
-  return Array.isArray(cursor) ? cursor : [cursor, cursor];
+  return Array.isArray(cursor) ? (cursor as Cursor) : [cursor, cursor];
 }
 
 export function selectNode(ancestor): Cursor {
