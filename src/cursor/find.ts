@@ -1,8 +1,9 @@
-import { getFocusPath, getNode } from "../ast-utils";
-import { spreadCursor } from "./utils";
-import { Cursor, Direction } from "./types";
+import * as t from "@babel/types";
 
-const t = require("@babel/types");
+import { getNode, getParentsAndPathTD } from "../ast-utils";
+import { CodeWithAST } from "../history";
+import { Direction, Range } from "../utils";
+import { selectNode, selectOperator } from "./utils";
 
 const isCursorable = (node) =>
   [
@@ -11,50 +12,139 @@ const isCursorable = (node) =>
     t.isTemplateElement,
     t.isIdentifier,
     t.isNumericLiteral,
-    t.isCallExpression,
     t.isExpressionStatement,
   ].some((check) => check(node));
 
-function withSpreadCursor<T>(fn: (...args: T[]) => number | Cursor) {
-  return (...args: T[]) => spreadCursor(fn(...args));
+function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
+  const emptyElementIndexes = [];
+  const elementEnds: number[] = [];
+  for (let i = 0; i < node.elements.length; i++) {
+    const element = node.elements[i];
+    if (element) {
+      elementEnds.push(element.end);
+      continue;
+    }
+
+    emptyElementIndexes.push(i);
+    elementEnds.push(i == 0 ? node.start + 1 : elementEnds[i - 1] + 2);
+  }
+
+  return elementEnds
+    .filter((n, i) => emptyElementIndexes.includes(i))
+    .includes(start);
 }
 
-let findCursorX = function (
-  ast,
-  code: string,
+const NODE_SLOT_CHECKERS: Partial<
+  {
+    [T in t.Node["type"]]: (
+      node: Extract<t.Node, { type: T }>,
+      start: number,
+      codeWithAST: CodeWithAST
+    ) => boolean | Range;
+  }
+> = {
+  BooleanLiteral: selectNode,
+  NullLiteral: selectNode,
+  StringLiteral: (node, start) => start !== node.start,
+
+  BinaryExpression: (node, start, { code }) => {
+    const operator = selectOperator(node, code);
+    return operator.includes(start) ? operator : false;
+  },
+  LogicalExpression: (node: t.LogicalExpression, start, { code }) => {
+    const operator = selectOperator(node, code);
+    return operator.includes(start) ? operator : false;
+  },
+
+  ArrayExpression: (node, start) => {
+    if (
+      (node.elements.length == 0 && start == node.start + 1) ||
+      start == node.end
+    ) {
+      return true;
+    }
+    return checkForEmptyElements(node, start);
+  },
+  ObjectExpression: (node, start) =>
+    (node.properties.length == 0 && start == node.start + 1) ||
+    start == node.end,
+  MemberExpression: (node, start) => node.computed && start == node.end,
+  ArrowFunctionExpression: (node: t.ArrowFunctionExpression, start) =>
+    node.params.length == 0 && node.start + 1 == start,
+
+  // VariableDeclaration: (node) =>
+  //   new Range(node.start, node.start + node.kind.length),
+
+  BlockStatement: (node, start) =>
+    node.body.length == 0 && node.start + 1 == start,
+  IfStatement(node, start, { code }) {
+    const { consequent, alternate } = node;
+    return (
+      alternate &&
+      consequent.end +
+        code.slice(consequent.end, alternate.start).indexOf("else") +
+        "else".length ==
+        start
+    );
+  },
+  ForStatement(node, start) {
+    const init = node.init ? node.init.end : node.start + 5;
+    const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
+    const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
+
+    return (
+      (!node.init && start == init) ||
+      (!node.test && start == test) ||
+      (!node.update && start == update)
+    );
+  },
+  ReturnStatement: (node, start) => !node.argument && node.end - 1 == start,
+};
+
+function findSlot(
+  node: t.Node,
+  start: number,
+  codeWithAST: CodeWithAST
+): null | Range {
+  const check = NODE_SLOT_CHECKERS[node.type];
+  if (!check) {
+    return null;
+  }
+  const slot = check(node as any, start, codeWithAST);
+  return slot ? (slot instanceof Range ? slot : new Range(start)) : null;
+}
+
+function findCursorX(
+  codeWithAST: CodeWithAST,
   direction: "LEFT" | "RIGHT" | "UP" | "DOWN" | null,
-  recursionDepth: number,
+  isAtInitial: boolean,
   start: number
-): number | Cursor {
+): Range {
+  const { ast, code } = codeWithAST;
   const { isLeft, isRight, isDown, isUp } = {
     isLeft: direction === "LEFT",
     isRight: direction === "RIGHT",
     isDown: direction === "DOWN",
     isUp: direction === "UP",
   };
-  const [node, parent] = getFocusPath(ast, start)[0].slice().reverse();
+  const [node, parent] = getParentsAndPathTD(ast, start)[0].slice().reverse();
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
-  const moveOn = findCursorX.bind(
-    null,
-    ast,
-    code,
-    direction,
-    recursionDepth + 1
-  );
+  const moveOn = (newStart: number) =>
+    findCursorX(codeWithAST, direction, false, newStart);
 
   if (ast.start > start) {
-    return ast.start;
+    return new Range(ast.start);
   }
   if (ast.end < start) {
-    return ast.end;
+    return new Range(ast.end);
   }
 
   if (start !== nextStart && code[start] == "\n" && code[nextStart] == "\n") {
-    if (isLeft && recursionDepth == 0) {
-      return findCursorX(ast, code, null, recursionDepth, nextStart);
+    if (isLeft && isAtInitial) {
+      return findCursorX(codeWithAST, null, false, nextStart);
     }
-    return isRight ? nextStart : start;
+    return new Range(isRight ? nextStart : start);
   }
 
   if (
@@ -63,185 +153,80 @@ let findCursorX = function (
     !t.isArrowFunctionExpression(node)
   ) {
     if (
-      (code[nextStart] == "(" && recursionDepth === 0) ||
-      (code[start] == ")" && recursionDepth === 0)
+      (code[nextStart] == "(" && isAtInitial) ||
+      (code[start] == ")" && isAtInitial)
     ) {
-      return nextStart;
+      return new Range(nextStart);
     }
-    if (code[nextStart] == ")" && recursionDepth > 0) {
-      return start;
+    if (code[nextStart] == ")" && !isAtInitial) {
+      return new Range(start);
     }
   }
 
   if (t.isVariableDeclaration(node)) {
     const kindLength = node.kind.length;
     if (isRight && start - node.start == kindLength) {
-      return start + additive;
+      return new Range(start + additive);
     }
     if (start > node.start && start <= node.start + kindLength) {
-      return [node.start, node.start + kindLength];
+      return new Range(node.start, node.start + kindLength);
     }
   }
 
-  if (
-    recursionDepth > 0 &&
-    (t.isBooleanLiteral(node) || t.isNullLiteral(node)) &&
-    ((isRight && start == node.start) || (isLeft && start == node.end))
-  ) {
-    return [node.start, node.end];
-  }
-
-  if (
-    (t.isBinaryExpression(node) || t.isLogicalExpression(node)) &&
-    ((isRight && start == node.left.end + 1) ||
-      (isLeft && start == node.right.start - 1))
-  ) {
-    const start =
-      node.left.end + code.slice(node.left.end).indexOf(node.operator);
-    return [start, start + node.operator.length];
-  }
-
-  if (
-    (t.isArrayExpression(node) || t.isObjectExpression(node)) &&
-    recursionDepth > 0
-  ) {
-    if ((node.elements || node.properties).length == 0) {
-      return start;
+  if (!isAtInitial) {
+    const slot = findSlot(node, start, codeWithAST);
+    if (slot) {
+      return slot;
     }
 
-    if (start == node.end) {
-      return start;
-    }
-  }
-
-  if (
-    (t.isArrayExpression(node) || t.isArrayExpression(parent)) &&
-    recursionDepth > 0
-  ) {
-    const arrayNode = t.isArrayExpression(node) ? node : parent;
-    const emptyElementIndexes = [];
-    const elementEnds = [];
-    for (let i = 0; i < arrayNode.elements.length; i++) {
-      const element = arrayNode.elements[i];
-      if (element) {
-        elementEnds.push(element.end);
-        continue;
-      }
-
-      emptyElementIndexes.push(i);
-      elementEnds.push(i == 0 ? arrayNode.start + 1 : elementEnds[i - 1] + 2);
+    if (t.isArrayExpression(parent) && checkForEmptyElements(parent, start)) {
+      return new Range(start);
     }
 
-    if (
-      elementEnds
-        .filter((n, i) => emptyElementIndexes.includes(i))
-        .includes(start)
-    ) {
-      return start;
+    if (!Array.isArray(node) && start == node.end) {
+      return new Range(start);
     }
-  }
-
-  if (
-    t.isMemberExpression(node) &&
-    node.computed &&
-    recursionDepth > 0 &&
-    start == node.end
-  ) {
-    return start;
-  }
-
-  if (t.isForStatement(node) && recursionDepth > 0) {
-    const init = node.init ? node.init.end : node.start + 5;
-    const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
-    const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
-
-    if (
-      (!node.init && start == init) ||
-      (!node.test && start == test) ||
-      (!node.update && start == update)
-    ) {
-      return start;
-    }
-  }
-
-  if (
-    t.isArrowFunctionExpression(node) &&
-    node.params.length == 0 &&
-    recursionDepth > 0 &&
-    start == node.start + 1
-  ) {
-    return start;
-  }
-
-  if (
-    t.isReturnStatement(node) &&
-    recursionDepth > 0 &&
-    !node.argument &&
-    (isRight || start == node.end - 1)
-  ) {
-    return node.end - 1;
-  }
-
-  const shouldEndBlock =
-    t.isBlockStatement(node) &&
-    ((isRight && start !== node.end) || recursionDepth > 0);
-
-  if (t.isBlockStatement(node) && node.body.length == 0) {
-    const blockStart = node.start + 1;
-    return start >= blockStart &&
-      !(isLeft && start == node.end && recursionDepth == 0)
-      ? shouldEndBlock
-        ? node.end
-        : moveOn(isRight || isDown ? node.end + 1 : node.start - 1)
-      : blockStart;
-  }
-
-  if (start == node.end && shouldEndBlock) {
-    return node.end;
   }
 
   // Only skip over the starting quote, we might want to call functions on that
   // string so we need the cursor after the closing quote
   if (t.isStringLiteral(node) && start == node.start) {
     if (start == nextStart) {
-      return start + 1;
+      return new Range(start + 1);
     }
     return moveOn(nextStart);
   }
   const isHorizontal = isLeft || isRight;
 
-  if (isCursorable(node) && (recursionDepth > 0 || !isHorizontal)) {
-    return start;
+  if (isCursorable(node) && (!isAtInitial || !isHorizontal)) {
+    return new Range(start);
   }
 
   if (!isHorizontal) {
-    const left = findCursorX(ast, code, "LEFT", 1, start);
-    const right = findCursorX(ast, code, "RIGHT", 1, start);
-    const leftBreak = code.slice(left[0], start).includes("\n");
-    const rightBreak = code.slice(start, right[0]).includes("\n");
-    if (leftBreak) return right;
-    if (rightBreak) return left;
-    return Math.min(start - left[0], start - left[1]) <
-      Math.min(right[0] - start, right[1] - start)
+    let left = findCursorX(codeWithAST, "LEFT", false, start);
+    let right = findCursorX(codeWithAST, "RIGHT", false, start);
+    const leftBreak = code.slice(left.end, start).includes("\n");
+    const rightBreak = code.slice(start + 1, right.start).includes("\n");
+    if (leftBreak) {
+      return right;
+    }
+    if (rightBreak) {
+      return left;
+    }
+    return Math.min(start - left.start, start - left.end) <
+      Math.min(right.start - start, right.end - start)
       ? left
       : right;
   }
 
   return moveOn(nextStart);
-};
+}
 
-findCursorX = withSpreadCursor(findCursorX);
-
-let findCursorInternal = function (
-  ast,
-  code,
-  direction: Direction,
-  start: number
-) {
-  if (direction != "UP" && direction != "DOWN") {
-    return findCursorX(ast, code, direction, 0, start);
-  }
-
+export function findCursorY(
+  code: string,
+  start: number,
+  direction: "UP" | "DOWN"
+): number {
   const isUp = direction == "UP";
   const charCounts = code
     .split("\n")
@@ -254,24 +239,30 @@ let findCursorInternal = function (
   const line = accuCharCounts.findIndex((n) => n >= start);
   const nextLine = line + (isUp ? -1 : 1);
   if (line == -1) {
-    return ast.end;
+    return code.length;
   }
   if (nextLine < 0) {
     return 0;
   }
 
-  let nextStart;
-  if (start - (accuCharCounts[line - 1] || 0) > charCounts[nextLine]) {
-    nextStart = accuCharCounts[nextLine];
-  } else {
-    nextStart =
-      start +
-      (isUp
-        ? -charCounts[nextLine] + (nextLine == 0 ? -1 : 0)
-        : charCounts[line] + (line == 0 ? 1 : 0));
-  }
+  return start - (accuCharCounts[line - 1] || 0) > charCounts[nextLine]
+    ? accuCharCounts[nextLine]
+    : start +
+        (isUp
+          ? -charCounts[nextLine] + (nextLine == 0 ? -1 : 0)
+          : charCounts[line] + (line == 0 ? 1 : 0));
+}
 
-  return findCursorX(ast, code, direction, 1, nextStart);
-};
-
-export const findCursor = withSpreadCursor(findCursorInternal);
+export const findCursor = (
+  codeWithAST: CodeWithAST,
+  direction: Direction,
+  start: number
+): Range =>
+  !direction || direction == "LEFT" || direction == "RIGHT"
+    ? findCursorX(codeWithAST, direction, true, start)
+    : findCursorX(
+        codeWithAST,
+        direction,
+        false,
+        findCursorY(codeWithAST.code, start, direction)
+      );

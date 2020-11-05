@@ -1,24 +1,18 @@
-import { CodeWithAST } from "../use-history";
-import { findCursor } from "./find";
-import { Cursor, Direction } from "./types";
-import { spreadCursor } from "./utils";
+import { CodeWithAST } from "../history";
+import { Direction, Range } from "../utils";
+import { findCursor, findCursorY } from "./find";
 
 function moveCursorWithAST(
-  { ast, code }: CodeWithAST,
-  [start, end]: Cursor,
+  codeWithAST: CodeWithAST,
+  { start, end }: Range,
   direction: Direction
-) {
-  // if (!ast) {
-  //   this.updateCode({});
-  //   return;
-  // }
-
-  let nextCursor;
+): Range {
+  let nextCursor: ReturnType<typeof moveCursorWithAST>;
   if (start != end) {
     if (direction == "LEFT") {
-      nextCursor = start;
+      nextCursor = new Range(start);
     } else if (direction == "RIGHT") {
-      nextCursor = end;
+      nextCursor = new Range(end);
     }
   }
 
@@ -26,35 +20,44 @@ function moveCursorWithAST(
 
   if (!nextCursor) {
     nextCursor = findCursor(
-      ast,
-      code,
+      codeWithAST,
       direction,
       (direction == "DOWN" ? Math.max : Math.min)(start, end)
     );
   }
 
-  return spreadCursor(nextCursor);
+  return nextCursor;
 }
 
 function moveCursorWithoutAST(
   code: string,
-  [start]: Cursor,
+  { start }: Range,
   direction: Direction
 ) {
   if (!direction) {
-    return spreadCursor(start);
+    return new Range(start);
   }
-  const newStart = { LEFT: start - 1, RIGHT: start + 1, UP: 0, DOWN: 0 }[
-    direction
-  ];
-  return spreadCursor(Math.max(Math.min(newStart, code.length), 0));
+
+  const newStart = (() => {
+    switch (direction) {
+      case "LEFT":
+        return start - 1;
+      case "RIGHT":
+        return start + 1;
+      case "UP":
+      case "DOWN":
+        return findCursorY(code, start, direction);
+    }
+  })();
+
+  return new Range(Math.max(Math.min(newStart, code.length), 0));
 }
 
 export function moveCursor(
   cursorWithAST: CodeWithAST,
-  cursor: Cursor,
+  cursor: Range,
   direction: Direction
-) {
+): Range {
   return cursorWithAST.ast
     ? moveCursorWithAST(cursorWithAST, cursor, direction)
     : moveCursorWithoutAST(cursorWithAST.code, cursor, direction);

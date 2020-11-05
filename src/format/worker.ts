@@ -24,8 +24,9 @@ const format = ({
 };
 
 export type FormatParameters = Parameters<typeof format>[0];
-export type FormatResult = null | ReturnType<typeof format>;
+export type FormatResult = ReturnType<typeof format>;
 
 onmessage = (event: MessageEvent<FormatParameters>) => {
-  (postMessage as Worker["postMessage"])(format(event.data));
+  const formatResult = format(event.data);
+  (postMessage as Worker["postMessage"])(formatResult);
 };

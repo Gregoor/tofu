@@ -1,15 +1,15 @@
-import * as React from 'react';
-import { render } from 'react-dom';
-import styled from 'styled-components';
-import Editor from './editor';
-import { Key, Keyword } from './ui';
+import * as React from "react";
+import { render } from "react-dom";
+import styled from "styled-components";
+import Editor from "./editor";
+import { Key, Keyword } from "./ui";
 
 function debounce(func, wait) {
   let timeout;
-  return function() {
+  return function () {
     const context = this;
     const args = arguments;
-    const later = function() {
+    const later = function () {
       timeout = null;
       func.apply(context, args);
     };
@@ -25,7 +25,7 @@ const Card = styled.section`
   padding: 20px;
   max-width: 600px;
   background: white;
-  font-family: 'Open Sans', sans-serif;
+  font-family: "Open Sans", sans-serif;
 `;
 
 const Spacer = styled.div`
@@ -39,7 +39,7 @@ const CanvasContainer = styled.div`
 `;
 
 const WELCOME_CODE =
-  localStorage.getItem('code') ||
+  localStorage.getItem("code") ||
   `// Demo using p5js (https://p5js.org)
 const TOTAL = 42;
 const EXPONENT = 23;
@@ -79,31 +79,31 @@ class Demo extends React.Component {
   p5Instance = null;
 
   componentDidMount() {
-    const script = document.createElement('script');
+    const script = document.createElement("script");
 
     script.onload = () => {
       this.updateP5(WELCOME_CODE);
     };
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.js';
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.js";
     script.async = true;
 
     document.body.appendChild(script);
   }
 
-  updateP5 = debounce(code => {
-    localStorage.setItem('code', code);
+  updateP5 = debounce((code) => {
+    localStorage.setItem("code", code);
     const el = this.canvasRef.current;
     if (this.p5Instance) {
       this.p5Instance.remove();
-      el.innerHTML = '';
+      el.innerHTML = "";
     }
-    this.p5Instance = new (window as any).p5(new Function('sketch', code), el);
+    // this.p5Instance = new (window as any).p5(new Function("sketch", code), el);
   }, 1000);
 
   render() {
     return (
       <>
-        {/*<CanvasContainer ref={this.canvasRef} />*/}
+        <CanvasContainer ref={this.canvasRef} />
 
         <Spacer />
 
@@ -114,10 +114,10 @@ class Demo extends React.Component {
         <Card>
           <h3 style={{ marginTop: 0 }}>What is this?</h3>
           <p>
-            Tofu is a code editor that frees you from making meaningless changes
-            to your code, that is you don't have to manage syntax or code style.
-            Thus common keys can trigger more meaningful actions. Here are a few
-            examples:
+            Tofu is a fluid code editor that frees you from making meaningless
+            changes to your code, that is you don't have to manage syntax or
+            code style. Thus keypresses can trigger more meaningful actions.
+            Here are a few examples:
           </p>
           <ul>
             <li>
@@ -125,7 +125,7 @@ class Demo extends React.Component {
               edits.
             </li>
             <li>
-              Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{' '}
+              Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{" "}
               declaration requires only a single keypress.
             </li>
             <li>
@@ -170,7 +170,7 @@ class Demo extends React.Component {
             <li>
               <a href="https://dflate.io/code-is-not-just-text">
                 Code is not just text
-              </a>{' '}
+              </a>{" "}
               - A blog post I wrote in early 2017, lining out my thinking at the
               time about code editing
             </li>
@@ -181,4 +181,4 @@ class Demo extends React.Component {
   }
 }
 
-render(<Demo />, document.querySelector('#root'));
+render(<Demo />, document.querySelector("#root"));

@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 
-import { Cursor } from "./cursor/types";
+import { EditorState } from "./history";
 import { CodeWrap } from "./ui";
 
 function useEventListener(element, type: string, listener: Function) {
@@ -23,14 +23,19 @@ function useEventListener(element, type: string, listener: Function) {
 }
 
 export default function CodeTextArea({
-  value,
-  cursor: [start, end],
+  editorState: {
+    codeWithAST,
+    cursor: { start, end },
+    formattedForPrintWidth,
+  },
   cols,
   disabled,
   onKeyDown,
   onInput,
   onClick,
-}: HTMLProps<"textarea"> & { cursor: Cursor }) {
+  onCut,
+  onPaste,
+}: Omit<HTMLProps<"textarea">, "value"> & { editorState: EditorState }) {
   const rootRef = useRef(null);
   const [flask, setFlask] = useState(null);
 
@@ -54,13 +59,17 @@ export default function CodeTextArea({
   }, [flask, start, end]);
 
   useEffect(() => {
-    setFlask(new CodeFlask(rootRef.current, { language: "js" }));
+    setFlask(
+      new CodeFlask(rootRef.current, { language: "js", handleTabs: false })
+    );
   }, [rootRef]);
 
   useEffect(() => {
-    flask?.updateCode(value);
-    updateSelection();
-  }, [flask, value]);
+    if (flask && (!codeWithAST.ast || formattedForPrintWidth !== null)) {
+      flask.updateCode(codeWithAST.code);
+      updateSelection();
+    }
+  }, [flask, codeWithAST, formattedForPrintWidth]);
 
   useEffect(() => {
     updateSelection();
@@ -87,6 +96,8 @@ export default function CodeTextArea({
   useEventListener(flask?.elTextarea, "keydown", onKeyDown);
   useEventListener(flask?.elTextarea, "input", onInput);
   useEventListener(flask?.elTextarea, "click", onClick);
+  useEventListener(flask?.elTextarea, "cut", onCut);
+  useEventListener(flask?.elTextarea, "paste", onPaste);
 
   return <CodeWrap ref={rootRef} />;
 }

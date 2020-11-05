@@ -1,37 +1,47 @@
 import { useCallback, useState } from "react";
+
 import { FormatParameters, FormatResult } from "./worker";
 
-const initializeWorker = () => new Worker("./worker.ts");
-
-type CancellablePromise<T> = Promise<T> & { cancel(): void };
+const loadWorker = () => new Worker("./worker.ts");
 
 export function useFormat() {
-  const [worker, setWorker] = useState(initializeWorker);
+  const [isWorking, setIsWorking] = useState(false);
+  const [worker, setWorker] = useState(loadWorker);
 
   return useCallback(
     (params: FormatParameters) => {
       const promise: any = new Promise((resolve, reject) => {
-        worker.onmessage = (message) => {
-          worker.onmessage = undefined;
-          worker.onmessageerror = undefined;
-          resolve(message.data);
-        };
-        worker.onmessageerror = (message) => {
-          worker.onmessage = undefined;
-          worker.onmessageerror = undefined;
+        // TODO: BUG!!! Some messages are not reaching the promise
+        function handleMessage(message) {
+          removeHandlers();
+          resolve(message.data as FormatResult);
+        }
+        function handleMessageError(message) {
+          removeHandlers();
           reject(message.data);
-        };
+        }
+        function removeHandlers() {
+          setIsWorking(false);
+          worker.removeEventListener("message", handleMessage);
+          worker.removeEventListener("messageerror", handleMessageError);
+        }
 
+        worker.addEventListener("message", handleMessage);
+        worker.addEventListener("messageerror", handleMessageError);
+        setIsWorking(true);
         worker.postMessage(params);
       });
 
-      promise.cancel = () => {
-        worker.terminate();
-        setWorker(initializeWorker);
-      };
-
-      return promise as CancellablePromise<FormatResult>;
+      return [
+        promise,
+        () => {
+          if (isWorking) {
+            worker.terminate();
+            setWorker(loadWorker);
+          }
+        },
+      ];
     },
-    [worker]
+    [isWorking, worker]
   );
 }

@@ -1,28 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 
-const { parse } = require("@babel/parser");
-import { test } from "uvu";
+import { suite, test } from "uvu";
 import * as assert from "uvu/assert";
 
-import { spreadCursor } from "./utils";
+import { CodeWithAST } from "../history";
 import { findCursor } from "./find";
-
-function testPath(ast, code, path, direction) {
-  for (let [before, after] of path) {
-    test(`${direction}: ${before} => ${after}`, () => {
-      assert.equal(
-        findCursor(ast, code, direction == "null" ? null : direction, before),
-        spreadCursor(after)
-      );
-    });
-  }
-}
 
 const testCode = fs.readFileSync(path.join(__dirname, "sample.js"), "utf-8");
 
-type Path = (number | [number, number])[][];
-const tests = [
+const tests = ([
   [
     "let i = 23;",
     {
@@ -172,6 +159,29 @@ const tests = [
     },
   ],
   [
+    `if (t) {
+} else {
+  fn();
+}
+`,
+    {
+      X: [
+        //
+        [10, 16],
+      ],
+      DOWN: [
+        //
+        [10, 20],
+        [20, 27],
+      ],
+      UP: [
+        //
+        [27, 20],
+        [20, 10],
+      ],
+    },
+  ],
+  [
     "[];",
     {
       RIGHT: [
@@ -294,33 +304,41 @@ const tests = [
     },
   ],
   [
+    "someLongFunctionName(\n" +
+      "  firstParameter,\n" +
+      "  secondParameter,\n" +
+      "  thirdParameter,\n" +
+      ");\n",
+    { X: [[20, 24]] },
+  ],
+  [
     testCode,
     {
+      X: [
+        //
+        [19, 23],
+        // [85, 87],
+        [150, 153],
+      ],
       RIGHT: [
         //
         [0, [0, 5]],
         [12, 16],
-        [19, 23],
         [55, 56],
-        [85, 87],
-        [150, 153],
       ],
       LEFT: [
         //
-        [23, 19],
         [73, 70],
-        [87, 85],
         [92, 87],
-        [153, 150],
       ],
       UP: [
         //
-        [4, 0],
+        // [4, 0],
         [24, 10],
         [28, 12],
         [43, 16],
         [55, 26],
-        [74, 41],
+        // [74, 41],
         [93, 87],
       ],
       DOWN: [
@@ -331,41 +349,52 @@ const tests = [
       ],
     },
   ],
-].map(
-  ([code, paths]) =>
-    [code.replace(/\r/g, ""), paths] as [string, { [direction: string]: Path }]
-);
+] as const).map(([code, paths]) => [code.replace(/\r/g, ""), paths] as const);
 
 for (const [code, paths] of tests) {
-  test(code, () => {
-    const ast = parse(code);
-    for (const [direction, path] of Object.entries(paths).reduce(
-      (a, [direction, path]) => [
-        ...a,
-        ...({
-          X: [
-            [
-              "RIGHT",
-              path.map(([from, to]) => [
-                Array.isArray(from) ? from[1] : from,
-                to,
-              ]),
-            ],
-            [
-              "LEFT",
-              path.map(([to, from]) => [
-                Array.isArray(from) ? from[0] : from,
-                to,
-              ]),
-            ],
+  const testSuite = suite(code);
+  for (const [direction, path] of Object.entries(paths).reduce(
+    (a, [direction, path]) => [
+      ...a,
+      ...({
+        X: [
+          [
+            "RIGHT",
+            path.map(([from, to]) => [
+              Array.isArray(from) ? from[1] : from,
+              to,
+            ]),
           ],
-        }[direction] || [[direction, path]]),
-      ],
-      []
-    )) {
-      testPath(ast, code, path, direction);
+          [
+            "LEFT",
+            path.map(([to, from]) => [
+              Array.isArray(from) ? from[0] : from,
+              to,
+            ]),
+          ],
+        ],
+      }[direction] || [[direction, path]]),
+    ],
+    []
+  )) {
+    for (let [before, after] of path) {
+      testSuite(`${direction}: ${before} => ${after}`, () => {
+        const afterCursor = findCursor(
+          CodeWithAST.fromCode(code),
+          direction == "null" ? null : direction,
+          before
+        );
+
+        assert.equal(
+          afterCursor.start == afterCursor.end
+            ? afterCursor.start
+            : [afterCursor.start, afterCursor.end],
+          after
+        );
+      });
     }
-  });
+  }
+  testSuite.run();
 }
 
 test.run();

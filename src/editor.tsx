@@ -1,74 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
+import { findAction } from "./actions";
 import CodeTextArea from "./code-text-area";
+import { PrintASTButton } from "./components";
 import { moveCursor } from "./cursor/move";
-import { Cursor, Direction } from "./cursor/types";
-import { spreadCursor } from "./cursor/utils";
-import { useFormat } from "./format";
-import { Container, GlobalStyle, ResizeHandle } from "./ui";
-import useHistory, { CodeWithAST, EditorState } from "./use-history";
-
-const KEY_ACTIONS: {
-  [key: string]: (
-    codeWithAST: CodeWithAST,
-    cursor: Cursor
-  ) => Partial<{
-    codeWithAST: CodeWithAST;
-    cursor: Cursor | number;
-    skipFormatting: boolean;
-  }>;
-} = {
-  ...Object.fromEntries(
-    [
-      ["ArrowLeft", "LEFT"],
-      ["ArrowRight", "RIGHT"],
-      ["ArrowUp", "UP"],
-      ["ArrowDown", "DOWN"],
-    ].map(([key, direction]: [string, Direction]) => [
-      key,
-      (codeWithAST, cursor) => ({
-        cursor: moveCursor(codeWithAST, cursor, direction),
-      }),
-    ])
-  ),
-
-  Enter: ({ code }, [start]) => {
-    const accuCharCounts = code
-      .split("\n")
-      .map((s, i) => s.length + (i == 0 ? 0 : 1))
-      .reduce((accu, n) => accu.concat((accu[accu.length - 1] || 0) + n), []);
-    let index = accuCharCounts.findIndex(
-      (n) => n >= start - 2 // I don't quite get this one
-    );
-    // if (event.shiftKey && index > 0) {
-    //   index -= 1;
-    // }
-    const pos = index == -1 ? 0 : accuCharCounts[index];
-    return {
-      codeWithAST: CodeWithAST.fromCode(
-        code.slice(0, pos) + "\n" + code.slice(pos)
-      ),
-      cursor: pos == 0 ? 0 : pos + 1,
-      skipFormatting: true,
-    };
-  },
-
-  Backspace: ({ code, ast }, [start, end]) => {
-    const codeWithAST = CodeWithAST.fromCode(
-      code.slice(0, start === end ? start - 1 : start) + code.slice(start)
-    );
-    return {
-      codeWithAST,
-      cursor: moveCursor(codeWithAST, [start, end], "LEFT"),
-    };
-  },
-
-  Delete: ({ code, ast }, [start, end]) => ({
-    codeWithAST: CodeWithAST.fromCode(
-      code.slice(0, start) + code.slice(start === end ? end + 1 : end)
-    ),
-  }),
-};
+import { CodeWithAST, useHistory } from "./history";
+import Keymap from "./keymap";
+import { Direction, Range } from "./utils";
+import { ActionBar, Container, GlobalStyle, ResizeHandle } from "./ui";
 
 export default function Editor({
   initialValue,
@@ -78,85 +17,59 @@ export default function Editor({
   onChange: Function;
 }) {
   const [printWidth, setPrintWidth] = useState(80);
+  const [resizeStartX, setResizeStartX] = useState<null | number>(null);
 
-  const [{ codeWithAST, cursor }, history] = useHistory(initialValue);
+  const [editorState, applyChange] = useHistory(initialValue, printWidth);
+  const { codeWithAST, cursor } = editorState;
   const { code, ast } = codeWithAST;
-  const [start, end] = cursor;
-  const format = useFormat();
+  const { start, end } = cursor;
 
   const moveCursorInHistory = useCallback(
-    (direction: Direction, from?: Cursor) => {
+    (direction: Direction, from?: Range) => {
       const nextCursor = moveCursor(codeWithAST, from || cursor, direction);
       if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
-        history.add({ cursor: nextCursor });
+        applyChange({ cursor: nextCursor });
       }
     },
     [cursor, codeWithAST]
-  );
-
-  const [formatPromise, setFormatPromise] = useState<ReturnType<typeof format>>(
-    null
-  );
-  const formatInHistory = useCallback(
-    async (code: string, cursorOffset: number) => {
-      if (formatPromise) {
-        formatPromise.cancel();
-      }
-
-      const newFormatPromise = format({
-        code,
-        cursorOffset,
-        printWidth,
-      });
-      setFormatPromise(newFormatPromise);
-
-      const result = await newFormatPromise;
-      setFormatPromise(null);
-      if (!result) {
-        return;
-      }
-      const newCodeWithAST = CodeWithAST.fromCode(result.formatted);
-      if (newCodeWithAST.code === code) {
-        return;
-      }
-      history.override({
-        codeWithAST: newCodeWithAST,
-        cursor: [result.cursorOffset, result.cursorOffset],
-        formattedForPrintWidth: printWidth,
-      });
-    },
-    [history, formatPromise, printWidth]
   );
 
   useEffect(() => {
     onChange(code);
   }, [code]);
 
-  console.log(JSON.stringify({ code, cursor }, null, 2));
+  useEffect(() => {
+    if (resizeStartX == null) {
+      return;
+    }
+
+    const handleResize = (event) => {
+      const colChange = Math.round((event.clientX - resizeStartX) / 2.9);
+      if (colChange == 0) {
+        return;
+      }
+      setResizeStartX(event.clientX);
+      setPrintWidth(Math.max(20, printWidth + colChange));
+    };
+    const handleResizeStop = () => setResizeStartX(null);
+    document.addEventListener("mousemove", handleResize);
+    document.addEventListener("mouseup", handleResizeStop);
+    return () => {
+      document.removeEventListener("mousemove", handleResize);
+      document.removeEventListener("mouseup", handleResizeStop);
+    };
+  }, [printWidth, resizeStartX]);
 
   return (
     <Container>
       <GlobalStyle />
       <CodeTextArea
-        value={code}
-        cursor={cursor}
+        editorState={editorState}
         cols={printWidth}
-        disabled={!!formatPromise}
         onKeyDown={(event) => {
-          if (formatPromise) {
-            event.preventDefault();
-            return;
-          }
-          const action = KEY_ACTIONS[event.key];
+          const action = findAction(codeWithAST, cursor, event as any);
           if (action) {
-            const state = action(codeWithAST, cursor);
-            const newCursor = state.cursor
-              ? spreadCursor(state.cursor)
-              : cursor;
-            history.add({ codeWithAST: state.codeWithAST, cursor: newCursor });
-            if (state.codeWithAST && !state.skipFormatting) {
-              formatInHistory(state.codeWithAST.code, newCursor[0]);
-            }
+            applyChange(action());
             event.preventDefault();
             return;
           }
@@ -169,26 +82,53 @@ export default function Editor({
           const newCode = code.slice(0, start) + event.data + code.slice(end);
 
           const newStart = start + event.data.length;
-          history.add({
+          applyChange({
             codeWithAST: CodeWithAST.fromCode(newCode),
-            cursor: spreadCursor(newStart),
-            formattedForPrintWidth: null,
+            cursor: new Range(newStart),
           });
-
-          formatInHistory(newCode, newStart);
+        }}
+        onCut={(event) => {
+          if (start === end) {
+            return;
+          }
+          applyChange({
+            codeWithAST: CodeWithAST.fromCode(
+              code.substr(0, start) + code.substr(end)
+            ),
+            cursor: new Range(start),
+          });
+          event.clipboardData.setData(
+            "text/plain",
+            code.substr(start, end - start)
+          );
+          event.preventDefault();
+        }}
+        onPaste={(event) => {
+          const clipboardText = event.clipboardData.getData("text/plain");
+          applyChange({
+            codeWithAST: CodeWithAST.fromCode(
+              code.slice(0, start) + clipboardText + code.slice(end)
+            ),
+            nextCursor: () => new Range(start + clipboardText.length),
+          });
+          event.preventDefault();
         }}
         onClick={(event) => {
           const textArea = event.target as HTMLTextAreaElement;
-          moveCursorInHistory(null, [
-            textArea.selectionStart,
-            textArea.selectionEnd,
-          ]);
+          moveCursorInHistory(
+            null,
+            new Range(textArea.selectionStart, textArea.selectionEnd)
+          );
         }}
       />
       <ResizeHandle
-        title={"80"}
-        onMouseDown={(event) => (this.resizeStartX = event.clientX)}
+        title={printWidth.toString()}
+        onMouseDown={(event) => setResizeStartX(event.clientX)}
       />
+      <ActionBar>
+        <PrintASTButton ast={ast} />
+        <Keymap {...{ codeWithAST, cursor }} />
+      </ActionBar>
     </Container>
   );
 }

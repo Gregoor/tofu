@@ -73,18 +73,18 @@ export const CodeWrap = styled.div`
   flex-direction: row;
   background: white;
   overflow: hidden;
-  min-width: 300px;
   min-height: 300px;
 
   .codeflask.codeflask {
     position: relative;
     width: initial;
     height: initial;
-    min-width: 600px;
   }
 
   .codeflask textarea {
     position: static;
+    width: auto;
+    height: 100%;
   }
 
   .codeflask pre {

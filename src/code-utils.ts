@@ -1,11 +1,7 @@
-import { Cursor } from './cursor/types';
-import { spreadCursor } from './cursor/utils';
+import { Range } from "./utils";
 
-export function replaceCode(
+export const replaceCode = (
   code: string,
-  cursor: Cursor | number,
+  { start, end }: Range,
   replacement: string
-): string {
-  const [from, to] = spreadCursor(cursor);
-  return code.slice(0, Math.max(from, 0)) + replacement + code.slice(to);
-}
+): string => code.slice(0, Math.max(start, 0)) + replacement + code.slice(end);
