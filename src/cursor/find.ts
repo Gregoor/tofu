@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
 
 import { getNode, getParentsAndPathTD } from "../ast-utils";
-import { CodeWithAST } from "../history";
+import { ValidCode } from "../code";
 import { findNodeSlot } from "../nodes";
 import { Direction, Range } from "../utils";
 
-const isCursorable = (node) =>
+const isCursorable = (node: t.Node) =>
   [
     t.isStringLiteral,
     t.isTemplateLiteral,
@@ -15,18 +15,21 @@ const isCursorable = (node) =>
     t.isExpressionStatement,
   ].some((check) => check(node));
 
-function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
-  const emptyElementIndexes = [];
+function checkForEmptyElements(
+  node: t.ArrayExpression,
+  start: number
+): boolean {
+  const emptyElementIndexes: number[] = [];
   const elementEnds: number[] = [];
   for (let i = 0; i < node.elements.length; i++) {
     const element = node.elements[i];
     if (element) {
-      elementEnds.push(element.end);
+      elementEnds.push(element.end!);
       continue;
     }
 
     emptyElementIndexes.push(i);
-    elementEnds.push(i == 0 ? node.start + 1 : elementEnds[i - 1] + 2);
+    elementEnds.push(i == 0 ? node.start! + 1 : elementEnds[i - 1] + 2);
   }
 
   return elementEnds
@@ -35,34 +38,40 @@ function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
 }
 
 function findCursorX(
-  codeWithAST: CodeWithAST,
+  code: ValidCode,
   direction: "LEFT" | "RIGHT" | "UP" | "DOWN" | null,
   isAtInitial: boolean,
   start: number
 ): Range {
-  const { ast, code } = codeWithAST;
+  const { ast, source } = code;
   const { isLeft, isRight, isDown, isUp } = {
     isLeft: direction === "LEFT",
     isRight: direction === "RIGHT",
     isDown: direction === "DOWN",
     isUp: direction === "UP",
   };
-  const [node, parent] = getParentsAndPathTD(ast, start)[0].slice().reverse();
+  const [node, parent] = getParentsAndPathTD(ast, start)[0]
+    .slice()
+    .reverse() as t.Node[];
   const additive = isLeft ? -1 : isRight ? 1 : 0;
   const nextStart = start + additive;
   const moveOn = (newStart: number) =>
-    findCursorX(codeWithAST, direction, false, newStart);
+    findCursorX(code, direction, false, newStart);
 
-  if (ast.start > start) {
-    return new Range(ast.start);
+  if (ast.start! > start) {
+    return new Range(ast.start!);
   }
-  if (ast.end < start) {
-    return new Range(ast.end);
+  if (ast.end! < start) {
+    return new Range(ast.end!);
   }
 
-  if (start !== nextStart && code[start] == "\n" && code[nextStart] == "\n") {
+  if (
+    start !== nextStart &&
+    source[start] == "\n" &&
+    source[nextStart] == "\n"
+  ) {
     if (isLeft && isAtInitial) {
-      return findCursorX(codeWithAST, null, false, nextStart);
+      return findCursorX(code, null, false, nextStart);
     }
     return new Range(isRight ? nextStart : start);
   }
@@ -73,28 +82,28 @@ function findCursorX(
     !t.isArrowFunctionExpression(node)
   ) {
     if (
-      (code[nextStart] == "(" && isAtInitial) ||
-      (code[start] == ")" && isAtInitial)
+      (source[nextStart] == "(" && isAtInitial) ||
+      (source[start] == ")" && isAtInitial)
     ) {
       return new Range(nextStart);
     }
-    if (code[nextStart] == ")" && !isAtInitial) {
+    if (source[nextStart] == ")" && !isAtInitial) {
       return new Range(start);
     }
   }
 
   if (t.isVariableDeclaration(node)) {
     const kindLength = node.kind.length;
-    if (isRight && start - node.start == kindLength) {
+    if (isRight && start - node.start! == kindLength) {
       return new Range(start + additive);
     }
-    if (start > node.start && start <= node.start + kindLength) {
-      return new Range(node.start, node.start + kindLength);
+    if (start > node.start! && start <= node.start! + kindLength) {
+      return new Range(node.start!, node.start! + kindLength);
     }
   }
 
   if (!isAtInitial) {
-    const slot = findNodeSlot(node, start, codeWithAST);
+    const slot = findNodeSlot(node, start, code);
     if (slot) {
       return slot;
     }
@@ -123,10 +132,10 @@ function findCursorX(
   }
 
   if (!isHorizontal) {
-    let left = findCursorX(codeWithAST, "LEFT", false, start);
-    let right = findCursorX(codeWithAST, "RIGHT", false, start);
-    const leftBreak = code.slice(left.end, start).includes("\n");
-    const rightBreak = code.slice(start + 1, right.start).includes("\n");
+    let left = findCursorX(code, "LEFT", false, start);
+    let right = findCursorX(code, "RIGHT", false, start);
+    const leftBreak = source.slice(left.end, start).includes("\n");
+    const rightBreak = source.slice(start + 1, right.start).includes("\n");
     if (leftBreak) {
       return right;
     }
@@ -151,8 +160,8 @@ export function findCursorY(
   const charCounts = code
     .split("\n")
     .map((s, i) => s.length + (i == 0 ? 0 : 1));
-  const accuCharCounts = charCounts.reduce(
-    (accu, n) => accu.concat((accu[accu.length - 1] || 0) + n),
+  const accuCharCounts = charCounts.reduce<number[]>(
+    (accu, n) => [...accu, (accu[accu.length - 1] || 0) + n],
     []
   );
 
@@ -174,15 +183,15 @@ export function findCursorY(
 }
 
 export const findCursor = (
-  codeWithAST: CodeWithAST,
+  code: ValidCode,
   direction: Direction,
   start: number
 ): Range =>
   !direction || direction == "LEFT" || direction == "RIGHT"
-    ? findCursorX(codeWithAST, direction, true, start)
+    ? findCursorX(code, direction, true, start)
     : findCursorX(
-        codeWithAST,
+        code,
         direction,
         false,
-        findCursorY(codeWithAST.code, start, direction)
+        findCursorY(code.source, start, direction)
       );

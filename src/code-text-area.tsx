@@ -42,7 +42,11 @@ const CodeWrap = styled.div`
   }
 `;
 
-function useEventListener(element, type: string, listener: Function) {
+function useEventListener(
+  element: HTMLTextAreaElement,
+  type: string,
+  listener: any
+) {
   useEffect(() => {
     if (!element) {
       return;
@@ -56,7 +60,7 @@ function useEventListener(element, type: string, listener: Function) {
 
 export default function CodeTextArea({
   editorState: {
-    codeWithAST,
+    code,
     cursor: { start, end },
     formattedForPrintWidth,
   },
@@ -68,15 +72,15 @@ export default function CodeTextArea({
   onCut,
   onPaste,
 }: Omit<HTMLProps<"textarea">, "value"> & { editorState: EditorState }) {
-  const rootRef = useRef(null);
-  const [flask, setFlask] = useState(null);
+  const rootRef = useRef<null | HTMLDivElement>(null);
+  const [flask, setFlask] = useState<null | any>(null);
 
   const updateSelection = useCallback(() => {
     if (!flask) {
       return;
     }
 
-    const textArea = flask.elTextarea;
+    const textArea = flask.elTextarea as HTMLTextAreaElement;
 
     const [scrollX, scrollY] = [window.scrollX, window.scrollY];
     textArea.blur();
@@ -91,17 +95,20 @@ export default function CodeTextArea({
   }, [flask, start, end]);
 
   useEffect(() => {
+    if (!rootRef.current) {
+      return;
+    }
     setFlask(
       new CodeFlask(rootRef.current, { language: "js", handleTabs: false })
     );
   }, [rootRef]);
 
   useEffect(() => {
-    if (flask && (!codeWithAST.ast || formattedForPrintWidth !== null)) {
-      flask.updateCode(codeWithAST.code);
+    if (flask && (!code.isValid() || formattedForPrintWidth !== null)) {
+      flask.updateCode(code.source);
       updateSelection();
     }
-  }, [flask, codeWithAST, formattedForPrintWidth]);
+  }, [flask, code, formattedForPrintWidth]);
 
   useEffect(() => {
     updateSelection();

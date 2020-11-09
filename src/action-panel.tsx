@@ -2,9 +2,9 @@ import * as React from "react";
 import { ButtonHTMLAttributes } from "react";
 
 import { Action, findActions, isMac } from "./actions";
-import { CodeWithAST } from "./history";
+import { Code, InvalidCode, ValidCode } from "./code";
 import { Key, font, styled } from "./ui";
-import { Range, modifierKeys } from "./utils";
+import { Direction, Range, modifierKeys } from "./utils";
 
 const Root = styled.div`
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -31,14 +31,14 @@ const DebugBox = styled.div`
   border: 3px solid orange;
 `;
 
-const stripLocs = (ast) =>
+const stripLocs = (ast: ValidCode["ast"]): any =>
   Array.isArray(ast)
     ? ast.map(stripLocs)
     : typeof ast == "object" && ast !== null
     ? Object.entries(ast)
         .filter(([key]) => key != "loc")
         .map(([k, v]) => [k, stripLocs(v)])
-        .reduce((o, [k, v]) => {
+        .reduce((o: any, [k, v]) => {
           o[k] = v;
           return o;
         }, {})
@@ -63,7 +63,7 @@ const ActionText = styled.span`
   text-decoration: underline;
 `;
 
-const LogASTButton = ({ ast }) => (
+const LogASTButton = ({ ast }: { ast: ValidCode["ast"] }) => (
   <ActionButtonRoot
     onClick={() => {
       console.log(JSON.stringify(stripLocs(ast), null, 2));
@@ -96,7 +96,7 @@ const ActionVariant = styled.li`
   align-items: center;
 `;
 
-const getActionText = (info) => {
+const getActionText = (info: Action["info"]) => {
   switch (info.type) {
     case "RANGE_SELECT":
       return {
@@ -104,7 +104,7 @@ const getActionText = (info) => {
         DOWN: "inner",
         LEFT: "Previous",
         RIGHT: "Next",
-      }[info.direction];
+      }[info.direction as NonNullable<Direction>];
 
     case "WRAP_WITH":
       return humanize(info.wrapper);
@@ -154,7 +154,7 @@ const ActionButton = ({
 } & ButtonHTMLAttributes<HTMLButtonElement>) => (
   <ActionButtonRoot {...props} single={single}>
     <ActionText>{getActionText(info)}</ActionText>
-    <Key value={"key" in on ? on.key : on.code} />
+    {on && <Key value={"key" in on ? on.key : on.code} />}
   </ActionButtonRoot>
 );
 
@@ -173,7 +173,7 @@ const ActionList = ({
       }
       const sharedModifiers = actions.reduce(
         (modifierKeys, action) =>
-          modifierKeys.filter((modifier) => action.on[modifier]),
+          modifierKeys.filter((modifier) => action.on && action.on[modifier]),
         (modifierKeys as unknown) as SomeModifiers
       );
       return (
@@ -216,21 +216,21 @@ const NodeTitle = styled.div`
 `;
 
 export default function ActionPanel({
-  codeWithAST,
+  code,
   cursor,
   onAction,
 }: {
-  codeWithAST: CodeWithAST;
+  code: Code;
   cursor: Range;
 } & OnAction) {
-  const { base, nodes } = findActions(codeWithAST, cursor);
+  const { base, nodes } = findActions(code, cursor);
   return (
     <Root>
       <DebugBox>
-        <LogASTButton ast={codeWithAST.ast} />
+        {code.isValid() && <LogASTButton ast={code.ast} />}
         Cursor: <em>{cursor.toString()}</em>
-        {codeWithAST.error && (
-          <div style={{ color: "red" }}>{codeWithAST.error.message}</div>
+        {code instanceof InvalidCode && (
+          <div style={{ color: "red" }}>{code.error.message}</div>
         )}
       </DebugBox>
 

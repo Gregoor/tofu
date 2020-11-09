@@ -1,13 +1,13 @@
-import { CodeWithAST } from "../history";
+import { Code, ValidCode } from "../code";
 import { Direction, Range } from "../utils";
 import { findCursor, findCursorY } from "./find";
 
 function moveCursorWithAST(
-  codeWithAST: CodeWithAST,
+  code: ValidCode,
   { start, end }: Range,
   direction: Direction
 ): Range {
-  let nextCursor: ReturnType<typeof moveCursorWithAST>;
+  let nextCursor: null | ReturnType<typeof moveCursorWithAST> = null;
   if (start != end) {
     if (direction == "LEFT") {
       nextCursor = new Range(start);
@@ -20,7 +20,7 @@ function moveCursorWithAST(
 
   if (!nextCursor) {
     nextCursor = findCursor(
-      codeWithAST,
+      code,
       direction,
       (direction == "DOWN" ? Math.max : Math.min)(start, end)
     );
@@ -30,7 +30,7 @@ function moveCursorWithAST(
 }
 
 function moveCursorWithoutAST(
-  code: string,
+  source: string,
   { start }: Range,
   direction: Direction
 ) {
@@ -46,19 +46,19 @@ function moveCursorWithoutAST(
         return start + 1;
       case "UP":
       case "DOWN":
-        return findCursorY(code, start, direction);
+        return findCursorY(source, start, direction);
     }
   })();
 
-  return new Range(Math.max(Math.min(newStart, code.length), 0));
+  return new Range(Math.max(Math.min(newStart, source.length), 0));
 }
 
 export function moveCursor(
-  cursorWithAST: CodeWithAST,
+  code: Code,
   cursor: Range,
   direction: Direction
 ): Range {
-  return cursorWithAST.ast
-    ? moveCursorWithAST(cursorWithAST, cursor, direction)
-    : moveCursorWithoutAST(cursorWithAST.code, cursor, direction);
+  return code.isValid()
+    ? moveCursorWithAST(code, cursor, direction)
+    : moveCursorWithoutAST(code.source, cursor, direction);
 }

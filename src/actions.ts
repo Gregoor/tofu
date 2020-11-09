@@ -2,10 +2,9 @@ import generate from "@babel/generator";
 import * as t from "@babel/types";
 
 import { getNode, getNodeFromPath, getParentsAndPathTD } from "./ast-utils";
-import { replaceCode } from "./code-utils";
+import { Code, ValidCode, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
 import { selectName, selectNode } from "./cursor/utils";
-import { CodeWithAST } from "./history";
 import { findNodeActions } from "./nodes";
 import { NodeAction } from "./nodes/utils";
 import { Change, KeyConfig, Range, modifierKeys } from "./utils";
@@ -13,23 +12,21 @@ import { Change, KeyConfig, Range, modifierKeys } from "./utils";
 type BaseAction = {
   info?: any;
   on?: KeyConfig;
-  do: (
-    codeWithAST: CodeWithAST,
-    cursor: Range,
-    isShifted?: boolean
-  ) => null | Change;
+  do: (code: Code, cursor: Range, isShifted?: boolean) => null | Change<Code>;
 };
 
 export const isMac = navigator.platform.startsWith("Mac");
 
-const keywords: {
+type Keyword = {
   name: string;
   label?: string;
   create: (child?: string) => string;
   getInitialCursor: (ast: t.File, path: (string | number)[]) => Range;
   canWrapStatement: boolean;
   hidden?: boolean;
-}[] = [
+};
+
+const keywords: Keyword[] = [
   {
     name: "if",
     create: (child = "") => `if (someCondition) { ${child} }`,
@@ -62,45 +59,49 @@ const keywords: {
     canWrapStatement: false,
   },
 
-  ...(["const", "let", "var"] as const).map((kind) => ({
-    name: kind,
-    create: (initial) =>
-      generate(
-        t.variableDeclaration(kind, [
-          t.variableDeclarator(
-            t.identifier("n"),
-            initial || (kind == "const" ? t.nullLiteral() : null)
+  ...(["const", "let", "var"] as const).map(
+    (kind) =>
+      ({
+        name: kind,
+        create: (initial) =>
+          generate(
+            t.variableDeclaration(kind, [
+              t.variableDeclarator(
+                t.identifier("n"),
+                initial || ((kind == "const" ? t.nullLiteral() : null) as any)
+              ),
+            ])
+          ).code,
+        getInitialCursor: (ast, path) =>
+          selectName(
+            getNodeFromPath(ast, [
+              ...path,
+              "declarations",
+              "0",
+              "id",
+            ]) as t.Identifier
           ),
-        ])
-      ).code,
-    getInitialCursor: (ast, path) =>
-      selectName(
-        getNodeFromPath(ast, [
-          ...path,
-          "declarations",
-          "0",
-          "id",
-        ]) as t.Identifier
-      ),
-    canWrapStatement: false,
-  })),
+        canWrapStatement: false,
+      } as Keyword)
+  ),
 ];
 
-const baseActionCreators: (
-  | BaseAction
-  | ((codeWithAST: CodeWithAST, cursor: Range) => BaseAction | null)
-)[] = [
+type BaseActionCreator = (code: Code, cursor: Range) => BaseAction | null;
+const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
   ...([
     ["ArrowLeft", "LEFT"],
     ["ArrowRight", "RIGHT"],
     ["ArrowUp", "UP"],
     ["ArrowDown", "DOWN"],
-  ] as const).map(([key, direction]) => ({
-    on: { key, shiftKey: false },
-    do: (codeWithAST, cursor) => ({
-      cursor: moveCursor(codeWithAST, cursor, direction),
-    }),
-  })),
+  ] as const).map(
+    ([key, direction]) =>
+      ({
+        on: { key, shiftKey: false },
+        do: (code, cursor) => ({
+          cursor: moveCursor(code, cursor, direction),
+        }),
+      } as BaseAction)
+  ),
 
   {
     on: isMac ? { code: "ArrowLeft", metaKey: true } : { code: "Home" },
@@ -111,8 +112,8 @@ const baseActionCreators: (
     do: () => ({}),
   },
 
-  (codeWithAST, { start, end }) => {
-    const node = codeWithAST.ast && getNode(codeWithAST.ast, start);
+  (code, { start, end }) => {
+    const node = code instanceof ValidCode && getNode(code.ast, start);
     if (!node) {
       return null;
     }
@@ -120,10 +121,10 @@ const baseActionCreators: (
       on: { code: "Tab" },
       do: (_1, _2, isShifted) => ({
         cursor: isShifted
-          ? moveCursor(codeWithAST, new Range(node.start), "LEFT")
+          ? moveCursor(code, new Range(node.start!), "LEFT")
           : moveCursor(
-              codeWithAST,
-              new Range(start == end ? node.end : end),
+              code,
+              new Range(start == end ? node.end! : end),
               "RIGHT"
             ),
       }),
@@ -132,11 +133,13 @@ const baseActionCreators: (
 
   {
     on: { code: "Enter" },
-    do: (codeWithAST, { start }, isShifted) => {
-      const accuCharCounts = codeWithAST.code
-        .split("\n")
+    do: (code, { start }, isShifted) => {
+      const accuCharCounts = (code.source.split("\n") as string[])
         .map((s, i) => s.length + (i == 0 ? 0 : 1))
-        .reduce((accu, n) => accu.concat((accu[accu.length - 1] || 0) + n), []);
+        .reduce<number[]>(
+          (accu, n) => [...accu, (accu[accu.length - 1] || 0) + n],
+          []
+        );
       let index = accuCharCounts.findIndex(
         (n) => n >= start - 2 // I don't quite get this one
       );
@@ -145,7 +148,7 @@ const baseActionCreators: (
       }
       const pos = index == -1 ? 0 : accuCharCounts[index];
       return {
-        codeWithAST: codeWithAST.replaceCode(new Range(pos), "\n"),
+        code: code.replaceSource(new Range(pos), "\n"),
         cursor: new Range(pos == 0 ? 0 : pos + 1),
         skipFormatting: true,
       };
@@ -154,24 +157,25 @@ const baseActionCreators: (
 
   {
     on: { code: "Backspace" },
-    do: ({ code, ast }, cursor) => {
-      const { start, end } = cursor;
-      const codeWithAST = CodeWithAST.fromCode(
-        code.slice(0, start === end ? start - 1 : start) + code.slice(end)
-      );
-
-      return {
-        codeWithAST,
-        cursor: moveCursor(codeWithAST, cursor, "LEFT"),
-      };
-    },
+    do: ({ source }, { start, end }) => ({
+      code: codeFromSource(
+        source.slice(0, start === end ? start - 1 : start) + source.slice(end)
+      ),
+      cursor: moveCursor(
+        codeFromSource(
+          source.slice(0, start === end ? start - 1 : start) + source.slice(end)
+        ),
+        new Range(start, end),
+        "LEFT"
+      ),
+    }),
   },
 
   {
     on: { code: "Delete" },
-    do: ({ code, ast }, { start, end }) => ({
-      codeWithAST: CodeWithAST.fromCode(
-        code.slice(0, start) + code.slice(start === end ? end + 1 : end)
+    do: ({ source }, { start, end }) => ({
+      code: codeFromSource(
+        source.slice(0, start) + source.slice(start === end ? end + 1 : end)
       ),
     }),
   },
@@ -197,7 +201,7 @@ const baseActionCreators: (
       code: "KeyA",
       ...(isMac ? { metaKey: true } : { ctrlKey: true }),
     },
-    do: ({ code }) => ({ cursor: new Range(0, code.length) }),
+    do: ({ source }) => ({ cursor: new Range(0, source.length) }),
   },
 
   ...([
@@ -205,49 +209,58 @@ const baseActionCreators: (
     ["RIGHT", "ArrowRight"],
     ["UP", "ArrowUp"],
     ["DOWN", "ArrowDown"],
-  ] as const).map(([direction, code]) => (codeWithAST) =>
-    codeWithAST.ast
-      ? {
-          info: { type: "RANGE_SELECT", direction } as const,
-          on: { code, shiftKey: true },
-          do: (codeWithAST) => ({ rangeSelect: direction }),
-        }
-      : null
+  ] as const).map(
+    ([direction, keyCode]) =>
+      ((code) =>
+        code.isValid()
+          ? {
+              info: { type: "RANGE_SELECT", direction } as const,
+              on: { code: keyCode, shiftKey: true },
+              do: () => ({ rangeSelect: direction }),
+            }
+          : null) as BaseActionCreator
   ),
 
   ...keywords.map(
-    ({ name, create, getInitialCursor }) => ({ code }, { start }) => {
-      if (
-        code.slice(start - name.length, start) != name ||
-        code[start + 1] != "\n"
-      ) {
-        return null;
-      }
-      return {
-        on: { code: "Space" },
-        do: () => ({
-          codeWithAST: CodeWithAST.fromCode(
-            replaceCode(code, new Range(start - name.length, start), create())
-          ),
-          nextCursor: ({ ast }) =>
-            getInitialCursor(ast, getParentsAndPathTD(ast, start)[1]),
-        }),
-      };
-    }
+    ({ name, create, getInitialCursor }) =>
+      ((code, { start }) => {
+        if (
+          code.source.slice(start - name.length, start) != name ||
+          code.source[start + 1] != "\n"
+        ) {
+          return null;
+        }
+        return {
+          on: { code: "Space" },
+          do: () => ({
+            code: code.replaceSource(
+              new Range(start - name.length, start),
+              create()
+            ),
+            nextCursor: (code, cursor) =>
+              code.isValid()
+                ? getInitialCursor(
+                    code.ast,
+                    getParentsAndPathTD(code.ast, start)[1]
+                  )
+                : cursor,
+          }),
+        };
+      }) as BaseActionCreator
   ),
 ];
 
-export const getBaseActions = (codeWithAST: CodeWithAST, cursor: Range) =>
+export const getBaseActions = (code: Code, cursor: Range) =>
   baseActionCreators
     .map((actionCreator) =>
       typeof actionCreator == "function"
-        ? actionCreator(codeWithAST, cursor)
+        ? actionCreator(code, cursor)
         : actionCreator
     )
-    .filter((a) => !!a);
+    .filter((a) => !!a) as BaseAction[];
 
 const groupByType = (actions: Action[]): Record<string, Action[]> => {
-  const grouped = {};
+  const grouped: any = {};
   for (const action of actions) {
     if (!action.info) {
       continue;
@@ -261,41 +274,42 @@ const groupByType = (actions: Action[]): Record<string, Action[]> => {
 
 export type Action = BaseAction | NodeAction;
 
-export const findActions = (codeWithAST: CodeWithAST, cursor: Range) => ({
-  base: groupByType(getBaseActions(codeWithAST, cursor)),
-  nodes: codeWithAST.ast
-    ? findNodeActions(codeWithAST, cursor).map(({ node, actions }) => ({
+export const findActions = (code: Code, cursor: Range) => ({
+  base: groupByType(getBaseActions(code, cursor)),
+  nodes: code.isValid()
+    ? findNodeActions(code, cursor).map(({ node, actions }) => ({
         node,
         actions: groupByType(actions),
       }))
     : [],
 });
 
-export function findAction(
-  codeWithAST: CodeWithAST,
-  cursor: Range,
-  event: KeyboardEvent
-) {
-  for (const action of getBaseActions(codeWithAST, cursor)) {
+export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
+  for (const action of getBaseActions(code, cursor)) {
     if (
       action.on &&
       ("code" in action.on
         ? action.on.code === event.code
         : action.on.key === event.key) &&
       modifierKeys.every((key) =>
-        key in action.on ? action.on[key] == event[key] : true
+        action.on && key in action.on ? action.on[key] == event[key] : true
       )
     ) {
-      return () => action.do(codeWithAST, cursor, event.shiftKey);
+      return () => action.do(code, cursor, event.shiftKey);
     }
   }
 
-  for (const { actions } of findNodeActions(codeWithAST, cursor)) {
+  if (!code.isValid()) {
+    return;
+  }
+
+  for (const { actions } of findNodeActions(code, cursor)) {
     for (const action of actions) {
       if (
-        "code" in action.on
+        action.on &&
+        ("code" in action.on
           ? action.on.code === event.code
-          : action.on.key === event.key
+          : action.on.key === event.key)
       ) {
         return () => action.do();
       }

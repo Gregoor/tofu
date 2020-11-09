@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "parcel --no-hmr src/index.html",
-    "deploy": "git stash && git branch -f gh-pages && git checkout gh-pages && parcel build src/index.html --public-url /tofu/ && cp -r dist/* . && git add -A . && git commit -am. && git push origin gh-pages --force && git checkout master && git stash apply",
-    "test": "tsc --noEmit && uvu -r ts-node/register",
+    "start": "BROWSER=none react-scripts start",
+    "build": "react-scripts build",
+    "test": "uvu -r ts-node/register && yarn build",
     "watch:tsc": "tsc --noEmit --watch",
     "watch:test": "watchlist src -- uvu -r ts-node/register"
   },
@@ -28,15 +28,19 @@
     "immer": "^7.0.14",
     "lodash.pick": "^4.4.0",
     "memoize-one": "^5.1.1",
-    "prettier": "^2.1.2",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "react-scripts": "4.0.0"
   },
   "devDependencies": {
+    "@types/codeflask": "^1.4.2",
     "@types/node": "^14.14.6",
+    "eslint-config-react-app": "^6.0.0",
+    "husky": "^4.3.0",
     "import-sort-style-module": "^6.0.0",
-    "parcel": "2.0.0-beta.1",
+    "prettier": "^2.1.2",
     "prettier-plugin-import-sort": "^0.0.6",
+    "pretty-quick": "^3.1.0",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
     "uvu": "^0.4.0",
@@ -45,16 +49,33 @@
   "engines": {
     "node": ">=8.12.0"
   },
-  "browserslist": [
-    "last 2 firefox versions",
-    "last 2 chrome versions",
-    "last 1 edge version",
-    "last 1 safari version"
-  ],
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
   "importSort": {
     ".js, .jsx, .es6, .es, .mjs, .ts, .tsx": {
       "parser": "babylon",
       "style": "module"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
     }
   }
 }

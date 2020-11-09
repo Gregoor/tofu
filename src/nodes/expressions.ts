@@ -9,9 +9,9 @@ import {
 } from "../ast-utils";
 import { selectNode } from "../cursor/utils";
 import { Range } from "../utils";
-import { NodeActionParams, NodeActions, NodeDef } from "./utils";
+import { NodeActionParams, NodeActions, NodeDef, NodeDefs } from "./utils";
 
-function findSlotIndex(collection, start: number) {
+function findSlotIndex(collection: any[], start: number) {
   let index = collection.findIndex((n) => n && n.start > start);
   if (index == -1) {
     index = collection.length;
@@ -19,18 +19,21 @@ function findSlotIndex(collection, start: number) {
   return index;
 }
 
-function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
-  const emptyElementIndexes = [];
+function checkForEmptyElements(
+  node: t.ArrayExpression,
+  start: number
+): boolean {
+  const emptyElementIndexes: number[] = [];
   const elementEnds: number[] = [];
   for (let i = 0; i < node.elements.length; i++) {
     const element = node.elements[i];
     if (element) {
-      elementEnds.push(element.end);
+      elementEnds.push(element.end!);
       continue;
     }
 
     emptyElementIndexes.push(i);
-    elementEnds.push(i == 0 ? node.start + 1 : elementEnds[i - 1] + 2);
+    elementEnds.push(i == 0 ? node.start! + 1 : elementEnds[i - 1] + 2);
   }
 
   return elementEnds
@@ -43,12 +46,12 @@ const generateCode = (node: t.Node) =>
 
 const changeOperationActions: (
   params: NodeActionParams<t.BinaryExpression | t.LogicalExpression>
-) => NodeActions = ({ node, codeWithAST, cursor }) =>
+) => NodeActions = ({ node, code, cursor }) =>
   (["&", "|", "+", "-", "*", "/", "=", "<", ">"] as const).map((operator) => ({
     info: { type: "CHANGE_OPERATION", operator } as const,
     on: { key: operator },
     do: () => ({
-      codeWithAST: codeWithAST.mutateAST((ast) => {
+      code: code.mutateAST((ast) => {
         const newNode = getNode(ast, cursor.start) as typeof node;
         const isDoubleable = ["&", "|", "="].includes(operator);
         if (operator === "=") {
@@ -67,40 +70,44 @@ const changeOperationActions: (
       }),
       nextCursor: ({ ast }, { start }) => {
         const newNode = getNode(ast, start) as typeof node;
-        return new Range(newNode.left.end + 1, newNode.right.start - 1);
+        return new Range(newNode.left.end! + 1, newNode.right.start! - 1);
       },
     }),
   }));
 
 const removeCallOrMember: (
   params: NodeActionParams<t.CallExpression | t.MemberExpression>
-) => NodeActions = ({ node, path, codeWithAST, cursor: { start } }) =>
-  start == node.end
+) => NodeActions = ({ node, path, code, cursor: { start } }) =>
+  start == node.end!
     ? {
         on: { code: "Backspace" },
         do: () => ({
-          codeWithAST: codeWithAST.mutateAST((ast) => {
+          code: code.mutateAST((ast) => {
             const [parents, path] = getParentsAndPathTD(ast, start);
             const [, parent] = parents.slice().reverse();
             const [lastKey] = path.slice().reverse();
-            parent[lastKey] = t.isCallExpression(node)
+            (parent as any)[lastKey] = t.isCallExpression(node)
               ? node.callee
               : node.object;
           }),
-          nextCursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end),
+          nextCursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end!),
         }),
       }
     : null;
 
-const wrappers = [
-  { type: "ARRAY", key: "[", wrap: (code) => `[${code}]` },
-  { type: "OBJECT", key: "{", wrap: (code) => `({key: ${code}})` },
-  { type: "FUNCTION_CALL", key: "(", wrap: (code) => `fn(${code})` },
-  { type: "ARROW_FUNCTION", key: ">", wrap: (code) => `(() => (${code}))` },
-] as const;
+const wrappers: {
+  type: string;
+  key: string;
+  wrap: (source: string) => string;
+}[] = [
+  { type: "ARRAY", key: "[", wrap: (source) => `[${source}]` },
+  { type: "OBJECT", key: "{", wrap: (source) => `({key: ${source}})` },
+  { type: "FUNCTION_CALL", key: "(", wrap: (source) => `fn(${source})` },
+  { type: "ARROW_FUNCTION", key: ">", wrap: (source) => `(() => (${source}))` },
+];
 
 export const expression: NodeDef<t.Expression> = {
-  actions: ({ node, codeWithAST, cursor: { start, end } }) =>
+  actions: ({ node, code, cursor: { start, end } }) =>
     node.start != start || node.end != end
       ? []
       : [
@@ -108,9 +115,9 @@ export const expression: NodeDef<t.Expression> = {
             info: { type: "WRAP_WITH", wrapper: type },
             on: { key },
             do: () => ({
-              codeWithAST: codeWithAST.replaceCode(
+              code: code.replaceSource(
                 new Range(start, end),
-                wrap(codeWithAST.code.slice(start, end))
+                wrap(code.source.slice(start, end))
               ),
               nextCursor: ({ ast }, { start }) =>
                 selectNode(
@@ -123,20 +130,22 @@ export const expression: NodeDef<t.Expression> = {
             info: { type: "WRAP_WITH", wrapper: "TERNARY" },
             on: { key: "?" },
             do: () => ({
-              codeWithAST: codeWithAST.replaceCode(
+              code: code.replaceSource(
                 selectNode(node),
-                codeWithAST.code.slice(node.start, node.end) + " ? null : null"
+                code.source.slice(node.start!, node.end!) + " ? null : null"
               ),
               nextCursor: ({ ast }, { start }) => {
                 const [[, parent]] = getParentsAndPathBU(ast, start);
-                return selectNode(parent.consequent);
+                return selectNode(
+                  (parent as t.ConditionalExpression).consequent
+                );
               },
             }),
           },
         ],
 };
 
-export const expressions = {
+export const expressions: NodeDefs = {
   BinaryExpression: {
     actions: changeOperationActions as any,
   },
@@ -144,14 +153,14 @@ export const expressions = {
   ArrayExpression: {
     hasSlot(node, start) {
       if (
-        (node.elements.length == 0 && start == node.start + 1) ||
+        (node.elements.length == 0 && start == node.start! + 1) ||
         start == node.end
       ) {
         return true;
       }
       return checkForEmptyElements(node, start);
     },
-    actions: ({ node, path, codeWithAST, cursor: { start, end } }) => [
+    actions: ({ node, path, code, cursor: { start, end } }) => [
       (["LEFT", "RIGHT"] as const).map((direction) => {
         const itemIndex = Number(path[path.length - 1]);
 
@@ -168,15 +177,15 @@ export const expressions = {
 
         const newIndex = itemIndex + moveDirection;
 
-        const first = node.elements[Math.min(itemIndex, newIndex)];
-        const second = node.elements[Math.max(itemIndex, newIndex)];
+        const first = node.elements[Math.min(itemIndex, newIndex)]!;
+        const second = node.elements[Math.max(itemIndex, newIndex)]!;
         return {
           info: { type: "MOVE_ELEMENT", direction },
           // t.isProgram(n) || t.isBlockStatement(n)
           key: direction == "LEFT" ? "ArrowLeft" : "ArrowRight",
           do: () => ({
-            codeWithAST: codeWithAST.replaceCode(
-              new Range(first.start, second.end),
+            code: code.replaceSource(
+              new Range(first.start!, second.end),
               generateCode(second) + "," + generateCode(first)
             ),
             // nextCursor({ ast }) {
@@ -232,7 +241,7 @@ export const expressions = {
 
   ObjectExpression: {
     hasSlot: (node, start) =>
-      (node.properties.length == 0 && start == node.start + 1) ||
+      (node.properties.length == 0 && start == node.start! + 1) ||
       start == node.end,
   },
 
@@ -242,6 +251,6 @@ export const expressions = {
 
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>
-      node.params.length == 0 && node.start + 1 == start,
+      node.params.length == 0 && node.start! + 1 == start,
   },
 };

@@ -1,28 +1,28 @@
 import * as t from "@babel/types";
 
-import { CodeWithAST } from "../history";
+import { ValidCode } from "../code";
 import { Change, KeyConfig, Range } from "../utils";
 
 export type NodeAction = {
   info?: any;
   on?: KeyConfig;
-  do: () => Change;
+  do: () => Change<ValidCode>;
 };
-export type NodeActions = NodeAction | NestedActions;
+export type NodeActions = null | NodeAction | NestedActions;
 
 type NestedActions = NodeActions[];
 
 export type NodeHasSlot<T> = (
   node: T,
   start: number,
-  codeWithAST: CodeWithAST
+  code: ValidCode
 ) => boolean | Range;
 
 export type NodeActionParams<T> = {
   node: T;
   path: (string | number)[];
   cursor: Range;
-  codeWithAST: CodeWithAST;
+  code: ValidCode;
 };
 
 export type NodeDef<T> = {

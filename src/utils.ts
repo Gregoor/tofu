@@ -1,14 +1,14 @@
-import { CodeWithAST } from "./history";
+import { Code } from "./code";
 
-export type Change =
+export type Change<C> =
   | {
-      codeWithAST?: CodeWithAST;
+      code?: Code;
       cursor?: Range;
       skipFormatting?: true;
     }
   | {
-      codeWithAST: CodeWithAST;
-      nextCursor: (codeWithAST: CodeWithAST, cursor: Range) => Range;
+      code: Code;
+      nextCursor: (code: C, cursor: Range) => Range;
     }
   | { rangeSelect: Direction }
   | { history: "UNDO" | "REDO" };
@@ -18,7 +18,8 @@ export type Direction = "LEFT" | "RIGHT" | "UP" | "DOWN" | null;
 export class Range {
   start: number;
   private readonly _end: null | number;
-  constructor(start: number, end: number = null) {
+
+  constructor(start: number, end: number | null = null) {
     this.start = start;
     this._end = end;
   }

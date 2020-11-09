@@ -12,11 +12,11 @@ export function useFormat() {
     (params: FormatParameters) => {
       const promise: any = new Promise((resolve, reject) => {
         // TODO: BUG!!! Some messages are not reaching the promise
-        function handleMessage(message) {
+        function handleMessage(message: { data: FormatResult }) {
           removeHandlers();
-          resolve(message.data as FormatResult);
+          resolve(message.data);
         }
-        function handleMessageError(message) {
+        function handleMessageError(message: any) {
           removeHandlers();
           reject(message.data);
         }

@@ -4,9 +4,10 @@ import React, { useCallback, useEffect, useState } from "react";
 
 import ActionPanel from "./action-panel";
 import { findAction } from "./actions";
+import { codeFromSource } from "./code";
 import CodeTextArea from "./code-text-area";
 import { moveCursor } from "./cursor/move";
-import { CodeWithAST, useHistory } from "./history";
+import { useHistory } from "./history";
 import { font } from "./ui";
 import { Direction, Range } from "./utils";
 
@@ -26,7 +27,7 @@ const ResizeHandle = styled.div`
   user-select: none;
 `;
 
-export default function Editor({
+export function Editor({
   initialValue,
   onChange,
 }: {
@@ -37,30 +38,30 @@ export default function Editor({
   const [resizeStartX, setResizeStartX] = useState<null | number>(null);
 
   const [editorState, applyChange] = useHistory(initialValue, printWidth);
-  const { codeWithAST, cursor } = editorState;
-  const { code, ast } = codeWithAST;
+  const { code, cursor } = editorState;
+  const { source } = code;
   const { start, end } = cursor;
 
   const moveCursorInHistory = useCallback(
     (direction: Direction, from?: Range) => {
-      const nextCursor = moveCursor(codeWithAST, from || cursor, direction);
+      const nextCursor = moveCursor(code, from || cursor, direction);
       if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
         applyChange({ cursor: nextCursor });
       }
     },
-    [cursor, codeWithAST]
+    [cursor, source]
   );
 
   useEffect(() => {
-    onChange(code);
-  }, [code]);
+    onChange(source);
+  }, [source]);
 
   useEffect(() => {
     if (resizeStartX == null) {
       return;
     }
 
-    const handleResize = (event) => {
+    const handleResize = (event: MouseEvent) => {
       const colChange = Math.round((event.clientX - resizeStartX) / 2.9);
       if (colChange == 0) {
         return;
@@ -90,9 +91,10 @@ export default function Editor({
         editorState={editorState}
         cols={printWidth}
         onKeyDown={(event) => {
-          const action = findAction(codeWithAST, cursor, event as any);
-          if (action) {
-            applyChange(action());
+          const action = findAction(code, cursor, event as any);
+          const change = action && action();
+          if (change) {
+            applyChange(change);
             event.preventDefault();
             return;
           }
@@ -102,11 +104,11 @@ export default function Editor({
             return;
           }
 
-          const newCode = code.slice(0, start) + event.data + code.slice(end);
-
+          const newSource =
+            source.slice(0, start) + event.data + source.slice(end);
           const newStart = start + event.data.length;
           applyChange({
-            codeWithAST: CodeWithAST.fromCode(newCode),
+            code: codeFromSource(newSource),
             cursor: new Range(newStart),
           });
         }}
@@ -115,22 +117,20 @@ export default function Editor({
             return;
           }
           applyChange({
-            codeWithAST: CodeWithAST.fromCode(
-              code.substr(0, start) + code.substr(end)
-            ),
+            code: codeFromSource(source.substr(0, start) + source.substr(end)),
             cursor: new Range(start),
           });
           event.clipboardData.setData(
             "text/plain",
-            code.substr(start, end - start)
+            source.substr(start, end - start)
           );
           event.preventDefault();
         }}
         onPaste={(event) => {
           const clipboardText = event.clipboardData.getData("text/plain");
           applyChange({
-            codeWithAST: CodeWithAST.fromCode(
-              code.slice(0, start) + clipboardText + code.slice(end)
+            code: codeFromSource(
+              source.slice(0, start) + clipboardText + source.slice(end)
             ),
             nextCursor: () => new Range(start + clipboardText.length),
           });
@@ -149,9 +149,9 @@ export default function Editor({
         onMouseDown={(event) => setResizeStartX(event.clientX)}
       />
       <ActionPanel
-        {...{ codeWithAST, cursor }}
+        {...{ code, cursor }}
         onAction={(action) => {
-          const change = action.do(codeWithAST, cursor);
+          const change = action.do(code, cursor);
           if (change) {
             applyChange(change);
           }

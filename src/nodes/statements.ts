@@ -7,33 +7,33 @@ import { NodeDefs } from "./utils";
 
 export const statements: NodeDefs = {
   BlockStatement: {
-    hasSlot: (node, start) => node.body.length == 0 && node.start + 1 == start,
+    hasSlot: (node, start) => node.body.length == 0 && node.start! + 1 == start,
   },
   IfStatement: {
-    hasSlot: (node, start, { code }) =>
-      node.alternate &&
-      start ==
-        node.consequent.end +
-          code
-            .slice(node.consequent.end, node.alternate.start)
-            .indexOf("else") +
-          "else".length,
-    actions: ({ node, path, cursor, codeWithAST }) => [
+    hasSlot: (node, start, { source }) =>
+      Boolean(
+        node.alternate &&
+          start ==
+            node.consequent.end! +
+              source
+                .slice(node.consequent.end!, node.alternate.start!)
+                .indexOf("else") +
+              "else".length
+      ),
+    actions: ({ node, path, cursor, code }) => [
       node.alternate
         ? {
             info: { type: "CHANGE_ELSE_TO_ELSE_IF" },
             on: { code: "KeyI" },
             do: () => ({
-              codeWithAST: codeWithAST.replaceCode(cursor, " if (t)"),
+              code: code.replaceSource(cursor, " if (t)"),
               nextCursor: ({ ast }) =>
                 selectNode(
-                  getNodeFromPath(
-                    ast,
-                    getParentsAndPathTD(ast, cursor.start)[1].concat(
-                      "alternate",
-                      "test"
-                    )
-                  )
+                  getNodeFromPath(ast, [
+                    ...getParentsAndPathTD(ast, cursor.start)[1],
+                    "alternate",
+                    "test",
+                  ])
                 ),
             }),
           }
@@ -42,11 +42,11 @@ export const statements: NodeDefs = {
               info: { type: "ADD_ELSE" },
               on: { code: "KeyE" },
               do: () => ({
-                codeWithAST: codeWithAST.replaceCode(cursor, "else {}"),
+                code: code.replaceSource(cursor, "else {}"),
                 nextCursor: ({ ast }) =>
                   new Range(
                     getNodeFromPath(ast, [...path.slice(0, -1), "alternate"])
-                      .start - 1
+                      .start! - 1
                   ),
               }),
             },
@@ -54,8 +54,8 @@ export const statements: NodeDefs = {
               info: { type: "ADD_ELSE_IF" },
               on: { code: "KeyI" },
               do: () => ({
-                codeWithAST: codeWithAST.replaceCode(
-                  new Range(node.end),
+                code: code.replaceSource(
+                  new Range(node.end!),
                   "else if(null) {}"
                 ),
                 nextCursor: ({ ast }) =>
@@ -73,8 +73,8 @@ export const statements: NodeDefs = {
   },
   ForStatement: {
     hasSlot: (node, start) => {
-      const init = node.init ? node.init.end : node.start + 5;
-      const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
+      const init = node.init ? node.init.end! : node.start! + 5;
+      const test = node.test ? node.test.end! : init + (node.init ? 2 : 1);
       const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
 
       return (
@@ -85,7 +85,7 @@ export const statements: NodeDefs = {
     },
   },
   ForOfStatement: {
-    actions: ({ node, path, codeWithAST }) => ({
+    actions: ({ node, path, code }) => ({
       info: { type: "CONVERT", from: "ForOfStatement", to: "ForStatement" },
       on: { code: "KeyO" },
       /**
@@ -98,9 +98,9 @@ export const statements: NodeDefs = {
        * }
        */
       do: () => ({
-        codeWithAST: codeWithAST.mutateAST((ast) => {
+        code: code.mutateAST((ast) => {
           const i = t.identifier("i");
-          getNodeFromPath(ast, path.slice(0, -1))[
+          (getNodeFromPath(ast, path.slice(0, -1)) as any)[
             path[path.length - 1]
           ] = t.forStatement(
             t.variableDeclaration("let", [
@@ -128,6 +128,6 @@ export const statements: NodeDefs = {
   },
 
   ReturnStatement: {
-    hasSlot: (node, start) => !node.argument && node.end - 1 == start,
+    hasSlot: (node, start) => !node.argument && node.end! - 1 == start,
   },
 };

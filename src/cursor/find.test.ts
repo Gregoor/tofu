@@ -1,7 +1,7 @@
 import { suite, test } from "uvu";
 import * as assert from "uvu/assert";
 
-import { CodeWithAST } from "../history";
+import { codeFromSource } from "../code";
 import { findCursor } from "./find";
 
 const tests = ([
@@ -357,36 +357,43 @@ t;
   ],
 ] as const).map(([code, paths]) => [code.replace(/\r/g, ""), paths] as const);
 
-for (const [code, paths] of tests) {
-  const testSuite = suite(code);
-  for (const [direction, path] of Object.entries(paths).reduce(
-    (a, [direction, path]) => [
-      ...a,
-      ...({
-        X: [
-          [
-            "RIGHT",
-            path.map(([from, to]) => [
-              Array.isArray(from) ? from[1] : from,
-              to,
-            ]),
+for (const [source, paths] of tests) {
+  const testSuite = suite(source);
+  for (const [direction, path] of Object.entries(paths).reduce<any>(
+    (a, [direction, path]) =>
+      [
+        ...a,
+        ...(({
+          X: [
+            [
+              "RIGHT",
+              path.map(([from, to]: any) => [
+                Array.isArray(from) ? from[1] : from,
+                to,
+              ]),
+            ],
+            [
+              "LEFT",
+              path.map(([to, from]: any) => [
+                Array.isArray(from) ? from[0] : from,
+                to,
+              ]),
+            ],
           ],
-          [
-            "LEFT",
-            path.map(([to, from]) => [
-              Array.isArray(from) ? from[0] : from,
-              to,
-            ]),
-          ],
-        ],
-      }[direction] || [[direction, path]]),
-    ],
+        } as any)[direction] || [[direction, path]]),
+      ] as any,
     []
   )) {
     for (let [before, after] of path) {
       testSuite(`${direction}: ${before} => ${after}`, () => {
+        const code = codeFromSource(source);
+        assert.ok(code.isValid());
+        if (!code.isValid()) {
+          return;
+        }
+
         const afterCursor = findCursor(
-          CodeWithAST.fromCode(code),
+          code,
           direction == "null" ? null : direction,
           before
         );

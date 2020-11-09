@@ -1,21 +1,20 @@
 import styled from "@emotion/styled";
-import { ThemeProvider } from "emotion-theming";
 import * as React from "react";
-import { render } from "react-dom";
 
-import Editor from "./editor";
-import { Key, font, theme } from "./ui";
+import { Editor } from "./editor";
+import { Key, font } from "./ui";
 
-function debounce(func, wait) {
-  let timeout;
+function debounce(func: Function, wait: number) {
+  let timeout: null | NodeJS.Timeout;
   return function () {
+    // @ts-ignore
     const context = this;
     const args = arguments;
     const later = function () {
       timeout = null;
       func.apply(context, args);
     };
-    clearTimeout(timeout);
+    timeout && clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   } as any;
 }
@@ -81,9 +80,9 @@ sketch.draw = () => {
   }
 };`;
 
-class Demo extends React.Component {
+export class Demo extends React.Component {
   canvasRef = React.createRef<HTMLDivElement>();
-  p5Instance = null;
+  p5Instance: any = null;
 
   componentDidMount() {
     const script = document.createElement("script");
@@ -97,10 +96,10 @@ class Demo extends React.Component {
     document.body.appendChild(script);
   }
 
-  updateP5 = debounce((code) => {
+  updateP5 = debounce((code: string) => {
     localStorage.setItem("code", code);
     const el = this.canvasRef.current;
-    if (this.p5Instance) {
+    if (this.p5Instance && el) {
       this.p5Instance.remove();
       el.innerHTML = "";
     }
@@ -176,10 +175,3 @@ class Demo extends React.Component {
     );
   }
 }
-
-render(
-  <ThemeProvider theme={theme}>
-    <Demo />
-  </ThemeProvider>,
-  document.querySelector("#root")
-);

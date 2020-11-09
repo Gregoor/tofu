@@ -33,17 +33,19 @@ const KeyRoot = styled.span`
   ${font};
 `;
 
+const KEY_MAP = {
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+
+  shiftKey: "⇧",
+  Enter: "↵",
+};
+
 export const Key = ({ value }: { value: string }) => (
   <KeyRoot title={value}>
-    {{
-      ArrowUp: "↑",
-      ArrowDown: "↓",
-      ArrowLeft: "←",
-      ArrowRight: "→",
-
-      shiftKey: "⇧",
-      Enter: "↵",
-    }[value] ||
+    {(KEY_MAP as any)[value] ||
       (value.startsWith("Key") ? value.slice(3).toLowerCase() : value)}
   </KeyRoot>
 );

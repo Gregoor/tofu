@@ -1,57 +1,13 @@
-import generate from "@babel/generator";
-import { parse } from "@babel/parser";
-import * as t from "@babel/types";
-import produce, { immerable } from "immer";
 import pick from "lodash.pick";
 import { useEffect, useState } from "react";
 
-import { replaceCode } from "./code-utils";
+import { Code, codeFromSource } from "./code";
 import { useFormat } from "./format";
 import { useRangeSelect } from "./range-select";
 import { Change, Range } from "./utils";
 
-export class CodeWithAST {
-  code: string;
-  ast: t.File | null = null;
-  error: SyntaxError;
-
-  private constructor(code: string, ast: t.File, error?: SyntaxError) {
-    this.code = code;
-    this.ast = ast;
-    this.error = error;
-  }
-
-  static fromCode(code: string) {
-    try {
-      return new CodeWithAST(code, parse(code));
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) {
-        throw error;
-      }
-      return new CodeWithAST(code, null, error);
-    }
-  }
-
-  static fromMutatedAST(ast: t.File, produceAST: (ast: t.File) => void) {
-    ast[immerable] = true;
-    const newAST = produce(ast as t.File, produceAST);
-    return new CodeWithAST(
-      generate(newAST, { retainLines: true }).code,
-      newAST
-    );
-  }
-
-  replaceCode(range: Range, replacement: string) {
-    return CodeWithAST.fromCode(replaceCode(this.code, range, replacement));
-  }
-
-  mutateAST(produceAST: (ast: t.File) => void) {
-    return CodeWithAST.fromMutatedAST(this.ast, produceAST);
-  }
-}
-
 export type EditorState = Readonly<{
-  codeWithAST: CodeWithAST;
+  code: Code;
   cursor: Range;
   formattedForPrintWidth: null | number;
 }>;
@@ -63,17 +19,17 @@ function logAndEventuallyReportToSentry(error: Error) {
 export function useHistory(
   initialValue: string,
   printWidth: number
-): [EditorState, (change: Change) => void] {
+): [EditorState, (change: Change<Code>) => void] {
   const [history, setHistory] = useState<EditorState[]>(() => [
     {
-      codeWithAST: CodeWithAST.fromCode(initialValue),
+      code: codeFromSource(initialValue),
       cursor: new Range(0),
       formattedForPrintWidth: null,
     },
   ]);
   const [index, setIndex] = useState(0);
   const [formatOptions, setFormatOptions] = useState<null | {
-    nextCursor: (codeWithAST: CodeWithAST, cursor: Range) => Range;
+    nextCursor: (code: Code, cursor: Range) => Range;
   }>(null);
   const rangeSelect = useRangeSelect();
   const format = useFormat();
@@ -81,7 +37,7 @@ export function useHistory(
   const current = history[index];
 
   useEffect(() => {
-    const { codeWithAST, cursor, formattedForPrintWidth } = current;
+    const { code, cursor, formattedForPrintWidth } = current;
     if (formattedForPrintWidth == printWidth && !formatOptions) {
       return;
     }
@@ -90,8 +46,8 @@ export function useHistory(
       const newHistory = history.slice();
       try {
         newHistory[index] = {
-          codeWithAST,
-          cursor: formatOptions.nextCursor(codeWithAST, cursor),
+          code,
+          cursor: formatOptions.nextCursor(code, cursor),
           formattedForPrintWidth: printWidth,
         };
         setHistory(newHistory);
@@ -103,12 +59,12 @@ export function useHistory(
     }
 
     const [formatPromise, cancel] = format({
-      code: codeWithAST.code,
+      code: code.source,
       cursorOffset: cursor.start,
       printWidth,
     });
 
-    formatPromise.then((result) => {
+    formatPromise.then((result: any) => {
       if (!result) {
         if (formatOptions) {
           logAndEventuallyReportToSentry(
@@ -119,15 +75,11 @@ export function useHistory(
       }
 
       const newHistory = history.slice();
-      const newCodeWithAST = CodeWithAST.fromCode(result.formatted);
+      const newCode = codeFromSource(result.formatted);
       const newCursor = new Range(Math.max(result.cursorOffset, 0));
       newHistory[index] = {
-        codeWithAST:
-          newCodeWithAST.code === codeWithAST.code
-            ? codeWithAST
-            : newCodeWithAST,
-        cursor:
-          formatOptions?.nextCursor(newCodeWithAST, newCursor) || newCursor,
+        code: newCode.source === code.source ? code : newCode,
+        cursor: formatOptions?.nextCursor(newCode, newCursor) || newCursor,
         formattedForPrintWidth: printWidth,
       };
       setHistory(newHistory);
@@ -142,7 +94,7 @@ export function useHistory(
     function applyChange(change) {
       if ("history" in change) {
         const hasCodeChange = (state: EditorState) =>
-          current.codeWithAST.code !== state.codeWithAST.code;
+          current.code.source !== state.code.source;
         if (change.history == "UNDO") {
           const nextIndex = index + 1;
           const lastCodeChangeIndex = history
@@ -166,16 +118,17 @@ export function useHistory(
       setHistory([
         {
           ...current,
-          ...pick(change, "codeWithAST", "cursor"),
+          ...pick(change, "code", "cursor"),
           formattedForPrintWidth:
-            "codeWithAST" in change &&
-            change.codeWithAST.code !== current.codeWithAST.code
+            "code" in change &&
+            change.code &&
+            change.code.source !== current.code.source
               ? null
               : current.formattedForPrintWidth,
           ...("rangeSelect" in change
             ? {
                 cursor: rangeSelect.run(
-                  current.codeWithAST,
+                  current.code,
                   current.cursor,
                   change.rangeSelect
                 ),

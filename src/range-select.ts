@@ -2,19 +2,22 @@ import * as t from "@babel/types";
 import { useState } from "react";
 
 import { getNode, getParentsAndPathTD } from "./ast-utils";
+import { Code } from "./code";
 import { findCursor } from "./cursor/find";
 import { selectNode } from "./cursor/utils";
-import { CodeWithAST } from "./history";
 import { Direction, Range } from "./utils";
 
 const findIndexForCursor = (collection: t.Node[], { start, end }: Range) =>
-  collection.findIndex((node) => node.start <= start && node.end >= end);
+  collection.findIndex((node) => node.start! <= start && node.end! >= end);
 
 export function useRangeSelect() {
   const [initialRange, setInitialRange] = useState<null | Range>(null);
   return {
-    run(codeWithAST: CodeWithAST, cursor: Range, direction: Direction): Range {
-      const { ast } = codeWithAST;
+    run(code: Code, cursor: Range, direction: Direction): Range {
+      if (!code.isValid()) {
+        return initialRange || cursor;
+      }
+      const { ast } = code;
       if (!initialRange) {
         setInitialRange(cursor);
       }
@@ -32,7 +35,7 @@ export function useRangeSelect() {
         return cursor;
       } else if (direction == "DOWN") {
         let selectedNodeFound = false;
-        for (const node of getParentsAndPathTD(ast, initialRange[0])[0]) {
+        for (const node of getParentsAndPathTD(ast, initialRange!.start)[0]) {
           const nodeCursor = selectNode(node);
           const selectOverlaps =
             cursor.start == nodeCursor.start && cursor.end == nodeCursor.end;
@@ -51,17 +54,17 @@ export function useRangeSelect() {
 
       const isRight = direction == "RIGHT";
       const nextCursor = findCursor(
-        codeWithAST,
+        code,
         direction,
         (isRight ? Math.max : Math.min)(cursor.start, cursor.end)
       );
-      const nextNode = getNode(ast, nextCursor[0]);
+      const nextNode = getNode(ast, nextCursor.start);
 
       if (
         node == nextNode &&
         (t.isLiteral(nextNode) || t.isIdentifier(nextNode)) &&
-        nextNode.start <= nextCursor.start &&
-        nextNode.end >= nextCursor.end
+        nextNode.start! <= nextCursor.start &&
+        nextNode.end! >= nextCursor.end
       ) {
         return new Range(
           Math.min(cursor.start, nextCursor.start),
@@ -69,12 +72,12 @@ export function useRangeSelect() {
         );
       }
       const collection = parents.find((node) => Array.isArray(node));
-      if (!collection) {
+      if (!collection || !Array.isArray(collection)) {
         return cursor;
       }
 
       const [initialIndex, startIndex, endIndex] = ([
-        initialRange,
+        initialRange!,
         new Range(cursor.start),
         new Range(cursor.end),
       ] as const).map((cursor) =>
@@ -101,7 +104,7 @@ export function useRangeSelect() {
       }
 
       return new Range(
-        collection[nextStartIndex].start,
+        collection[nextStartIndex].start!,
         collection[nextEndIndex].end
       );
     },
