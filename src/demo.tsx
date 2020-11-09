@@ -1,8 +1,10 @@
+import styled from "@emotion/styled";
+import { ThemeProvider } from "emotion-theming";
 import * as React from "react";
 import { render } from "react-dom";
-import styled from "styled-components";
+
 import Editor from "./editor";
-import { Key, Keyword } from "./ui";
+import { Key, font, theme } from "./ui";
 
 function debounce(func, wait) {
   let timeout;
@@ -36,6 +38,11 @@ const CanvasContainer = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: center;
+`;
+
+const Keyword = styled.span`
+  font-weight: bold;
+  ${font};
 `;
 
 const WELCOME_CODE =
@@ -114,10 +121,10 @@ class Demo extends React.Component {
         <Card>
           <h3 style={{ marginTop: 0 }}>What is this?</h3>
           <p>
-            Tofu is a fluid code editor that frees you from making meaningless
-            changes to your code, that is you don't have to manage syntax or
-            code style. Thus keypresses can trigger more meaningful actions.
-            Here are a few examples:
+            Tofu is an exploration in fluid code editing, freeing you from
+            making meaningless changes to your code, like syntax management or
+            code styling. Thus keypresses are wholly reserved for meaningful
+            actions like:
           </p>
           <ul>
             <li>
@@ -130,27 +137,16 @@ class Demo extends React.Component {
             </li>
             <li>
               Putting a space after <Keyword>if</Keyword> always creates a
-              complete if-block (as that is the only syntactically valid
+              complete if-block (that being the only syntactically valid
               option). Other keywords behave similarly.
             </li>
             <li>
-              <Key>Enter</Key> always creates a new line underneath. Compare
-              that to other editors, where Enter either breaks syntax or code
-              style (unless you're already at the start/end of a line).
+              <Key value="Enter" /> always creates a new line underneath.
+              Compare that to other editors, where Enter either breaks syntax or
+              code style (unless you're already at the start/end of a line).
             </li>
           </ul>
         </Card>
-
-        {/*<Spacer />
-
-    <Card>
-      <h3 style={{ marginTop: 0 }}>Try it!</h3>
-      <p>
-        Embed some sort of quiz here, that shows how Tofu fares when adding code
-        with changing requirements. I.e. don't just make people write code, make
-        people rewrite code.
-      </p>
-    </Card>*/}
 
         <Spacer />
 
@@ -181,4 +177,9 @@ class Demo extends React.Component {
   }
 }
 
-render(<Demo />, document.querySelector("#root"));
+render(
+  <ThemeProvider theme={theme}>
+    <Demo />
+  </ThemeProvider>,
+  document.querySelector("#root")
+);

@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
 import { useState } from "react";
 
-import { getParentsAndPathTD, getNode } from "./ast-utils";
+import { getNode, getParentsAndPathTD } from "./ast-utils";
 import { findCursor } from "./cursor/find";
 import { selectNode } from "./cursor/utils";
 import { CodeWithAST } from "./history";

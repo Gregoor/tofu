@@ -1,0 +1,247 @@
+import generate from "@babel/generator";
+import * as t from "@babel/types";
+
+import {
+  getNode,
+  getNodeFromPath,
+  getParentsAndPathBU,
+  getParentsAndPathTD,
+} from "../ast-utils";
+import { selectNode } from "../cursor/utils";
+import { Range } from "../utils";
+import { NodeActionParams, NodeActions, NodeDef } from "./utils";
+
+function findSlotIndex(collection, start: number) {
+  let index = collection.findIndex((n) => n && n.start > start);
+  if (index == -1) {
+    index = collection.length;
+  }
+  return index;
+}
+
+function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
+  const emptyElementIndexes = [];
+  const elementEnds: number[] = [];
+  for (let i = 0; i < node.elements.length; i++) {
+    const element = node.elements[i];
+    if (element) {
+      elementEnds.push(element.end);
+      continue;
+    }
+
+    emptyElementIndexes.push(i);
+    elementEnds.push(i == 0 ? node.start + 1 : elementEnds[i - 1] + 2);
+  }
+
+  return elementEnds
+    .filter((n, i) => emptyElementIndexes.includes(i))
+    .includes(start);
+}
+
+const generateCode = (node: t.Node) =>
+  generate(node, { retainLines: true }).code.trim();
+
+const changeOperationActions: (
+  params: NodeActionParams<t.BinaryExpression | t.LogicalExpression>
+) => NodeActions = ({ node, codeWithAST, cursor }) =>
+  (["&", "|", "+", "-", "*", "/", "=", "<", ">"] as const).map((operator) => ({
+    info: { type: "CHANGE_OPERATION", operator } as const,
+    on: { key: operator },
+    do: () => ({
+      codeWithAST: codeWithAST.mutateAST((ast) => {
+        const newNode = getNode(ast, cursor.start) as typeof node;
+        const isDoubleable = ["&", "|", "="].includes(operator);
+        if (operator === "=") {
+          newNode.operator = (node.operator == ">" || node.operator == "<"
+            ? node.operator + "="
+            : operator.repeat(
+                node.operator == "==" ? 3 : 2
+              )) as typeof node.operator;
+        } else {
+          newNode.operator =
+            isDoubleable &&
+            (newNode.operator.length == 1 || newNode.operator[0] !== operator)
+              ? ((operator + operator) as any)
+              : operator;
+        }
+      }),
+      nextCursor: ({ ast }, { start }) => {
+        const newNode = getNode(ast, start) as typeof node;
+        return new Range(newNode.left.end + 1, newNode.right.start - 1);
+      },
+    }),
+  }));
+
+const removeCallOrMember: (
+  params: NodeActionParams<t.CallExpression | t.MemberExpression>
+) => NodeActions = ({ node, path, codeWithAST, cursor: { start } }) =>
+  start == node.end
+    ? {
+        on: { code: "Backspace" },
+        do: () => ({
+          codeWithAST: codeWithAST.mutateAST((ast) => {
+            const [parents, path] = getParentsAndPathTD(ast, start);
+            const [, parent] = parents.slice().reverse();
+            const [lastKey] = path.slice().reverse();
+            parent[lastKey] = t.isCallExpression(node)
+              ? node.callee
+              : node.object;
+          }),
+          nextCursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end),
+        }),
+      }
+    : null;
+
+const wrappers = [
+  { type: "ARRAY", key: "[", wrap: (code) => `[${code}]` },
+  { type: "OBJECT", key: "{", wrap: (code) => `({key: ${code}})` },
+  { type: "FUNCTION_CALL", key: "(", wrap: (code) => `fn(${code})` },
+  { type: "ARROW_FUNCTION", key: ">", wrap: (code) => `(() => (${code}))` },
+] as const;
+
+export const expression: NodeDef<t.Expression> = {
+  actions: ({ node, codeWithAST, cursor: { start, end } }) =>
+    node.start != start || node.end != end
+      ? []
+      : [
+          wrappers.map(({ type, key, wrap }) => ({
+            info: { type: "WRAP_WITH", wrapper: type },
+            on: { key },
+            do: () => ({
+              codeWithAST: codeWithAST.replaceCode(
+                new Range(start, end),
+                wrap(codeWithAST.code.slice(start, end))
+              ),
+              nextCursor: ({ ast }, { start }) =>
+                selectNode(
+                  getNodeFromPath(ast, getParentsAndPathTD(ast, start)[1])
+                ),
+            }),
+          })),
+
+          {
+            info: { type: "WRAP_WITH", wrapper: "TERNARY" },
+            on: { key: "?" },
+            do: () => ({
+              codeWithAST: codeWithAST.replaceCode(
+                selectNode(node),
+                codeWithAST.code.slice(node.start, node.end) + " ? null : null"
+              ),
+              nextCursor: ({ ast }, { start }) => {
+                const [[, parent]] = getParentsAndPathBU(ast, start);
+                return selectNode(parent.consequent);
+              },
+            }),
+          },
+        ],
+};
+
+export const expressions = {
+  BinaryExpression: {
+    actions: changeOperationActions as any,
+  },
+
+  ArrayExpression: {
+    hasSlot(node, start) {
+      if (
+        (node.elements.length == 0 && start == node.start + 1) ||
+        start == node.end
+      ) {
+        return true;
+      }
+      return checkForEmptyElements(node, start);
+    },
+    actions: ({ node, path, codeWithAST, cursor: { start, end } }) => [
+      (["LEFT", "RIGHT"] as const).map((direction) => {
+        const itemIndex = Number(path[path.length - 1]);
+
+        let moveDirection: null | 1 | -1 = null;
+        if (direction == "LEFT" && itemIndex > 0) {
+          moveDirection = -1;
+        }
+        if (direction == "RIGHT" && itemIndex < node.elements.length - 1) {
+          moveDirection = 1;
+        }
+        if (moveDirection === null) {
+          return null;
+        }
+
+        const newIndex = itemIndex + moveDirection;
+
+        const first = node.elements[Math.min(itemIndex, newIndex)];
+        const second = node.elements[Math.max(itemIndex, newIndex)];
+        return {
+          info: { type: "MOVE_ELEMENT", direction },
+          // t.isProgram(n) || t.isBlockStatement(n)
+          key: direction == "LEFT" ? "ArrowLeft" : "ArrowRight",
+          do: () => ({
+            codeWithAST: codeWithAST.replaceCode(
+              new Range(first.start, second.end),
+              generateCode(second) + "," + generateCode(first)
+            ),
+            // nextCursor({ ast }) {
+            //   const newPath = pathBU.slice();
+            //   newPath[collectionIndex - 2] = newIndex.toString();
+            //   const innerStart = start - parentsBU[0].start;
+            //   return new Range(
+            //     getNodeFromPath(ast, [...newPath.reverse()]).start +
+            //       innerStart
+            //   );
+            // },
+          }),
+        };
+      }),
+      // {
+      //   info: { type: "ADD_ELEMENT" },
+      //   // ArrowFunctionExpression: ["params", t.identifier("p")],
+      //   // CallExpression: ["arguments", t.nullLiteral()],
+      //   // ObjectExpression: [
+      //   //   "properties",
+      //   //   t.objectProperty(
+      //   //       t.identifier("p"),
+      //   //       t.identifier("p"),
+      //   //       false,
+      //   //       true
+      //   //   ),
+      //   // ],
+      //   key: ",",
+      //   do: () => {
+      //     let index = findSlotIndex(node.elements, start);
+      //     if (start == node.start && end == node.start) {
+      //       index = Math.max(0, index - 1);
+      //     }
+      //
+      //     return () => ({
+      //       codeWithAST: CodeWithAST.fromMutatedAST(ast, (ast) => {
+      //         const [parents] = getParentsAndPathTD(ast, start);
+      //         const collection = parents[collectionIndex];
+      //         collection[childKey].splice(index, 0, "null,");
+      //       }),
+      //       nextCursor: ({ ast }) =>
+      //         selectNode(
+      //           getNodeFromPath(
+      //             ast,
+      //             pathTD.slice(0, collectionIndex).concat(childKey, index)
+      //           )
+      //         ),
+      //     });
+      //   },
+      // },
+    ],
+  },
+
+  ObjectExpression: {
+    hasSlot: (node, start) =>
+      (node.properties.length == 0 && start == node.start + 1) ||
+      start == node.end,
+  },
+
+  MemberExpression: {
+    hasSlot: (node, start) => node.computed && start == node.end,
+  },
+
+  ArrowFunctionExpression: {
+    hasSlot: (node, start) =>
+      node.params.length == 0 && node.start + 1 == start,
+  },
+};

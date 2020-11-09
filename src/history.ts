@@ -5,10 +5,10 @@ import produce, { immerable } from "immer";
 import pick from "lodash.pick";
 import { useEffect, useState } from "react";
 
-import { Change } from "./actions";
+import { replaceCode } from "./code-utils";
 import { useFormat } from "./format";
 import { useRangeSelect } from "./range-select";
-import { Range } from "./utils";
+import { Change, Range } from "./utils";
 
 export class CodeWithAST {
   code: string;
@@ -39,6 +39,14 @@ export class CodeWithAST {
       generate(newAST, { retainLines: true }).code,
       newAST
     );
+  }
+
+  replaceCode(range: Range, replacement: string) {
+    return CodeWithAST.fromCode(replaceCode(this.code, range, replacement));
+  }
+
+  mutateAST(produceAST: (ast: t.File) => void) {
+    return CodeWithAST.fromMutatedAST(this.ast, produceAST);
   }
 }
 

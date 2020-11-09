@@ -1,13 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-
 import { suite, test } from "uvu";
 import * as assert from "uvu/assert";
 
 import { CodeWithAST } from "../history";
 import { findCursor } from "./find";
-
-const testCode = fs.readFileSync(path.join(__dirname, "sample.js"), "utf-8");
 
 const tests = ([
   [
@@ -312,7 +307,18 @@ const tests = ([
     { X: [[20, 24]] },
   ],
   [
-    testCode,
+    `const n = 42,
+  msg = "We been doin this";
+const arr = [42, "asd", 525, [["wat"], n]];
+
+if (n > arr[3][1]) {
+  console.log(msg + "!");
+}
+
+if (someTest) {
+}
+t;
+`,
     {
       X: [
         //

@@ -2,8 +2,8 @@ import * as t from "@babel/types";
 
 import { getNode, getParentsAndPathTD } from "../ast-utils";
 import { CodeWithAST } from "../history";
+import { findNodeSlot } from "../nodes";
 import { Direction, Range } from "../utils";
-import { selectNode, selectOperator } from "./utils";
 
 const isCursorable = (node) =>
   [
@@ -32,86 +32,6 @@ function checkForEmptyElements(node: t.ArrayExpression, start): boolean {
   return elementEnds
     .filter((n, i) => emptyElementIndexes.includes(i))
     .includes(start);
-}
-
-const NODE_SLOT_CHECKERS: Partial<
-  {
-    [T in t.Node["type"]]: (
-      node: Extract<t.Node, { type: T }>,
-      start: number,
-      codeWithAST: CodeWithAST
-    ) => boolean | Range;
-  }
-> = {
-  BooleanLiteral: selectNode,
-  NullLiteral: selectNode,
-  StringLiteral: (node, start) => start !== node.start,
-
-  BinaryExpression: (node, start, { code }) => {
-    const operator = selectOperator(node, code);
-    return operator.includes(start) ? operator : false;
-  },
-  LogicalExpression: (node: t.LogicalExpression, start, { code }) => {
-    const operator = selectOperator(node, code);
-    return operator.includes(start) ? operator : false;
-  },
-
-  ArrayExpression: (node, start) => {
-    if (
-      (node.elements.length == 0 && start == node.start + 1) ||
-      start == node.end
-    ) {
-      return true;
-    }
-    return checkForEmptyElements(node, start);
-  },
-  ObjectExpression: (node, start) =>
-    (node.properties.length == 0 && start == node.start + 1) ||
-    start == node.end,
-  MemberExpression: (node, start) => node.computed && start == node.end,
-  ArrowFunctionExpression: (node: t.ArrowFunctionExpression, start) =>
-    node.params.length == 0 && node.start + 1 == start,
-
-  // VariableDeclaration: (node) =>
-  //   new Range(node.start, node.start + node.kind.length),
-
-  BlockStatement: (node, start) =>
-    node.body.length == 0 && node.start + 1 == start,
-  IfStatement(node, start, { code }) {
-    const { consequent, alternate } = node;
-    return (
-      alternate &&
-      consequent.end +
-        code.slice(consequent.end, alternate.start).indexOf("else") +
-        "else".length ==
-        start
-    );
-  },
-  ForStatement(node, start) {
-    const init = node.init ? node.init.end : node.start + 5;
-    const test = node.test ? node.test.end : init + (node.init ? 2 : 1);
-    const update = node.update ? node.update.end : test + (node.test ? 2 : 1);
-
-    return (
-      (!node.init && start == init) ||
-      (!node.test && start == test) ||
-      (!node.update && start == update)
-    );
-  },
-  ReturnStatement: (node, start) => !node.argument && node.end - 1 == start,
-};
-
-function findSlot(
-  node: t.Node,
-  start: number,
-  codeWithAST: CodeWithAST
-): null | Range {
-  const check = NODE_SLOT_CHECKERS[node.type];
-  if (!check) {
-    return null;
-  }
-  const slot = check(node as any, start, codeWithAST);
-  return slot ? (slot instanceof Range ? slot : new Range(start)) : null;
 }
 
 function findCursorX(
@@ -174,7 +94,7 @@ function findCursorX(
   }
 
   if (!isAtInitial) {
-    const slot = findSlot(node, start, codeWithAST);
+    const slot = findNodeSlot(node, start, codeWithAST);
     if (slot) {
       return slot;
     }

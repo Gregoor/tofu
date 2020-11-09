@@ -8,7 +8,39 @@ import React, {
 } from "react";
 
 import { EditorState } from "./history";
-import { CodeWrap } from "./ui";
+import { styled } from "./ui";
+
+const CodeWrap = styled.div`
+  border-radius: ${({ theme }) => theme.borderRadius} 0 0
+    ${({ theme }) => theme.borderRadius};
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: none;
+  display: flex;
+  flex-direction: row;
+  background: white;
+  overflow: hidden;
+  min-height: 300px;
+
+  .codeflask.codeflask {
+    position: relative;
+    width: initial;
+    height: initial;
+  }
+
+  .codeflask textarea {
+    position: static;
+    width: auto;
+    height: 100%;
+  }
+
+  .codeflask pre {
+    position: absolute;
+  }
+
+  .keyword {
+    font-weight: bold;
+  }
+`;
 
 function useEventListener(element, type: string, listener: Function) {
   useEffect(() => {

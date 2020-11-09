@@ -1,13 +1,30 @@
+import { Global, css } from "@emotion/core";
+import styled from "@emotion/styled";
 import React, { useCallback, useEffect, useState } from "react";
 
+import ActionPanel from "./action-panel";
 import { findAction } from "./actions";
 import CodeTextArea from "./code-text-area";
-import { PrintASTButton } from "./components";
 import { moveCursor } from "./cursor/move";
 import { CodeWithAST, useHistory } from "./history";
-import Keymap from "./keymap";
+import { font } from "./ui";
 import { Direction, Range } from "./utils";
-import { ActionBar, Container, GlobalStyle, ResizeHandle } from "./ui";
+
+const Container = styled.div`
+  display: flex;
+  justify-content: center;
+  ${font};
+`;
+
+const ResizeHandle = styled.div`
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-left: none;
+  border-right: 2px dashed rgba(0, 0, 0, 0.1);
+  width: 8px;
+  background: white;
+  cursor: col-resize;
+  user-select: none;
+`;
 
 export default function Editor({
   initialValue,
@@ -62,7 +79,13 @@ export default function Editor({
 
   return (
     <Container>
-      <GlobalStyle />
+      <Global
+        styles={css`
+          ::selection {
+            background: yellow;
+          }
+        `}
+      />
       <CodeTextArea
         editorState={editorState}
         cols={printWidth}
@@ -125,10 +148,15 @@ export default function Editor({
         title={printWidth.toString()}
         onMouseDown={(event) => setResizeStartX(event.clientX)}
       />
-      <ActionBar>
-        <PrintASTButton ast={ast} />
-        <Keymap {...{ codeWithAST, cursor }} />
-      </ActionBar>
+      <ActionPanel
+        {...{ codeWithAST, cursor }}
+        onAction={(action) => {
+          const change = action.do(codeWithAST, cursor);
+          if (change) {
+            applyChange(change);
+          }
+        }}
+      />
     </Container>
   );
 }
