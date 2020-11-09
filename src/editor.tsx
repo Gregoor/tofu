@@ -53,6 +53,7 @@ export default class Editor extends React.Component<
   searchRef: React.RefObject<HTMLInputElement> = React.createRef();
 
   componentDidMount() {
+    console.log({ CodeFlask c: this.flaskContainer});
     this.flask = new CodeFlask(this.flaskContainer.current, {
       language: 'js'
     });
