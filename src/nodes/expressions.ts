@@ -105,6 +105,7 @@ const wrappers: {
 ];
 
 export const expression: NodeDef<t.Expression> = {
+  hasSlot: (node, start) => node.end == start,
   actions: ({ node, code, cursor: { start, end } }) =>
     node.start != start || node.end != end
       ? []
@@ -144,6 +145,16 @@ export const expression: NodeDef<t.Expression> = {
 };
 
 export const expressions: NodeDefs = {
+  NumericLiteral: { hasSlot: () => true },
+  StringLiteral: {
+    hasSlot: (node, start) => start > node.start!,
+  },
+  TemplateLiteral: { hasSlot: () => true },
+  TemplateElement: { hasSlot: () => true },
+
+  Identifier: { hasSlot: () => true },
+
+  UnaryExpression: { hasSlot: () => true },
   BinaryExpression: {
     hasSlot: (node, start, { source }) => {
       const range = selectOperator(node, source);
@@ -254,5 +265,10 @@ export const expressions: NodeDefs = {
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>
       node.params.length == 0 && node.start! + 1 == start,
+  },
+
+  CallExpression: {
+    hasSlot: (node, start) =>
+      node.arguments.length == 0 && node.end! - 1 == start,
   },
 };

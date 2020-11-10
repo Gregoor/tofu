@@ -30,7 +30,7 @@ const CodeWrap = styled.div`
   .codeflask textarea {
     position: static;
     width: auto;
-    height: 100%;
+    height: 100% !important;
   }
 
   .codeflask pre {

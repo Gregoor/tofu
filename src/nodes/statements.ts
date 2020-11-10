@@ -6,19 +6,23 @@ import { Range } from "../utils";
 import { NodeDefs } from "./utils";
 
 export const statements: NodeDefs = {
+  // ExpressionStatement: { hasSlot: () => true },
+
   BlockStatement: {
     hasSlot: (node, start) => node.body.length == 0 && node.start! + 1 == start,
   },
+
   IfStatement: {
     hasSlot: (node, start, { source }) =>
       Boolean(
-        node.alternate &&
-          start ==
-            node.consequent.end! +
-              source
-                .slice(node.consequent.end!, node.alternate.start!)
-                .indexOf("else") +
-              "else".length
+        (!node.alternate && node.consequent.end! == start) ||
+          (node.alternate &&
+            start ==
+              node.consequent.end! +
+                source
+                  .slice(node.consequent.end!, node.alternate.start!)
+                  .indexOf("else") +
+                "else".length)
       ),
     actions: ({ node, path, cursor, code }) => [
       node.alternate
@@ -71,6 +75,7 @@ export const statements: NodeDefs = {
           ],
     ],
   },
+
   ForStatement: {
     hasSlot: (node, start) => {
       const init = node.init ? node.init.end! : node.start! + 5;

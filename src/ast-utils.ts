@@ -1,5 +1,4 @@
 import t from "@babel/types";
-import memoizeOne from "memoize-one";
 
 import { Range } from "./utils";
 
@@ -29,33 +28,35 @@ function* forEachProperty(node: t.Node) {
   }
 }
 
-export const getParentsAndPathTD = memoizeOne(
-  (node: t.File, pos, seen = new Set()) => {
-    seen.add(node);
+export function getParentsAndPathTD(
+  node: t.File,
+  pos: number,
+  seen = new Set()
+) {
+  seen.add(node);
 
-    let parents: (t.Node | t.Node[])[] = [];
-    let path: (string | number)[] = [];
-    let range = nodeToRange(node);
-    if (range) {
-      if (range.includes(pos)) {
-        parents.push(node);
-      } else {
-        return [[], []];
-      }
+  let parents: (t.Node | t.Node[])[] = [];
+  let path: (string | number)[] = [];
+  let range = nodeToRange(node);
+  if (range) {
+    if (range.includes(pos)) {
+      parents.push(node);
+    } else {
+      return [[], []];
     }
-    for (let { key, value } of forEachProperty(node)) {
-      if (value && typeof value === "object" && !seen.has(value)) {
-        let [childParents, childPath] = getParentsAndPathTD(value, pos, seen);
-        if (childParents.length > 0) {
-          parents = parents.concat(childParents);
-          path = path.concat(key, childPath);
-          break;
-        }
-      }
-    }
-    return [parents, path] as const;
   }
-);
+  for (let { key, value } of forEachProperty(node)) {
+    if (value && typeof value === "object" && !seen.has(value)) {
+      let [childParents, childPath] = getParentsAndPathTD(value, pos, seen);
+      if (childParents.length > 0) {
+        parents = parents.concat(childParents);
+        path = path.concat(key, childPath);
+        break;
+      }
+    }
+  }
+  return [parents, path] as const;
+}
 
 export function getParentsAndPathBU(node: t.File, pos: number) {
   const [parentsTD, pathTD] = getParentsAndPathTD(node, pos);

@@ -67,7 +67,7 @@ const nodeDefs: NodeDefs = {
 
 export const findNodeSlot: (
   ...params: Parameters<NodeHasSlot<t.Node>>
-) => false | Range = (node, start, code) => {
+) => null | Range = (node, start, code) => {
   const nodeDef = nodeDefs[node.type];
   if (nodeDef && "hasSlot" in nodeDef && nodeDef.hasSlot) {
     const slot = nodeDef.hasSlot(node as any, start, code);
@@ -75,7 +75,13 @@ export const findNodeSlot: (
       return slot instanceof Range ? slot : new Range(start);
     }
   }
-  return false;
+  if (t.isExpression(node)) {
+    const slot = expression.hasSlot!(node, start, code);
+    if (slot) {
+      return slot instanceof Range ? slot : new Range(start);
+    }
+  }
+  return null;
 };
 
 const flattenActions = (actions: NodeActions): NodeAction[] =>
