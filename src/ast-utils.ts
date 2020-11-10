@@ -1,4 +1,4 @@
-import * as t from "@babel/types";
+import t from "@babel/types";
 import memoizeOne from "memoize-one";
 
 import { Range } from "./utils";

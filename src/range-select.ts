@@ -1,4 +1,4 @@
-import * as t from "@babel/types";
+import t from "@babel/types";
 import { useState } from "react";
 
 import { getNode, getParentsAndPathTD } from "./ast-utils";

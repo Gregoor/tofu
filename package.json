@@ -2,13 +2,13 @@
   "name": "tofu",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "license": "MIT",
   "scripts": {
-    "start": "BROWSER=none react-scripts start",
-    "build": "react-scripts build",
-    "test": "uvu -r ts-node/register && yarn build",
-    "watch:tsc": "tsc --noEmit --watch",
-    "watch:test": "watchlist src -- uvu -r ts-node/register"
+    "start": "BROWSER=none snowpack dev",
+    "build": "snowpack build",
+    "test": "NODE_OPTIONS=\"--loader ts-node/esm --experimental-specifier-resolution=node\" uvu -r ts-node/register",
+    "watch:test": "watchlist src -- yarn test"
   },
   "dependencies": {
     "@babel/generator": "^7.12.5",
@@ -16,12 +16,6 @@
     "@babel/types": "^7.12.6",
     "@emotion/core": "^10.1.1",
     "@emotion/styled": "^10.0.27",
-    "@types/lodash.pick": "^4.4.6",
-    "@types/memoize-one": "^5.1.2",
-    "@types/prettier": "^2.1.5",
-    "@types/react": "^16.9.56",
-    "@types/react-dom": "^16.9.9",
-    "@types/redom": "^3.23.1",
     "codeflask": "^1.4.1",
     "downshift": "^6.0.6",
     "emotion-theming": "^10.0.27",
@@ -30,30 +24,35 @@
     "memoize-one": "^5.1.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "react-scripts": "4.0.0"
+    "rollup-plugin-node-polyfills": "^0.2.1"
   },
   "devDependencies": {
+    "@snowpack/plugin-optimize": "^0.2.8",
+    "@snowpack/plugin-react-refresh": "^2.3.6",
+    "@snowpack/plugin-typescript": "^1.1.0",
+    "@types/babel__generator": "^7.6.2",
     "@types/codeflask": "^1.4.2",
+    "@types/lodash.pick": "^4.4.6",
+    "@types/memoize-one": "^5.1.2",
     "@types/node": "^14.14.6",
-    "eslint-config-react-app": "^6.0.0",
+    "@types/prettier": "^2.1.5",
+    "@types/react": "^16.9.56",
+    "@types/react-dom": "^16.9.9",
+    "@types/redom": "^3.23.1",
+    "@types/snowpack-env": "2.3.0",
     "husky": "^4.3.0",
     "import-sort-style-module": "^6.0.0",
     "prettier": "^2.1.2",
     "prettier-plugin-import-sort": "^0.0.6",
     "pretty-quick": "^3.1.0",
+    "snowpack": "^2.17.0",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
-    "uvu": "^0.4.0",
+    "uvu": "next",
     "watchlist": "^0.2.3"
   },
   "engines": {
     "node": ">=8.12.0"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

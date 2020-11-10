@@ -106,8 +106,11 @@ const getActionText = (info: Action["info"]) => {
         RIGHT: "Next",
       }[info.direction as NonNullable<Direction>];
 
-    case "WRAP_WITH":
+    case "WRAP":
       return humanize(info.wrapper);
+
+    case "CHANGE_DECLARATION_KIND":
+      return info.kind;
 
     case "ADD_ELSE":
       return (

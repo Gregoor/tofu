@@ -1,4 +1,4 @@
-import * as t from "@babel/types";
+import t from "@babel/types";
 
 import { getNodeFromPath, getParentsAndPathTD } from "../ast-utils";
 import { selectNode } from "../cursor/utils";

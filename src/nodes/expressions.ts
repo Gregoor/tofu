@@ -1,5 +1,5 @@
 import generate from "@babel/generator";
-import * as t from "@babel/types";
+import t from "@babel/types";
 
 import {
   getNode,
@@ -7,7 +7,7 @@ import {
   getParentsAndPathBU,
   getParentsAndPathTD,
 } from "../ast-utils";
-import { selectNode } from "../cursor/utils";
+import { selectNode, selectOperator } from "../cursor/utils";
 import { Range } from "../utils";
 import { NodeActionParams, NodeActions, NodeDef, NodeDefs } from "./utils";
 
@@ -68,10 +68,8 @@ const changeOperationActions: (
               : operator;
         }
       }),
-      nextCursor: ({ ast }, { start }) => {
-        const newNode = getNode(ast, start) as typeof node;
-        return new Range(newNode.left.end! + 1, newNode.right.start! - 1);
-      },
+      nextCursor: ({ ast, source }, { start }) =>
+        selectOperator(getNode(ast, start) as typeof node, source),
     }),
   }));
 
@@ -112,7 +110,7 @@ export const expression: NodeDef<t.Expression> = {
       ? []
       : [
           wrappers.map(({ type, key, wrap }) => ({
-            info: { type: "WRAP_WITH", wrapper: type },
+            info: { type: "WRAP", wrapper: type },
             on: { key },
             do: () => ({
               code: code.replaceSource(
@@ -127,7 +125,7 @@ export const expression: NodeDef<t.Expression> = {
           })),
 
           {
-            info: { type: "WRAP_WITH", wrapper: "TERNARY" },
+            info: { type: "WRAP", wrapper: "TERNARY" },
             on: { key: "?" },
             do: () => ({
               code: code.replaceSource(
@@ -147,7 +145,11 @@ export const expression: NodeDef<t.Expression> = {
 
 export const expressions: NodeDefs = {
   BinaryExpression: {
-    actions: changeOperationActions as any,
+    hasSlot: (node, start, { source }) => {
+      const range = selectOperator(node, source);
+      return range.includes(start) ? range : false;
+    },
+    actions: changeOperationActions,
   },
 
   ArrayExpression: {

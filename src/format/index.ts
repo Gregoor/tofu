@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 
 import { FormatParameters, FormatResult } from "./worker";
 
-const loadWorker = () => new Worker("./worker.ts");
+const loadWorker = () =>
+  new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
 
 export function useFormat() {
   const [isWorking, setIsWorking] = useState(false);

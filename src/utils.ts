@@ -32,6 +32,10 @@ export class Range {
     return pos >= this.start && pos <= this.end;
   }
 
+  equals(other: Range) {
+    return this.start == other.start && this.end == other.end;
+  }
+
   toString = () =>
     this._end == null ? this.start : this.start + " - " + this._end;
 }

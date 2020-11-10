@@ -1,4 +1,4 @@
-import * as t from "@babel/types";
+import t from "@babel/types";
 
 import { ValidCode } from "../code";
 import { Change, KeyConfig, Range } from "../utils";

@@ -64,27 +64,29 @@ export function useHistory(
       printWidth,
     });
 
-    formatPromise.then((result: any) => {
-      if (!result) {
-        if (formatOptions) {
-          logAndEventuallyReportToSentry(
-            new Error("error while formatting, uck!")
-          );
+    formatPromise
+      .then((result: any) => {
+        if (!result) {
+          if (formatOptions) {
+            logAndEventuallyReportToSentry(
+              new Error("error while formatting, uck!")
+            );
+          }
+          return;
         }
-        return;
-      }
 
-      const newHistory = history.slice();
-      const newCode = codeFromSource(result.formatted);
-      const newCursor = new Range(Math.max(result.cursorOffset, 0));
-      newHistory[index] = {
-        code: newCode.source === code.source ? code : newCode,
-        cursor: formatOptions?.nextCursor(newCode, newCursor) || newCursor,
-        formattedForPrintWidth: printWidth,
-      };
-      setHistory(newHistory);
-      setFormatOptions(null);
-    });
+        const newHistory = history.slice();
+        const newCode = codeFromSource(result.formatted);
+        const newCursor = new Range(Math.max(result.cursorOffset, 0));
+        newHistory[index] = {
+          code: newCode.source === code.source ? code : newCode,
+          cursor: formatOptions?.nextCursor(newCode, newCursor) || newCursor,
+          formattedForPrintWidth: printWidth,
+        };
+        setHistory(newHistory);
+        setFormatOptions(null);
+      })
+      .catch((error: any) => console.error("Error while formatting:", error));
 
     return cancel;
   }, [history, formatOptions, printWidth]);

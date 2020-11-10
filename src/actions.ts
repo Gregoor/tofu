@@ -1,5 +1,5 @@
 import generate from "@babel/generator";
-import * as t from "@babel/types";
+import t from "@babel/types";
 
 import { getNode, getNodeFromPath, getParentsAndPathTD } from "./ast-utils";
 import { Code, ValidCode, codeFromSource } from "./code";

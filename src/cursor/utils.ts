@@ -10,11 +10,11 @@ export function selectNode(node: t.Node | t.Node[]) {
 
 export function selectOperator(
   node: t.LogicalExpression | t.BinaryExpression,
-  code: string
+  source: string
 ) {
   const start =
     node.left.end! +
-    code.slice(node.left.end!, node.right.start!).indexOf(node.operator);
+    source.slice(node.left.end!, node.right.start!).indexOf(node.operator);
   return new Range(start!, start + node.operator.length);
 }
 

@@ -1,4 +1,4 @@
-import * as t from "@babel/types";
+import t from "@babel/types";
 
 import { getNode, getParentsAndPathTD } from "../ast-utils";
 import { ValidCode } from "../code";
@@ -89,16 +89,6 @@ function findCursorX(
     }
     if (source[nextStart] == ")" && !isAtInitial) {
       return new Range(start);
-    }
-  }
-
-  if (t.isVariableDeclaration(node)) {
-    const kindLength = node.kind.length;
-    if (isRight && start - node.start! == kindLength) {
-      return new Range(start + additive);
-    }
-    if (start > node.start! && start <= node.start! + kindLength) {
-      return new Range(node.start!, node.start! + kindLength);
     }
   }
 
