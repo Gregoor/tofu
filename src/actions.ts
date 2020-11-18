@@ -265,10 +265,8 @@ export const findActions = (code: Code, cursor: Range) => ({
     : [],
 });
 
-const modifieresPressed = (action: BaseAction, event: KeyboardEvent) =>
-  modifierKeys.every((key) =>
-    action.on && key in action.on ? action.on[key] == event[key] : true
-  );
+const modifieresPressed = (on: BaseAction["on"], event: KeyboardEvent) =>
+  modifierKeys.every((key) => (on && key in on ? on[key] == event[key] : true));
 
 export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
   for (const action of getBaseActions(code, cursor)) {
@@ -277,7 +275,7 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
       ("code" in action.on
         ? action.on.code === event.code
         : action.on.key === event.key) &&
-      modifieresPressed(action, event)
+      modifieresPressed(action.on, event)
     ) {
       return () => action.do(code, cursor, event.shiftKey);
     }
@@ -291,10 +289,11 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
     for (const action of actions) {
       if (
         action.on &&
-        ("code" in action.on
-          ? action.on.code === event.code
-          : action.on.key === event.key) &&
-        modifieresPressed(action, event)
+        (Array.isArray(action.on) ? action.on : [action.on]).some(
+          (on) =>
+            ("code" in on ? on.code === event.code : on.key === event.key) &&
+            modifieresPressed(on, event)
+        )
       ) {
         return () => action.do();
       }

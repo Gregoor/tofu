@@ -5,7 +5,7 @@ import { Change, KeyConfig, Range } from "../utils";
 
 export type NodeAction = {
   info?: any;
-  on?: KeyConfig;
+  on?: KeyConfig | KeyConfig[];
   do: () => Change<ValidCode>;
 };
 export type NodeActions = false | null | NodeAction | NodeActions[];

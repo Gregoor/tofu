@@ -1,7 +1,7 @@
 import t from "@babel/types";
 
-import { getNodeFromPath } from "../ast-utils";
-import { selectNode, selectNodeFromPath } from "../cursor/utils";
+import { getNode, getNodeFromPath } from "../ast-utils";
+import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
 import { NodeDefs } from "./utils";
 
@@ -28,13 +28,36 @@ export const statements: NodeDefs = {
       })),
   },
 
+  VariableDeclaration: {
+    hasSlot(node, start) {
+      const kindRange = selectKind(node);
+      return kindRange.includes(start) ? kindRange : false;
+    },
+    actions: ({ node, code, cursor }) =>
+      selectKind(node).equals(cursor)
+        ? (["const", "let", "var"] as const)
+            .filter((kind) => node.kind != kind)
+            .map((kind) => ({
+              info: { type: "CHANGE_DECLARATION_KIND", kind },
+              on: { code: "Key" + kind[0].toUpperCase() },
+              do: () => ({
+                code: code.replaceSource(
+                  new Range(node.start!, node.start! + node.kind.length),
+                  kind
+                ),
+                nextCursor: ({ ast }, { start }) =>
+                  selectKind(getNode(ast, start) as typeof node),
+              }),
+            }))
+        : null,
+  },
   VariableDeclarator: {
     actions: ({ node, path, code, cursor }) =>
       !node.init &&
       cursor.start == node.id.end! && {
-        on: { key: "=" },
+        on: [{ code: "Space" }, { key: "=" }],
         do: () => ({
-          code: code.replaceSource(cursor, "= null"),
+          code: code.replaceSource(new Range(node.end!), "= null"),
           nextCursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
         }),
       },

@@ -222,10 +222,11 @@ export const expressions: NodeDefs = {
       },
   },
   StringLiteral: {
-    hasSlot: (node, start) => start > node.start!,
+    hasSlot: (node, start) => true,
   },
   TemplateLiteral: { hasSlot: () => true },
-  TemplateElement: { hasSlot: () => true },
+  BooleanLiteral: { hasSlot: selectNode },
+  NullLiteral: { hasSlot: selectNode },
 
   Identifier: { hasSlot: () => true },
 
@@ -235,6 +236,13 @@ export const expressions: NodeDefs = {
   UnaryExpression: { hasSlot: () => true },
   BinaryExpression: {
     hasSlot: (node, start, { source }) => {
+      const range = selectOperator(node, source);
+      return range.includes(start) ? range : false;
+    },
+    actions: changeOperationActions,
+  },
+  LogicalExpression: {
+    hasSlot(node, start, { source }) {
       const range = selectOperator(node, source);
       return range.includes(start) ? range : false;
     },

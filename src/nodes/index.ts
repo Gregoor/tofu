@@ -20,57 +20,6 @@ import {
 } from "./utils";
 
 const nodeDefs: NodeDefs = {
-  BooleanLiteral: { hasSlot: selectNode },
-  NullLiteral: { hasSlot: selectNode },
-  StringLiteral: { hasSlot: (node, start) => node.start !== start },
-
-  BinaryExpression: {
-    hasSlot(node, start, { source }) {
-      const operator = selectOperator(node, source);
-      return operator.includes(start) ? operator : false;
-    },
-  },
-  LogicalExpression: {
-    hasSlot(node, start, { source }) {
-      const operator = selectOperator(node, source);
-      return operator.includes(start) ? operator : false;
-    },
-  },
-
-  VariableDeclaration: {
-    hasSlot(node, start) {
-      const kindRange = selectKind(node);
-      return kindRange.includes(start) ? kindRange : false;
-    },
-    actions: ({ node, code, cursor }) =>
-      selectKind(node).equals(cursor)
-        ? (["const", "let", "var"] as const)
-            .filter((kind) => node.kind != kind)
-            .map((kind) => ({
-              info: { type: "CHANGE_DECLARATION_KIND", kind },
-              on: { code: "Key" + kind[0].toUpperCase() },
-              do: () => ({
-                code: code.replaceSource(
-                  new Range(node.start!, node.start! + node.kind.length),
-                  kind
-                ),
-                nextCursor: ({ ast }, { start }) =>
-                  selectKind(getNode(ast, start) as typeof node),
-              }),
-            }))
-        : null,
-  },
-  VariableDeclarator: {
-    actions: ({ node, path, code }) =>
-      node.init && {
-        on: { code: "Space" },
-        do: () => ({
-          code: code.replaceSource(new Range(node.end!), "= null"),
-          nextCursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
-        }),
-      },
-  },
-
   ...expressions,
   ...statements,
 };
