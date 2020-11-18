@@ -1,5 +1,6 @@
 import type t from "@babel/types";
 
+import { getNodeFromPath } from "../ast-utils";
 import { Range } from "../utils";
 
 export function selectNode(node: t.Node | t.Node[]) {
@@ -7,6 +8,10 @@ export function selectNode(node: t.Node | t.Node[]) {
     ? new Range(node[0].start!, node[node.length - 1].end!)
     : new Range(node.start!, node.end!);
 }
+
+export const selectNodeFromPath = (
+  ...params: Parameters<typeof getNodeFromPath>
+) => selectNode(getNodeFromPath(...params));
 
 export function selectOperator(
   node: t.LogicalExpression | t.BinaryExpression,

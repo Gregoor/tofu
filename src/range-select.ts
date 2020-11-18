@@ -1,7 +1,7 @@
 import t from "@babel/types";
 import { useState } from "react";
 
-import { getNode, getParentsAndPathTD } from "./ast-utils";
+import { getNode, getParents } from "./ast-utils";
 import { Code } from "./code";
 import { findCursor } from "./cursor/find";
 import { selectNode } from "./cursor/utils";
@@ -23,9 +23,7 @@ export function useRangeSelect() {
       }
 
       if (direction == "UP") {
-        for (const node of getParentsAndPathTD(ast, cursor.start)[0]
-          .slice()
-          .reverse()) {
+        for (const node of getParents(ast, cursor.start).reverse()) {
           const nextCursor = selectNode(node);
 
           if (cursor.start > nextCursor.start || cursor.end < nextCursor.end) {
@@ -35,7 +33,7 @@ export function useRangeSelect() {
         return cursor;
       } else if (direction == "DOWN") {
         let selectedNodeFound = false;
-        for (const node of getParentsAndPathTD(ast, initialRange!.start)[0]) {
+        for (const node of getParents(ast, initialRange!.start)) {
           const nodeCursor = selectNode(node);
           const selectOverlaps =
             cursor.start == nodeCursor.start && cursor.end == nodeCursor.end;
@@ -47,9 +45,6 @@ export function useRangeSelect() {
         return cursor;
       }
 
-      const parents = getParentsAndPathTD(ast, cursor.start)[0]
-        .slice()
-        .reverse();
       const node = getNode(ast, cursor.start);
 
       const isRight = direction == "RIGHT";
@@ -71,7 +66,9 @@ export function useRangeSelect() {
           Math.max(cursor.end, nextCursor.end)
         );
       }
-      const collection = parents.find((node) => Array.isArray(node));
+      const collection = getParents(ast, cursor.start)
+        .reverse()
+        .find((node) => Array.isArray(node));
       if (!collection || !Array.isArray(collection)) {
         return cursor;
       }

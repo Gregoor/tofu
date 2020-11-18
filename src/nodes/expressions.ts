@@ -1,13 +1,12 @@
 import generate from "@babel/generator";
 import t from "@babel/types";
 
+import { getNode, getNodeFromPath } from "../ast-utils";
 import {
-  getNode,
-  getNodeFromPath,
-  getParentsAndPathBU,
-  getParentsAndPathTD,
-} from "../ast-utils";
-import { selectNode, selectOperator } from "../cursor/utils";
+  selectNode,
+  selectNodeFromPath,
+  selectOperator,
+} from "../cursor/utils";
 import { Range } from "../utils";
 import { NodeActionParams, NodeActions, NodeDef, NodeDefs } from "./utils";
 
@@ -41,12 +40,42 @@ function checkForEmptyElements(
     .includes(start);
 }
 
+const addElementAction = (
+  { node, path, code, cursor: { start, end } }: NodeActionParams<t.Node>,
+  collectionKey: string,
+  initialValue: t.Node
+): NodeActions =>
+  start > node.start! &&
+  end < node.end! && {
+    info: { type: "ADD_ELEMENT" },
+    on: { key: "," },
+    do: () => {
+      let index = findSlotIndex((node as any)[collectionKey], start);
+      if (
+        (start == node.start && end == node.start) ||
+        getNode(code.ast, start).start == start
+      ) {
+        index = Math.max(0, index - 1);
+      }
+
+      return {
+        code: code.mutateAST((ast) => {
+          const collection = getNodeFromPath(ast, path) as any;
+          collection[collectionKey].splice(index, 0, initialValue);
+        }),
+        nextCursor: ({ ast }) =>
+          selectNodeFromPath(ast, [...path, collectionKey, index]),
+      };
+    },
+  };
+
 const generateCode = (node: t.Node) =>
   generate(node, { retainLines: true }).code.trim();
 
 const changeOperationActions: (
   params: NodeActionParams<t.BinaryExpression | t.LogicalExpression>
 ) => NodeActions = ({ node, code, cursor }) =>
+  selectOperator(node, code.source).includes(cursor.start) &&
   (["&", "|", "+", "-", "*", "/", "=", "<", ">"] as const).map((operator) => ({
     info: { type: "CHANGE_OPERATION", operator } as const,
     on: { key: operator },
@@ -81,10 +110,8 @@ const removeCallOrMember: (
         on: { code: "Backspace" },
         do: () => ({
           code: code.mutateAST((ast) => {
-            const [parents, path] = getParentsAndPathTD(ast, start);
-            const [, parent] = parents.slice().reverse();
-            const [lastKey] = path.slice().reverse();
-            (parent as any)[lastKey] = t.isCallExpression(node)
+            const parent = getNodeFromPath(ast, path.slice(0, -1)) as any;
+            parent[path[path.length - 1]] = t.isCallExpression(node)
               ? node.callee
               : node.object;
           }),
@@ -105,24 +132,24 @@ const wrappers: {
 ];
 
 export const expression: NodeDef<t.Expression> = {
-  hasSlot: (node, start) => node.end == start,
-  actions: ({ node, code, cursor: { start, end } }) =>
-    node.start != start || node.end != end
-      ? []
-      : [
+  hasSlot: (node, start) => start == node.start || start == node.end,
+  actions: ({ node, path, code, cursor: { start, end } }) =>
+    !t.isJSX(node) && [
+      node.start == start &&
+        node.end == end && [
           wrappers.map(({ type, key, wrap }) => ({
             info: { type: "WRAP", wrapper: type },
             on: { key },
-            do: () => ({
-              code: code.replaceSource(
-                new Range(start, end),
-                wrap(code.source.slice(start, end))
-              ),
-              nextCursor: ({ ast }, { start }) =>
-                selectNode(
-                  getNodeFromPath(ast, getParentsAndPathTD(ast, start)[1])
+            do: () => {
+              const wrapped = code.source.slice(start, end);
+              return {
+                code: code.replaceSource(
+                  new Range(start, end),
+                  wrap(wrapped == "null" ? "" : wrapped)
                 ),
-            }),
+                nextCursor: ({ ast }) => selectNodeFromPath(ast, path),
+              };
+            },
           })),
 
           {
@@ -133,19 +160,67 @@ export const expression: NodeDef<t.Expression> = {
                 selectNode(node),
                 code.source.slice(node.start!, node.end!) + " ? null : null"
               ),
-              nextCursor: ({ ast }, { start }) => {
-                const [[, parent]] = getParentsAndPathBU(ast, start);
-                return selectNode(
-                  (parent as t.ConditionalExpression).consequent
-                );
-              },
+              nextCursor: ({ ast }) =>
+                selectNodeFromPath(ast, [...path, "consequent"]),
             }),
           },
         ],
+
+      node.end == start && [
+        !t.isMemberExpression(getNode(code.ast, start, -2)) && {
+          info: {
+            type: "MAKE_MEMBER",
+          },
+          on: { key: "." },
+          do: () => ({
+            code: code.replaceSource(
+              new Range(node.start!, node.end),
+              `(${code.source.slice(node.start!, node.end!)}).p`
+            ),
+            nextCursor: ({ ast }, { start }) =>
+              selectNodeFromPath(ast, [...path, "property"]),
+          }),
+        },
+
+        !t.isNumericLiteral(node) &&
+          !t.isObjectExpression(node) && [
+            {
+              info: { type: "MAKE_CALL" },
+              on: { key: "(" },
+              do: () => ({
+                code: code.replaceSource(new Range(start), "()"),
+                nextCursor: ({ ast }, { start }) => new Range(start + 1),
+              }),
+            },
+            {
+              info: { type: "MAKE_COMPUTED_MEMBER" },
+              on: { key: "[" },
+              do: () => ({
+                code: code.replaceSource(new Range(start), "[0]"),
+                nextCursor: ({ ast }, { start }) =>
+                  selectNodeFromPath(ast, [...path, "property"]),
+              }),
+            },
+          ],
+      ],
+    ],
 };
 
 export const expressions: NodeDefs = {
-  NumericLiteral: { hasSlot: () => true },
+  NumericLiteral: {
+    hasSlot: () => true,
+    actions: ({ node, code, cursor }) =>
+      Number.isInteger(node.value) &&
+      cursor.isSingle() &&
+      cursor.start == node.end && {
+        info: { type: "DOT" },
+        on: { key: "." },
+        do: () => ({
+          code: code.replaceSource(cursor, ".0"),
+          nextCursor: () => new Range(cursor.start + 1, cursor.start + 2),
+        }),
+      },
+  },
   StringLiteral: {
     hasSlot: (node, start) => start > node.start!,
   },
@@ -153,6 +228,9 @@ export const expressions: NodeDefs = {
   TemplateElement: { hasSlot: () => true },
 
   Identifier: { hasSlot: () => true },
+
+  JSXIdentifier: { hasSlot: () => true },
+  JSXText: { hasSlot: () => true },
 
   UnaryExpression: { hasSlot: () => true },
   BinaryExpression: {
@@ -173,82 +251,48 @@ export const expressions: NodeDefs = {
       }
       return checkForEmptyElements(node, start);
     },
-    actions: ({ node, path, code, cursor: { start, end } }) => [
-      (["LEFT", "RIGHT"] as const).map((direction) => {
-        const itemIndex = Number(path[path.length - 1]);
+    actions: ({ node, path, code, cursor }) => [
+      cursor.start > node.start! &&
+        cursor.end < node.end! &&
+        (["LEFT", "RIGHT"] as const).map((direction) => {
+          const itemIndex = findSlotIndex(node.elements, cursor.start) - 1;
 
-        let moveDirection: null | 1 | -1 = null;
-        if (direction == "LEFT" && itemIndex > 0) {
-          moveDirection = -1;
-        }
-        if (direction == "RIGHT" && itemIndex < node.elements.length - 1) {
-          moveDirection = 1;
-        }
-        if (moveDirection === null) {
-          return null;
-        }
+          let moveDirection: null | 1 | -1 = null;
+          if (direction == "LEFT" && itemIndex > 0) {
+            moveDirection = -1;
+          }
+          if (direction == "RIGHT" && itemIndex < node.elements.length - 1) {
+            moveDirection = 1;
+          }
+          if (moveDirection === null) {
+            return null;
+          }
 
-        const newIndex = itemIndex + moveDirection;
+          const newIndex = itemIndex + moveDirection;
 
-        const first = node.elements[Math.min(itemIndex, newIndex)]!;
-        const second = node.elements[Math.max(itemIndex, newIndex)]!;
-        return {
-          info: { type: "MOVE_ELEMENT", direction },
-          // t.isProgram(n) || t.isBlockStatement(n)
-          key: direction == "LEFT" ? "ArrowLeft" : "ArrowRight",
-          do: () => ({
-            code: code.replaceSource(
-              new Range(first.start!, second.end),
-              generateCode(second) + "," + generateCode(first)
-            ),
-            // nextCursor({ ast }) {
-            //   const newPath = pathBU.slice();
-            //   newPath[collectionIndex - 2] = newIndex.toString();
-            //   const innerStart = start - parentsBU[0].start;
-            //   return new Range(
-            //     getNodeFromPath(ast, [...newPath.reverse()]).start +
-            //       innerStart
-            //   );
-            // },
-          }),
-        };
-      }),
-      // {
-      //   info: { type: "ADD_ELEMENT" },
-      //   // ArrowFunctionExpression: ["params", t.identifier("p")],
-      //   // CallExpression: ["arguments", t.nullLiteral()],
-      //   // ObjectExpression: [
-      //   //   "properties",
-      //   //   t.objectProperty(
-      //   //       t.identifier("p"),
-      //   //       t.identifier("p"),
-      //   //       false,
-      //   //       true
-      //   //   ),
-      //   // ],
-      //   key: ",",
-      //   do: () => {
-      //     let index = findSlotIndex(node.elements, start);
-      //     if (start == node.start && end == node.start) {
-      //       index = Math.max(0, index - 1);
-      //     }
-      //
-      //     return () => ({
-      //       codeWithAST: CodeWithAST.fromMutatedAST(ast, (ast) => {
-      //         const [parents] = getParentsAndPathTD(ast, start);
-      //         const collection = parents[collectionIndex];
-      //         collection[childKey].splice(index, 0, "null,");
-      //       }),
-      //       nextCursor: ({ ast }) =>
-      //         selectNode(
-      //           getNodeFromPath(
-      //             ast,
-      //             pathTD.slice(0, collectionIndex).concat(childKey, index)
-      //           )
-      //         ),
-      //     });
-      //   },
-      // },
+          const first = node.elements[Math.min(itemIndex, newIndex)]!;
+          const second = node.elements[Math.max(itemIndex, newIndex)]!;
+          return {
+            info: { type: "MOVE_ELEMENT", direction },
+            on: {
+              key: direction == "LEFT" ? "ArrowLeft" : "ArrowRight",
+              altKey: true,
+            },
+            do: () => ({
+              code: code.replaceSource(
+                new Range(first.start!, second.end),
+                generateCode(second) + "," + generateCode(first)
+              ),
+              nextCursor: ({ ast }) =>
+                selectNodeFromPath(ast, [...path, "elements", newIndex]),
+            }),
+          };
+        }),
+      addElementAction(
+        { node, path, code, cursor },
+        "elements",
+        t.nullLiteral()
+      ),
     ],
   },
 
@@ -256,6 +300,12 @@ export const expressions: NodeDefs = {
     hasSlot: (node, start) =>
       (node.properties.length == 0 && start == node.start! + 1) ||
       start == node.end,
+    actions: (params) =>
+      addElementAction(
+        params,
+        "properties",
+        t.objectProperty(t.identifier("p"), t.identifier("p"), false, true)
+      ),
   },
 
   MemberExpression: {
@@ -265,10 +315,24 @@ export const expressions: NodeDefs = {
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>
       node.params.length == 0 && node.start! + 1 == start,
+    actions: ({ node, cursor, ...params }) =>
+      cursor.start < node.body.start! &&
+      addElementAction(
+        { node, cursor, ...params },
+        "params",
+        t.identifier("p")
+      ),
   },
 
   CallExpression: {
     hasSlot: (node, start) =>
       node.arguments.length == 0 && node.end! - 1 == start,
+    actions: ({ node, cursor, ...params }) =>
+      cursor.start > node.callee.end! &&
+      addElementAction(
+        { node, cursor, ...params },
+        "arguments",
+        t.nullLiteral()
+      ),
   },
 };

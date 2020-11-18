@@ -1,27 +1,28 @@
-import { Global, css } from "@emotion/core";
+import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
 import React, { useCallback, useEffect, useState } from "react";
 
-import ActionPanel from "./action-panel";
 import { findAction } from "./actions";
 import { codeFromSource } from "./code";
-import CodeTextArea from "./code-text-area";
+import { CodeTextArea } from "./code-text-area";
 import { moveCursor } from "./cursor/move";
 import { useHistory } from "./history";
+import { Panel } from "./panel";
 import { font } from "./ui";
 import { Direction, Range } from "./utils";
 
 const Container = styled.div`
+  height: 100vh;
   display: flex;
   justify-content: center;
   ${font};
 `;
 
 const ResizeHandle = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-left: none;
-  border-right: 2px dashed rgba(0, 0, 0, 0.1);
-  width: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-left: 2px dashed rgba(0, 0, 0, 0.1);
+  padding-right: ${({ theme }) => theme.l.gap};
   background: white;
   cursor: col-resize;
   user-select: none;
@@ -148,8 +149,8 @@ export function Editor({
         title={printWidth.toString()}
         onMouseDown={(event) => setResizeStartX(event.clientX)}
       />
-      <ActionPanel
-        {...{ code, cursor }}
+      <Panel
+        editorState={editorState}
         onAction={(action) => {
           const change = action.do(code, cursor);
           if (change) {

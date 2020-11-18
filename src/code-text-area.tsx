@@ -1,3 +1,4 @@
+import styled from "@emotion/styled";
 import CodeFlask from "codeflask";
 import React, {
   HTMLProps,
@@ -8,7 +9,6 @@ import React, {
 } from "react";
 
 import { EditorState } from "./history";
-import { styled } from "./ui";
 
 const CodeWrap = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius} 0 0
@@ -58,7 +58,7 @@ function useEventListener(
   }, [element, type, listener]);
 }
 
-export default function CodeTextArea({
+export function CodeTextArea({
   editorState: {
     code,
     cursor: { start, end },

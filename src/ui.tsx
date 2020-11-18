@@ -1,10 +1,12 @@
-import { css } from "@emotion/core";
-import emotionStyled, { CreateStyled } from "@emotion/styled";
+import { Theme, css } from "@emotion/react";
+import styled from "@emotion/styled";
 import React from "react";
+
+import { isMac } from "./actions";
 
 const GAP = 5;
 
-export const theme = {
+export const theme: Theme = {
   // Lengths
   l: {
     gap: GAP + "px",
@@ -17,8 +19,6 @@ export const theme = {
 
   borderRadius: "10px",
 };
-
-export const styled: CreateStyled<typeof theme> = emotionStyled;
 
 export const font = css`
   font-family: "Roboto Mono", monospace;
@@ -40,6 +40,7 @@ const KEY_MAP = {
   ArrowRight: "→",
 
   shiftKey: "⇧",
+  altKey: isMac ? "⌥" : "Alt",
   Enter: "↵",
 };
 

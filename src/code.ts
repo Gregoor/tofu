@@ -3,7 +3,6 @@ import { parse } from "@babel/parser";
 import t from "@babel/types";
 import produce, { immerable } from "immer";
 
-import { replaceCode } from "./code-utils";
 import { Range } from "./utils";
 
 class BaseCode {
@@ -17,8 +16,12 @@ class BaseCode {
     return this instanceof ValidCode;
   }
 
-  replaceSource(range: Range, replacement: string) {
-    return codeFromSource(replaceCode(this.source, range, replacement));
+  replaceSource({ start, end }: Range, replacement: string) {
+    return codeFromSource(
+      this.source.slice(0, Math.max(start, 0)) +
+        replacement +
+        this.source.slice(end)
+    );
   }
 }
 
@@ -50,7 +53,10 @@ export class ValidCode extends BaseCode {
 
 export function codeFromSource(source: string) {
   try {
-    return new ValidCode(source, parse(source));
+    return new ValidCode(
+      source,
+      parse(source, { plugins: ["jsx", "typescript"] })
+    );
   } catch (error) {
     if (!(error instanceof SyntaxError)) {
       throw error;

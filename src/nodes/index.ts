@@ -1,12 +1,23 @@
 import t from "@babel/types";
 
-import { getNode, getNodeFromPath, getParentsAndPathTD } from "../ast-utils";
+import { getLineage, getNode } from "../ast-utils";
 import { ValidCode } from "../code";
-import { selectKind, selectNode, selectOperator } from "../cursor/utils";
+import {
+  selectKind,
+  selectNode,
+  selectNodeFromPath,
+  selectOperator,
+} from "../cursor/utils";
 import { Range } from "../utils";
 import { expression, expressions } from "./expressions";
 import { statements } from "./statements";
-import { NodeAction, NodeActions, NodeDefs, NodeHasSlot } from "./utils";
+import {
+  NodeAction,
+  NodeActions,
+  NodeDef,
+  NodeDefs,
+  NodeHasSlot,
+} from "./utils";
 
 const nodeDefs: NodeDefs = {
   BooleanLiteral: { hasSlot: selectNode },
@@ -50,13 +61,12 @@ const nodeDefs: NodeDefs = {
         : null,
   },
   VariableDeclarator: {
-    actions: ({ node, path, code, cursor }) =>
+    actions: ({ node, path, code }) =>
       node.init && {
         on: { code: "Space" },
         do: () => ({
-          code: code.replaceSource(new Range(cursor.end), "= null"),
-          nextCursor: ({ ast }) =>
-            selectNode(getNodeFromPath(ast, path.concat("init"))),
+          code: code.replaceSource(new Range(node.end!), "= null"),
+          nextCursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
         }),
       },
   },
@@ -91,38 +101,18 @@ export const findNodeActions: (
   code: ValidCode,
   cursor: Range
 ) => { node: t.Node; actions: NodeAction[] }[] = (code, cursor) => {
-  const [parents, path] = getParentsAndPathTD(code.ast, cursor.start);
-  return (Array.isArray(parents) ? parents : [])
-    .slice(2)
+  return getLineage(code.ast, cursor.start)
     .reverse()
-    .filter(
-      (node) =>
-        !Array.isArray(node) &&
-        node.start! <= cursor.start &&
-        node.end! >= cursor.end
-    )
-    .map((node, i) => {
-      if (Array.isArray(node)) {
-        return null;
-      }
-      const nodeDef = (nodeDefs as any)[node.type];
+    .map(([node, path]) => {
+      const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
       return {
         node,
         actions: [
-          ...(t.isExpression(node) && expression.actions
-            ? flattenActions(
-                expression.actions({
-                  node,
-                  path: path.slice(0, i),
-                  code,
-                  cursor,
-                })
-              )
-            : []),
           ...(nodeDef && nodeDef.actions
-            ? flattenActions(
-                nodeDef.actions({ node, path: path.slice(0, i), code, cursor })
-              )
+            ? flattenActions(nodeDef.actions({ node, path, code, cursor }))
+            : []),
+          ...(t.isExpression(node) && expression.actions
+            ? flattenActions(expression.actions({ node, path, code, cursor }))
             : []),
         ].filter((a) => !!a),
       };

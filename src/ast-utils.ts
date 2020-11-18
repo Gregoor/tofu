@@ -1,19 +1,6 @@
 import t from "@babel/types";
 
-import { Range } from "./utils";
-
-export function nodeToRange(node: t.Node | t.Node[]): Range | null {
-  if (Array.isArray(node)) {
-    const rangeFirst = node[0] && nodeToRange(node[0]);
-    const rangeLast =
-      node[node.length - 1] && nodeToRange(node[node.length - 1]);
-    return rangeFirst && rangeLast
-      ? new Range(rangeFirst.start, rangeLast.end)
-      : null;
-  } else {
-    return new Range(node.start!, node.end);
-  }
-}
+import { selectNode } from "./cursor/utils";
 
 function* forEachProperty(node: t.Node) {
   for (const prop in node) {
@@ -28,48 +15,42 @@ function* forEachProperty(node: t.Node) {
   }
 }
 
-export function getParentsAndPathTD(
-  node: t.File,
+type Path = (string | number)[];
+
+export function getLineage(
+  parentNode: t.Node,
   pos: number,
-  seen = new Set()
-) {
-  seen.add(node);
-
-  let parents: (t.Node | t.Node[])[] = [];
-  let path: (string | number)[] = [];
-  let range = nodeToRange(node);
-  if (range) {
-    if (range.includes(pos)) {
-      parents.push(node);
-    } else {
-      return [[], []];
-    }
-  }
-  for (let { key, value } of forEachProperty(node)) {
-    if (value && typeof value === "object" && !seen.has(value)) {
-      let [childParents, childPath] = getParentsAndPathTD(value, pos, seen);
-      if (childParents.length > 0) {
-        parents = parents.concat(childParents);
-        path = path.concat(key, childPath);
-        break;
+  parentPath: Path = []
+): [t.Node, Path][] {
+  for (const { key, value } of forEachProperty(parentNode)) {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const childNode = value[i];
+        if (t.isNode(childNode) && selectNode(childNode).includes(pos)) {
+          const childPath = [...parentPath, key, i];
+          return [
+            [childNode, childPath],
+            ...getLineage(childNode, pos, childPath),
+          ];
+        }
       }
+    } else if (t.isNode(value) && selectNode(value).includes(pos)) {
+      const childPath = [...parentPath, key];
+      return [[value, childPath], ...getLineage(value, pos, childPath)];
     }
   }
-  return [parents, path] as const;
+  return [];
 }
 
-export function getParentsAndPathBU(node: t.File, pos: number) {
-  const [parentsTD, pathTD] = getParentsAndPathTD(node, pos);
-  const parentsBU = parentsTD.slice().reverse();
-  const pathBU = pathTD.slice().reverse();
-  return [parentsBU, pathBU] as const;
+export function getParents(ast: t.File, start: number) {
+  return getLineage(ast, start).map(([node]) => node);
 }
 
-export function getNode(ast: t.File, start: number) {
-  const [parents] = getParentsAndPathTD(ast, start);
-  return parents[parents.length - 1] as t.Node;
+export function getNode(ast: t.File, start: number, negIndex = -1) {
+  const parentsAndPaths = getLineage(ast, start);
+  return parentsAndPaths[parentsAndPaths.length + negIndex][0];
 }
 
-export function getNodeFromPath(ast: t.File, path: (string | number)[]) {
+export function getNodeFromPath(ast: t.File, path: Path) {
   return path.reduce<t.Node>((ast, property) => (ast as any)[property], ast);
 }

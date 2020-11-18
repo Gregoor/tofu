@@ -28,6 +28,10 @@ export class Range {
     return this._end ?? this.start;
   }
 
+  isSingle() {
+    return this.start == this.end;
+  }
+
   includes(pos: number): boolean {
     return pos >= this.start && pos <= this.end;
   }

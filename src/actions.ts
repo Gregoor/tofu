@@ -1,10 +1,10 @@
 import generate from "@babel/generator";
 import t from "@babel/types";
 
-import { getNode, getNodeFromPath, getParentsAndPathTD } from "./ast-utils";
-import { Code, ValidCode, codeFromSource } from "./code";
+import { getLineage, getNodeFromPath } from "./ast-utils";
+import { Code, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
-import { selectName, selectNode } from "./cursor/utils";
+import { selectName, selectNodeFromPath } from "./cursor/utils";
 import { findNodeActions } from "./nodes";
 import { NodeAction } from "./nodes/utils";
 import { Change, KeyConfig, Range, modifierKeys } from "./utils";
@@ -54,7 +54,7 @@ const keywords: Keyword[] = [
     name: "return",
     create: () => "return null;",
     getInitialCursor: (ast, path) =>
-      selectNode(getNodeFromPath(ast, path.concat("argument"))),
+      selectNodeFromPath(ast, [...path, "argument"]),
     hidden: true,
     canWrapStatement: false,
   },
@@ -96,7 +96,7 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
   ] as const).map(
     ([key, direction]) =>
       ({
-        on: { key, shiftKey: false },
+        on: { key, shiftKey: false, altKey: false },
         do: (code, cursor) => ({
           cursor: moveCursor(code, cursor, direction),
         }),
@@ -110,25 +110,6 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
   {
     on: isMac ? { code: "ArrowRight", metaKey: true } : { code: "End" },
     do: () => ({}),
-  },
-
-  (code, { start, end }) => {
-    const node = code instanceof ValidCode && getNode(code.ast, start);
-    if (!node) {
-      return null;
-    }
-    return {
-      on: { code: "Tab" },
-      do: (_1, _2, isShifted) => ({
-        cursor: isShifted
-          ? moveCursor(code, new Range(node.start!), "LEFT")
-          : moveCursor(
-              code,
-              new Range(start == end ? node.end! : end),
-              "RIGHT"
-            ),
-      }),
-    };
   },
 
   {
@@ -241,7 +222,7 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
               code.isValid()
                 ? getInitialCursor(
                     code.ast,
-                    getParentsAndPathTD(code.ast, start)[1]
+                    getLineage(code.ast, start).pop()![1]
                   )
                 : cursor,
           }),
@@ -284,6 +265,11 @@ export const findActions = (code: Code, cursor: Range) => ({
     : [],
 });
 
+const modifieresPressed = (action: BaseAction, event: KeyboardEvent) =>
+  modifierKeys.every((key) =>
+    action.on && key in action.on ? action.on[key] == event[key] : true
+  );
+
 export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
   for (const action of getBaseActions(code, cursor)) {
     if (
@@ -291,9 +277,7 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
       ("code" in action.on
         ? action.on.code === event.code
         : action.on.key === event.key) &&
-      modifierKeys.every((key) =>
-        action.on && key in action.on ? action.on[key] == event[key] : true
-      )
+      modifieresPressed(action, event)
     ) {
       return () => action.do(code, cursor, event.shiftKey);
     }
@@ -309,7 +293,8 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
         action.on &&
         ("code" in action.on
           ? action.on.code === event.code
-          : action.on.key === event.key)
+          : action.on.key === event.key) &&
+        modifieresPressed(action, event)
       ) {
         return () => action.do();
       }

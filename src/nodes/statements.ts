@@ -1,12 +1,44 @@
 import t from "@babel/types";
 
-import { getNodeFromPath, getParentsAndPathTD } from "../ast-utils";
-import { selectNode } from "../cursor/utils";
+import { getNodeFromPath } from "../ast-utils";
+import { selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
 import { NodeDefs } from "./utils";
 
+const isAtSingleIfEnd = (node: t.IfStatement, start: number) =>
+  !node.alternate && node.consequent.end! == start;
+const isAtElse = (node: t.IfStatement, start: number, source: string) =>
+  node.alternate &&
+  start ==
+    node.consequent.end! +
+      source
+        .slice(node.consequent.end!, node.alternate.start!)
+        .indexOf("else") +
+      "else".length;
+
 export const statements: NodeDefs = {
-  // ExpressionStatement: { hasSlot: () => true },
+  Program: {
+    actions: ({ code, cursor }) =>
+      ["[]", "{}"].map((pair) => ({
+        on: { key: pair[0] },
+        do: () => ({
+          code: code.replaceSource(cursor, `(${pair})`),
+          nextCursor: () => new Range(cursor.start + 1),
+        }),
+      })),
+  },
+
+  VariableDeclarator: {
+    actions: ({ node, path, code, cursor }) =>
+      !node.init &&
+      cursor.start == node.id.end! && {
+        on: { key: "=" },
+        do: () => ({
+          code: code.replaceSource(cursor, "= null"),
+          nextCursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
+        }),
+      },
+  },
 
   BlockStatement: {
     hasSlot: (node, start) => node.body.length == 0 && node.start! + 1 == start,
@@ -14,65 +46,40 @@ export const statements: NodeDefs = {
 
   IfStatement: {
     hasSlot: (node, start, { source }) =>
-      Boolean(
-        (!node.alternate && node.consequent.end! == start) ||
-          (node.alternate &&
-            start ==
-              node.consequent.end! +
-                source
-                  .slice(node.consequent.end!, node.alternate.start!)
-                  .indexOf("else") +
-                "else".length)
-      ),
+      Boolean(isAtSingleIfEnd(node, start) || isAtElse(node, start, source)),
     actions: ({ node, path, cursor, code }) => [
-      node.alternate
-        ? {
-            info: { type: "CHANGE_ELSE_TO_ELSE_IF" },
-            on: { code: "KeyI" },
-            do: () => ({
-              code: code.replaceSource(cursor, " if (t)"),
-              nextCursor: ({ ast }) =>
-                selectNode(
-                  getNodeFromPath(ast, [
-                    ...getParentsAndPathTD(ast, cursor.start)[1],
-                    "alternate",
-                    "test",
-                  ])
-                ),
-            }),
-          }
-        : [
-            {
-              info: { type: "ADD_ELSE" },
-              on: { code: "KeyE" },
-              do: () => ({
-                code: code.replaceSource(cursor, "else {}"),
-                nextCursor: ({ ast }) =>
-                  new Range(
-                    getNodeFromPath(ast, [...path.slice(0, -1), "alternate"])
-                      .start! - 1
-                  ),
-              }),
+      isAtSingleIfEnd(node, cursor.start) && [
+        {
+          info: { type: "ADD_ELSE" },
+          on: { code: "KeyE" },
+          do: () => ({
+            code: code.replaceSource(new Range(node.end!), "else {}"),
+            nextCursor({ ast }) {
+              return new Range(
+                getNodeFromPath(ast, [...path, "alternate"]).start! - 1
+              );
             },
-            {
-              info: { type: "ADD_ELSE_IF" },
-              on: { code: "KeyI" },
-              do: () => ({
-                code: code.replaceSource(
-                  new Range(node.end!),
-                  "else if(null) {}"
-                ),
-                nextCursor: ({ ast }) =>
-                  selectNode(
-                    getNodeFromPath(ast, [
-                      ...path.slice(0, -1),
-                      "alternate",
-                      "test",
-                    ])
-                  ),
-              }),
-            },
-          ],
+          }),
+        },
+        {
+          info: { type: "ADD_ELSE_IF" },
+          on: { code: "KeyI" },
+          do: () => ({
+            code: code.replaceSource(new Range(node.end!), "else if (null) {}"),
+            nextCursor: ({ ast }) =>
+              selectNodeFromPath(ast, [...path, "alternate", "test"]),
+          }),
+        },
+      ],
+      isAtElse(node, cursor.start, code.source) && {
+        info: { type: "CHANGE_ELSE_TO_ELSE_IF" },
+        on: { code: "KeyI" },
+        do: () => ({
+          code: code.replaceSource(cursor, " if (t)"),
+          nextCursor: ({ ast }) =>
+            selectNode(getNodeFromPath(ast, [...path, "alternate", "test"])),
+        }),
+      },
     ],
   },
 

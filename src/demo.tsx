@@ -1,3 +1,4 @@
+import * as Babel from "@babel/standalone";
 import styled from "@emotion/styled";
 import * as React from "react";
 
@@ -103,15 +104,26 @@ export class Demo extends React.Component {
       this.p5Instance.remove();
       el.innerHTML = "";
     }
-    // this.p5Instance = new (window as any).p5(new Function("sketch", code), el);
+    try {
+      const result = Babel.transform(code, {
+        plugins: [
+          Babel.availablePlugins["syntax-jsx"],
+          Babel.availablePlugins["transform-react-jsx"],
+        ],
+      });
+      this.p5Instance = new (window as any).p5(
+        new Function("sketch", result.code),
+        el
+      );
+    } catch (e) {
+      console.error(e);
+    }
   }, 1000);
 
   render() {
     return (
       <>
         <CanvasContainer ref={this.canvasRef} />
-
-        <Spacer />
 
         <Editor initialValue={WELCOME_CODE} onChange={this.updateP5} />
 

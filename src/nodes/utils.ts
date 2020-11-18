@@ -8,9 +8,7 @@ export type NodeAction = {
   on?: KeyConfig;
   do: () => Change<ValidCode>;
 };
-export type NodeActions = null | NodeAction | NestedActions;
-
-type NestedActions = NodeActions[];
+export type NodeActions = false | null | NodeAction | NodeActions[];
 
 export type NodeHasSlot<T> = (
   node: T,
