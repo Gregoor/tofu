@@ -135,7 +135,10 @@ const ActionButton = ({
       )}
     </div>
     <BareButton {...props}>
-      {on && <Key value={"key" in on ? on.key : on.code} />}
+      {on &&
+        (Array.isArray(on) ? on : [on]).map((on, i) => (
+          <Key key={i} value={"key" in on ? on.key : on.code} />
+        ))}
     </BareButton>
   </ActionButtonRoot>
 );
@@ -166,7 +169,13 @@ export const ActionList = ({
       }
       const sharedModifiers = actions.reduce(
         (modifierKeys, action) =>
-          modifierKeys.filter((modifier) => action.on && action.on[modifier]),
+          modifierKeys.filter(
+            (modifier) =>
+              action.on &&
+              (Array.isArray(action.on) ? action.on : [action.on]).every(
+                (on) => on[modifier]
+              )
+          ),
         (modifierKeys as unknown) as SomeModifiers
       );
       return (

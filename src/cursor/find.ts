@@ -38,17 +38,17 @@ function findCursorX(
   }
 
   if (!direction || direction == "UP" || direction == "DOWN") {
-    const left = findCursorX(code, "LEFT", nextStart);
-    const right = findCursorX(code, "RIGHT", nextStart);
-    const leftBreak = source.slice(left.end, nextStart).includes("\n");
-    const rightBreak = source.slice(nextStart + 1, right.start).includes("\n");
-    if (leftBreak) {
+    const left = findCursorX(code, "LEFT", start);
+    const right = findCursorX(code, "RIGHT", start);
+    const leftBreak = source.slice(left.end, start).includes("\n");
+    const rightBreak = source.slice(start, right.start).includes("\n");
+    if ((direction !== "UP" || !rightBreak) && leftBreak) {
       return right;
     }
-    if (rightBreak) {
+    if (direction !== "DOWN" && rightBreak) {
       return left;
     }
-    return nextStart - left.end < right.start - nextStart ? left : right;
+    return start - left.end < right.start - start ? left : right;
   }
 
   return findCursorX(code, direction, nextStart);

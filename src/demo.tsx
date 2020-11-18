@@ -104,6 +104,7 @@ export class Demo extends React.Component {
       this.p5Instance.remove();
       el.innerHTML = "";
     }
+    return;
     try {
       const result = Babel.transform(code, {
         plugins: [
