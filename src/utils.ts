@@ -54,3 +54,9 @@ export const modifierKeys = [
 type Modifiers = Partial<Record<typeof modifierKeys[number], boolean>>;
 
 export type KeyConfig = ({ code: string } | { key: string }) & Modifiers;
+
+export function justLogErrorButInTheFutureThisWillNeedToReportToSentry(
+  error: Error
+) {
+  console.error(error);
+}

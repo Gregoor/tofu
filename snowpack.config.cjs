@@ -7,7 +7,6 @@ module.exports = {
   plugins: [
     "@snowpack/plugin-react-refresh",
     "@snowpack/plugin-typescript",
-    "@snowpack/plugin-optimize",
     "@snowpack/plugin-webpack"
   ],
   installOptions: {

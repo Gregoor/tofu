@@ -3,18 +3,18 @@ import { useEffect, useState } from "react";
 
 import { Code, codeFromSource } from "./code";
 import { useFormat } from "./format";
-import { useRangeSelect } from "./range-select";
-import { Change, Range } from "./utils";
+import { useSelectRange } from "./select-range";
+import {
+  Change,
+  Range,
+  justLogErrorButInTheFutureThisWillNeedToReportToSentry,
+} from "./utils";
 
 export type EditorState = Readonly<{
   code: Code;
   cursor: Range;
   formattedForPrintWidth: null | number;
 }>;
-
-function logAndEventuallyReportToSentry(error: Error) {
-  console.error(error);
-}
 
 export function useHistory(
   initialValue: string,
@@ -31,7 +31,7 @@ export function useHistory(
   const [formatOptions, setFormatOptions] = useState<null | {
     nextCursor: (code: Code, cursor: Range) => Range;
   }>(null);
-  const rangeSelect = useRangeSelect();
+  const selectRange = useSelectRange();
   const format = useFormat();
 
   const current = history[index];
@@ -52,7 +52,7 @@ export function useHistory(
         };
         setHistory(newHistory);
       } catch (error) {
-        logAndEventuallyReportToSentry(error);
+        justLogErrorButInTheFutureThisWillNeedToReportToSentry(error);
       }
       setFormatOptions(null);
       return;
@@ -68,7 +68,7 @@ export function useHistory(
       .then((result: any) => {
         if (!result) {
           if (formatOptions) {
-            logAndEventuallyReportToSentry(
+            justLogErrorButInTheFutureThisWillNeedToReportToSentry(
               new Error("error while formatting, uck!")
             );
           }
@@ -124,12 +124,13 @@ export function useHistory(
           formattedForPrintWidth:
             "code" in change &&
             change.code &&
-            change.code.source !== current.code.source
+            change.code.source !== current.code.source &&
+            (!("skipFormatting" in change) || !change.skipFormatting)
               ? null
               : current.formattedForPrintWidth,
           ...("rangeSelect" in change
             ? {
-                cursor: rangeSelect.run(
+                cursor: selectRange(
                   current.code,
                   current.cursor,
                   change.rangeSelect

@@ -2,12 +2,18 @@ import generate from "@babel/generator";
 import t from "@babel/types";
 
 import { getLineage, getNodeFromPath } from "./ast-utils";
-import { Code, codeFromSource } from "./code";
+import { Code, ValidCode, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
-import { selectName, selectNodeFromPath } from "./cursor/utils";
+import { selectName, selectNode, selectNodeFromPath } from "./cursor/utils";
 import { findNodeActions } from "./nodes";
 import { NodeAction } from "./nodes/utils";
-import { Change, KeyConfig, Range, modifierKeys } from "./utils";
+import {
+  Change,
+  KeyConfig,
+  Range,
+  justLogErrorButInTheFutureThisWillNeedToReportToSentry,
+  modifierKeys,
+} from "./utils";
 
 type BaseAction = {
   info?: any;
@@ -196,11 +202,68 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
         code.isValid()
           ? {
               info: { type: "RANGE_SELECT", direction } as const,
-              on: { code: keyCode, shiftKey: true },
+              on: { code: keyCode, shiftKey: true, altKey: false },
               do: () => ({ rangeSelect: direction }),
             }
           : null) as BaseActionCreator
   ),
+
+  (code) =>
+    code.isValid()
+      ? {
+          info: { type: "STRETCH" } as const,
+          on: { code: "ArrowUp", altKey: true },
+          do: (_, cursor) => {
+            const nodes = getLineage(code.ast, cursor.start).reverse();
+            const selectedNodeIndex = nodes.findIndex(
+              ([node]) => node.start! <= cursor.start && node.end! >= cursor.end
+            );
+            if (selectedNodeIndex == -1) {
+              justLogErrorButInTheFutureThisWillNeedToReportToSentry(
+                new Error("Assertion: there should always be a selected node")
+              );
+              return {};
+            }
+            const [selectedNode] = nodes[selectedNodeIndex];
+            const typeCheck = [t.isExpression, t.isStatement].find((test) =>
+              test(selectedNode)
+            );
+            if (!typeCheck) {
+              return {};
+            }
+            const result = nodes
+              .slice(selectedNodeIndex + 1)
+              .find(
+                ([node]) =>
+                  typeCheck(node) &&
+                  node.start! <= selectedNode.start! &&
+                  node.end! >= selectedNode.end!
+              );
+            if (!result) {
+              return {};
+            }
+            const [parentNode, parentPath] = result;
+            return {
+              code: code.replaceSource(
+                selectNode(parentNode),
+                code.source.slice(selectedNode.start!, selectedNode.end!)
+              ),
+              nextCursor: (code) => {
+                if (code.isValid()) {
+                  return selectNodeFromPath(code.ast, parentPath);
+                } else {
+                  justLogErrorButInTheFutureThisWillNeedToReportToSentry(
+                    new Error(
+                      "Assertion: move out should always generate valid code"
+                    )
+                  );
+                  return {};
+                }
+              },
+            };
+          },
+        }
+      : null,
 
   ...keywords.map(
     ({ name, create, getInitialCursor }) =>

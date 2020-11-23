@@ -3,7 +3,7 @@ import t from "@babel/types";
 import { getNode, getNodeFromPath } from "../ast-utils";
 import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
-import { NodeDefs } from "./utils";
+import { NodeDef, NodeDefs } from "./utils";
 
 const isAtSingleIfEnd = (node: t.IfStatement, start: number) =>
   !node.alternate && node.consequent.end! == start;
@@ -15,6 +15,12 @@ const isAtElse = (node: t.IfStatement, start: number, source: string) =>
         .slice(node.consequent.end!, node.alternate.start!)
         .indexOf("else") +
       "else".length;
+
+export const statement: NodeDef<t.Statement> = {
+  hasSlot: (node, start) =>
+    (t.isIfStatement(node) || t.isFor(node) || t.isDeclaration(node)) &&
+    start == node.start,
+};
 
 export const statements: NodeDefs = {
   Program: {
@@ -121,7 +127,7 @@ export const statements: NodeDefs = {
   },
   ForOfStatement: {
     actions: ({ node, path, code }) => ({
-      info: { type: "CONVERT", from: "ForOfStatement", to: "ForStatement" },
+      info: { type: "CONVERT", to: "ForStatement" },
       on: { code: "KeyO" },
       /**
        * from:

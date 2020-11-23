@@ -3,7 +3,7 @@ import * as React from "react";
 import { ButtonHTMLAttributes } from "react";
 
 import { Action } from "../actions";
-import { Key, font } from "../ui";
+import { Gap, Key, Space, font } from "../ui";
 import { Direction, modifierKeys } from "../utils";
 import {
   ActionText,
@@ -77,11 +77,6 @@ const getActionText = (info: Action["info"]) => {
   }
 };
 
-const Gap = styled.div`
-  width: ${({ theme }) => theme.l.gap};
-  display: inline-block;
-`;
-
 const ActionVariant = styled.li`
   margin-bottom: ${({ theme }) => theme.l.gap};
   display: flex;
@@ -130,7 +125,7 @@ const ActionButton = ({
       <Gap />
       {single && (
         <TextButton small onClick={() => toggleItem(info.type)}>
-          (hide)
+          ╳
         </TextButton>
       )}
     </div>
@@ -183,9 +178,9 @@ export const ActionList = ({
           <ActionTitle>
             <div>
               {humanize(type)}
-              <Gap />
+              <Space />
               <TextButton small onClick={() => toggleItem(type)}>
-                (hide)
+                ╳
               </TextButton>
             </div>
 

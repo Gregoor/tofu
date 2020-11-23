@@ -1,16 +1,10 @@
 import t from "@babel/types";
 
-import { getLineage, getNode } from "../ast-utils";
+import { getLineage } from "../ast-utils";
 import { ValidCode } from "../code";
-import {
-  selectKind,
-  selectNode,
-  selectNodeFromPath,
-  selectOperator,
-} from "../cursor/utils";
 import { Range } from "../utils";
 import { expression, expressions } from "./expressions";
-import { statements } from "./statements";
+import { statement, statements } from "./statements";
 import {
   NodeAction,
   NodeActions,
@@ -34,10 +28,15 @@ export const findNodeSlot: (
       return slot instanceof Range ? slot : new Range(start);
     }
   }
-  if (t.isExpression(node)) {
-    const slot = expression.hasSlot!(node, start, code);
-    if (slot) {
-      return slot instanceof Range ? slot : new Range(start);
+  for (const [typeCheck, slotCheck] of [
+    [t.isExpression, expression.hasSlot],
+    [t.isStatement, statement.hasSlot],
+  ] as const) {
+    if (typeCheck(node)) {
+      const slot = slotCheck!(node as any, start, code);
+      if (slot) {
+        return slot instanceof Range ? slot : new Range(start);
+      }
     }
   }
   return null;

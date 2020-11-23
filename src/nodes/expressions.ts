@@ -1,5 +1,6 @@
 import generate from "@babel/generator";
 import t from "@babel/types";
+import pick from "lodash.pick";
 
 import { getNode, getNodeFromPath } from "../ast-utils";
 import {
@@ -167,7 +168,7 @@ export const expression: NodeDef<t.Expression> = {
         ],
 
       node.end == start && [
-        !t.isMemberExpression(getNode(code.ast, start, -2)) && {
+        {
           info: {
             type: "MAKE_MEMBER",
           },
@@ -320,16 +321,45 @@ export const expressions: NodeDefs = {
     hasSlot: (node, start) => node.computed && start == node.end,
   },
 
+  FunctionExpression: {
+    hasSlot: (node, start, code) =>
+      start ==
+        node.start! +
+          code.source
+            .slice(node.start!, node.body.start!)
+            .indexOf("function ") +
+          "function ".length ||
+      (node.params.length == 0 &&
+        start ==
+          node.start! +
+            code.source.slice(node.start!, node.body.start!).indexOf("()") +
+            1),
+  },
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>
       node.params.length == 0 && node.start! + 1 == start,
-    actions: ({ node, cursor, ...params }) =>
+    actions: ({ node, cursor, code, path }) => [
       cursor.start < node.body.start! &&
-      addElementAction(
-        { node, cursor, ...params },
-        "params",
-        t.identifier("p")
-      ),
+        addElementAction(
+          { node, path, code, cursor },
+          "params",
+          t.identifier("p")
+        ),
+
+      {
+        info: { type: "CONVERT", to: "FunctionExpression" },
+        do: () => ({
+          code: code.mutateAST((ast) => {
+            (getNodeFromPath(ast, path.slice(0, -1)) as any)[
+              path[path.length - 1]
+            ] = Object.assign(
+              t.functionExpression(null, [], t.blockStatement([])),
+              pick(node, "params", "async", "body")
+            );
+          }),
+        }),
+      },
+    ],
   },
 
   CallExpression: {

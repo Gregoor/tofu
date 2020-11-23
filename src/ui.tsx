@@ -20,11 +20,30 @@ export const theme: Theme = {
   borderRadius: "10px",
 };
 
+const room = (size: string) => css`
+  width: ${size};
+  height: ${size};
+  display: inline-block;
+`;
+
+export const Gap = styled.div`
+  ${({ theme }) => room(theme.l.gap)}
+`;
+
+export const Space = styled.div`
+  ${({ theme }) => room(theme.l.space)}
+`;
+
+export const Abyss = styled.div`
+  ${({ theme }) => room(theme.l.abyss)}
+`;
+
 export const font = css`
   font-family: "Roboto Mono", monospace;
 `;
 
-const KeyRoot = styled.span`
+const KeyRoot = styled.div`
+  display: inline-block;
   border: 1px solid grey;
   padding: 0 ${({ theme }) => theme.l.gap};
   height: 22px;
@@ -43,7 +62,6 @@ const KEY_MAP = {
   altKey: isMac ? "⌥" : "Alt",
   Enter: "↵",
 };
-
 export const Key = ({ value }: { value: string }) => (
   <KeyRoot title={value}>
     {(KEY_MAP as any)[value] ||

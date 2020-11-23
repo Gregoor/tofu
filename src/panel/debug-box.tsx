@@ -58,7 +58,7 @@ export function DebugBox({
           toggleItem(DEBUG_KEY);
         }}
       >
-        hide
+        ╳
       </TextButton>
     </Root>
   );
