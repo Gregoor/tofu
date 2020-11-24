@@ -55,7 +55,7 @@ export function codeFromSource(source: string) {
   try {
     return new ValidCode(
       source,
-      parse(source, { plugins: ["jsx", "typescript"] })
+      parse(source, { sourceType: "module", plugins: ["jsx", "typescript"] })
     );
   } catch (error) {
     if (!(error instanceof SyntaxError)) {

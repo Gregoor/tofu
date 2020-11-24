@@ -23,9 +23,15 @@ export type NodeActionParams<T> = {
   code: ValidCode;
 };
 
+export type OnNodeInput<T> = (
+  params: NodeActionParams<T>,
+  data: string
+) => false | Change<ValidCode>;
+
 export type NodeDef<T> = {
   hasSlot?: NodeHasSlot<T>;
   actions?: (params: NodeActionParams<T>) => NodeActions;
+  onInput?: OnNodeInput<T>;
 };
 
 export type NodeDefs = Partial<

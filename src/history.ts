@@ -125,7 +125,7 @@ export function useHistory(
             "code" in change &&
             change.code &&
             change.code.source !== current.code.source &&
-            (!("skipFormatting" in change) || !change.skipFormatting)
+            !("skipFormatting" in change && change.skipFormatting)
               ? null
               : current.formattedForPrintWidth,
           ...("rangeSelect" in change

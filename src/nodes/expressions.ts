@@ -9,6 +9,7 @@ import {
   selectOperator,
 } from "../cursor/utils";
 import { Range } from "../utils";
+import { jsxExpressions } from "./jsx-expressions";
 import { NodeActionParams, NodeActions, NodeDef, NodeDefs } from "./utils";
 
 function findSlotIndex(collection: any[], start: number) {
@@ -231,9 +232,6 @@ export const expressions: NodeDefs = {
 
   Identifier: { hasSlot: () => true },
 
-  JSXIdentifier: { hasSlot: () => true },
-  JSXText: { hasSlot: () => true },
-
   UnaryExpression: { hasSlot: () => true },
   BinaryExpression: {
     hasSlot: (node, start, { source }) => {
@@ -373,4 +371,6 @@ export const expressions: NodeDefs = {
         t.nullLiteral()
       ),
   },
+
+  ...jsxExpressions,
 };

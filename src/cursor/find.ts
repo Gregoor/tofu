@@ -1,4 +1,4 @@
-import { getParents } from "../ast-utils";
+import { getLineageNodes } from "../ast-utils";
 import { ValidCode } from "../code";
 import { findNodeSlot } from "../nodes";
 import { Direction, Range } from "../utils";
@@ -27,7 +27,7 @@ function findCursorX(
     return new Range(nextStart);
   }
 
-  for (const node of getParents(ast, nextStart).reverse()) {
+  for (const node of getLineageNodes(ast, nextStart).reverse()) {
     if (Array.isArray(node)) {
       continue;
     }

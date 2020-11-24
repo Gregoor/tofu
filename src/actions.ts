@@ -2,10 +2,10 @@ import generate from "@babel/generator";
 import t from "@babel/types";
 
 import { getLineage, getNodeFromPath } from "./ast-utils";
-import { Code, ValidCode, codeFromSource } from "./code";
+import { Code, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
 import { selectName, selectNode, selectNodeFromPath } from "./cursor/utils";
-import { findNodeActions } from "./nodes";
+import { findNodeActions, handleNodeInput } from "./nodes";
 import { NodeAction } from "./nodes/utils";
 import {
   Change,
@@ -54,6 +54,14 @@ const keywords: Keyword[] = [
           "id",
         ]) as t.Identifier
       ),
+    canWrapStatement: true,
+  },
+
+  {
+    name: "function",
+    create: () => "function a() {}",
+    getInitialCursor: (ast, path) => selectNodeFromPath(ast, [...path, "id"]),
+    hidden: true,
     canWrapStatement: true,
   },
   {
@@ -118,9 +126,45 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
     do: () => ({}),
   },
 
+  ...keywords.map(
+    ({ name, create, getInitialCursor }) =>
+      ((code, { start }) => {
+        if (
+          code.source.slice(start - name.length, start) != name ||
+          code.source[start + 1] != "\n"
+        ) {
+          return null;
+        }
+        return {
+          on: { code: "Space" },
+          do: () => ({
+            code: code.replaceSource(
+              new Range(start - name.length, start),
+              create()
+            ),
+            nextCursor: (code, cursor) =>
+              code.isValid()
+                ? getInitialCursor(
+                    code.ast,
+                    getLineage(code.ast, start).pop()![1]
+                  )
+                : cursor,
+          }),
+        };
+      }) as BaseActionCreator
+  ),
+  {
+    on: { code: "Space" },
+    do: (code, cursor) => ({
+      code: code.replaceSource(cursor, " "),
+      cursor: new Range(cursor.start + 1),
+      skipFormatting: true,
+    }),
+  },
+
   {
     on: { code: "Enter" },
-    do: (code, { start }, isShifted) => {
+    do(code, { start }, isShifted) {
       const accuCharCounts = (code.source.split("\n") as string[])
         .map((s, i) => s.length + (i == 0 ? 0 : 1))
         .reduce<number[]>(
@@ -264,34 +308,6 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
           },
         }
       : null,
-
-  ...keywords.map(
-    ({ name, create, getInitialCursor }) =>
-      ((code, { start }) => {
-        if (
-          code.source.slice(start - name.length, start) != name ||
-          code.source[start + 1] != "\n"
-        ) {
-          return null;
-        }
-        return {
-          on: { code: "Space" },
-          do: () => ({
-            code: code.replaceSource(
-              new Range(start - name.length, start),
-              create()
-            ),
-            nextCursor: (code, cursor) =>
-              code.isValid()
-                ? getInitialCursor(
-                    code.ast,
-                    getLineage(code.ast, start).pop()![1]
-                  )
-                : cursor,
-          }),
-        };
-      }) as BaseActionCreator
-  ),
 ];
 
 export const getBaseActions = (code: Code, cursor: Range) =>
@@ -332,6 +348,24 @@ const modifieresPressed = (on: BaseAction["on"], event: KeyboardEvent) =>
   modifierKeys.every((key) => (on && key in on ? on[key] == event[key] : true));
 
 export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
+  if (code.isValid()) {
+    const action = findNodeActions(code, cursor)
+      .map(({ actions }) => actions)
+      .flat()
+      .find(
+        (action) =>
+          action.on &&
+          (Array.isArray(action.on) ? action.on : [action.on]).some(
+            (on) =>
+              ("code" in on ? on.code === event.code : on.key === event.key) &&
+              modifieresPressed(on, event)
+          )
+      );
+    if (action) {
+      return action.do;
+    }
+  }
+
   for (const action of getBaseActions(code, cursor)) {
     if (
       action.on &&
@@ -343,25 +377,23 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
       return () => action.do(code, cursor, event.shiftKey);
     }
   }
+}
 
-  if (!code.isValid()) {
-    return;
+export function handleInput(
+  code: Code,
+  cursor: Range,
+  data: string
+): Change<Code> {
+  const change = code.isValid() && handleNodeInput(code, cursor, data);
+  if (change) {
+    return change;
   }
-
-  for (const { actions } of findNodeActions(code, cursor)) {
-    for (const action of actions) {
-      if (
-        action.on &&
-        (Array.isArray(action.on) ? action.on : [action.on]).some(
-          (on) =>
-            ("code" in on ? on.code === event.code : on.key === event.key) &&
-            modifieresPressed(on, event)
-        )
-      ) {
-        return () => action.do();
-      }
-    }
-  }
-
-  return null;
+  const { source } = code;
+  const { start, end } = cursor;
+  const newSource = source.slice(0, start) + data + source.slice(end);
+  const newStart = start + data.length;
+  return {
+    code: codeFromSource(newSource),
+    cursor: new Range(newStart),
+  };
 }

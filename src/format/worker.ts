@@ -1,3 +1,5 @@
+import { log } from "util";
+
 import babel from "prettier/parser-babel";
 import prettier from "prettier/standalone";
 
@@ -27,6 +29,10 @@ export type FormatParameters = Parameters<typeof format>[0];
 export type FormatResult = ReturnType<typeof format>;
 
 onmessage = (event: MessageEvent<FormatParameters>) => {
-  const formatResult = format(event.data);
-  (postMessage as Worker["postMessage"])(formatResult);
+  try {
+    const formatResult = format(event.data);
+    (postMessage as Worker["postMessage"])(formatResult);
+  } catch (e) {
+    console.error("wat", e);
+  }
 };

@@ -1,10 +1,13 @@
 import * as Babel from "@babel/standalone";
 import styled from "@emotion/styled";
 import * as React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { Editor } from "./editor";
-import { Abyss, Key, Space, font } from "./ui";
+import { Editor } from "../editor";
+import { Abyss, Key, font } from "../ui";
+import { p5Runner } from "./p5";
+import { reactRunner } from "./react";
+import { Runner } from "./utils";
 
 function debounce(func: Function, wait: number) {
   let timeout: null | NodeJS.Timeout;
@@ -37,9 +40,8 @@ const Card = styled.section`
   font-family: "Open Sans", sans-serif;
 `;
 
-const Output = styled.iframe`
+const Output = styled.div`
   height: 350px;
-  border: none;
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -48,42 +50,6 @@ const Output = styled.iframe`
 const Keyword = styled.span`
   font-weight: bold;
   ${font};
-`;
-
-const WELCOME_CODE =
-  localStorage.getItem("code") ||
-  `// Demo using p5js (https://p5js.org)
-const TOTAL = 23;
-const EXPONENT = 5;
-const WEIGHT = 3;
-const MODULO = 10000;
-
-let factor;
-
-window.setup = () => {
-  createCanvas(300, 300);
-  fill(255);
-  factor = (width - WEIGHT) / 2 / Math.pow(2, EXPONENT);
-};
-
-window.draw = () => {
-  const now = performance.now();
-
-  clear();
-  stroke(0);
-  strokeWeight(WEIGHT);
-
-  for (let i = 0; i < TOTAL; i++) {
-    let n = 1 - i / TOTAL;
-    circle(
-      width / 2,
-      height / 2,
-      Math.sin((2 * Math.PI * (performance.now() % MODULO)) / MODULO) *
-        Math.pow(1 + n, EXPONENT) *
-        factor,
-    );
-  }
-};
 `;
 
 const AboutCard = () => (
@@ -143,40 +109,16 @@ const LinksCard = () => (
 );
 
 export function Demo() {
-  const output = useRef<null | HTMLIFrameElement>(null);
+  const [runner, setRunner] = useState<Runner>(reactRunner);
+  const [initialSource] = useState(
+    () => localStorage.getItem("source") || runner.example
+  );
+  const output = useRef<HTMLDivElement>(null);
 
-  const updateP5 = useCallback(
-    debounce((code: string) => {
-      localStorage.setItem("code", code);
-
-      const iframe = output.current!;
-      iframe.addEventListener(
-        "load",
-        () => {
-          try {
-            const result = Babel.transform(code, {
-              plugins: [
-                Babel.availablePlugins["syntax-jsx"],
-                Babel.availablePlugins["transform-react-jsx"],
-              ],
-            });
-            (iframe.contentWindow as any).eval(result.code);
-            const script = document.createElement("script");
-            script.src =
-              "https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.js";
-            const { body } = iframe.contentDocument!;
-            Object.assign(body.style, {
-              display: "flex",
-              "justify-content": "center",
-            });
-            body.appendChild(script);
-          } catch (e) {
-            console.error(e);
-          }
-        },
-        { once: true }
-      );
-      iframe.contentWindow!.location.reload();
+  const updateOutput = useCallback(
+    debounce((source: string) => {
+      localStorage.setItem("source", source);
+      runner.run(output.current!, source);
     }, 1000),
     []
   );
@@ -185,7 +127,7 @@ export function Demo() {
     <Rows>
       <Output ref={output} />
       <Abyss />
-      <Editor initialValue={WELCOME_CODE} onChange={updateP5} />
+      <Editor initialValue={initialSource} onChange={updateOutput} />
 
       <Abyss />
 

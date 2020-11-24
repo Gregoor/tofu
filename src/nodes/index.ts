@@ -2,7 +2,7 @@ import t from "@babel/types";
 
 import { getLineage } from "../ast-utils";
 import { ValidCode } from "../code";
-import { Range } from "../utils";
+import { Change, Range } from "../utils";
 import { expression, expressions } from "./expressions";
 import { statement, statements } from "./statements";
 import {
@@ -48,8 +48,8 @@ const flattenActions = (actions: NodeActions): NodeAction[] =>
 export const findNodeActions: (
   code: ValidCode,
   cursor: Range
-) => { node: t.Node; actions: NodeAction[] }[] = (code, cursor) => {
-  return getLineage(code.ast, cursor.start)
+) => { node: t.Node; actions: NodeAction[] }[] = (code, cursor) =>
+  getLineage(code.ast, cursor.start)
     .reverse()
     .map(([node, path]) => {
       const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
@@ -68,4 +68,21 @@ export const findNodeActions: (
     .filter((e) => e && e.node && e.actions.length > 0) as ReturnType<
     typeof findNodeActions
   >;
-};
+
+export function handleNodeInput(
+  code: ValidCode,
+  cursor: Range,
+  data: string
+): null | Change<ValidCode> {
+  for (const [node, path] of getLineage(code.ast, cursor.start).reverse()) {
+    const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
+    const change =
+      nodeDef &&
+      "onInput" in nodeDef &&
+      nodeDef.onInput!({ node, path, code, cursor }, data);
+    if (change) {
+      return change;
+    }
+  }
+  return null;
+}

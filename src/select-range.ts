@@ -1,7 +1,7 @@
 import t from "@babel/types";
 import { useState } from "react";
 
-import { getNode, getParents } from "./ast-utils";
+import { getLineageNodes, getNode } from "./ast-utils";
 import { Code } from "./code";
 import { findCursor } from "./cursor/find";
 import { selectNode } from "./cursor/utils";
@@ -26,7 +26,7 @@ export function useSelectRange() {
     }
 
     if (direction == "UP") {
-      for (const node of getParents(ast, cursor.start).reverse()) {
+      for (const node of getLineageNodes(ast, cursor.start).reverse()) {
         const nextCursor = selectNode(node);
 
         if (cursor.start > nextCursor.start || cursor.end < nextCursor.end) {
@@ -39,7 +39,7 @@ export function useSelectRange() {
       if (!initialRange || cursor.isSingle()) {
         return cursor;
       }
-      for (const node of getParents(ast, initialRange!.start)) {
+      for (const node of getLineageNodes(ast, initialRange!.start)) {
         const nodeCursor = selectNode(node);
         const selectOverlaps =
           cursor.start == nodeCursor.start && cursor.end == nodeCursor.end;
@@ -72,7 +72,7 @@ export function useSelectRange() {
         Math.max(cursor.end, nextCursor.end)
       );
     }
-    const collection = getParents(ast, cursor.start)
+    const collection = getLineageNodes(ast, cursor.start)
       .reverse()
       .find((node) => Array.isArray(node));
     if (!collection || !Array.isArray(collection)) {

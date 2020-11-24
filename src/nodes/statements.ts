@@ -3,6 +3,7 @@ import t from "@babel/types";
 import { getNode, getNodeFromPath } from "../ast-utils";
 import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
+import { expressions } from "./expressions";
 import { NodeDef, NodeDefs } from "./utils";
 
 const isAtSingleIfEnd = (node: t.IfStatement, start: number) =>
@@ -24,7 +25,7 @@ export const statement: NodeDef<t.Statement> = {
 
 export const statements: NodeDefs = {
   Program: {
-    actions: ({ code, cursor }) =>
+    actions: ({ code, cursor }) => [
       ["[]", "{}"].map((pair) => ({
         on: { key: pair[0] },
         do: () => ({
@@ -32,6 +33,14 @@ export const statements: NodeDefs = {
           nextCursor: () => new Range(cursor.start + 1),
         }),
       })),
+      {
+        on: { key: "<" },
+        do: () => ({
+          code: code.replaceSource(cursor, `<></>`),
+          nextCursor: () => new Range(cursor.start + 1),
+        }),
+      },
+    ],
   },
 
   VariableDeclaration: {
@@ -167,6 +176,8 @@ export const statements: NodeDefs = {
       }),
     }),
   },
+
+  FunctionDeclaration: expressions.FunctionExpression as any,
 
   ReturnStatement: {
     hasSlot: (node, start) => !node.argument && node.end! - 1 == start,

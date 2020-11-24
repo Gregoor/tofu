@@ -2,7 +2,7 @@ import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
 import React, { useCallback, useEffect, useState } from "react";
 
-import { findAction } from "./actions";
+import { findAction, handleInput } from "./actions";
 import { codeFromSource } from "./code";
 import { CodeTextArea } from "./code-text-area";
 import { moveCursor } from "./cursor/move";
@@ -104,14 +104,7 @@ export function Editor({
           if (!event.data) {
             return;
           }
-
-          const newSource =
-            source.slice(0, start) + event.data + source.slice(end);
-          const newStart = start + event.data.length;
-          applyChange({
-            code: codeFromSource(newSource),
-            cursor: new Range(newStart),
-          });
+          applyChange(handleInput(code, cursor, event.data));
         }}
         onCut={(event) => {
           if (start === end) {

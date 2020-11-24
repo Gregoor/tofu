@@ -22,27 +22,33 @@ export function getLineage(
   pos: number,
   parentPath: Path = []
 ): [t.Node, Path][] {
+  const candidates: ReturnType<typeof getLineage> = [];
   for (const { key, value } of forEachProperty(parentNode)) {
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
         const childNode = value[i];
         if (t.isNode(childNode) && selectNode(childNode).includes(pos)) {
-          const childPath = [...parentPath, key, i];
-          return [
-            [childNode, childPath],
-            ...getLineage(childNode, pos, childPath),
-          ];
+          candidates.push([childNode, [...parentPath, key, i]]);
         }
       }
     } else if (t.isNode(value) && selectNode(value).includes(pos)) {
-      const childPath = [...parentPath, key];
-      return [[value, childPath], ...getLineage(value, pos, childPath)];
+      candidates.push([value, [...parentPath, key]]);
     }
   }
-  return [];
+  const candidate =
+    candidates.length == 1
+      ? candidates[0]
+      : candidates.find(
+          ([node]) =>
+            // TODO: Invert that control
+            !t.isJSXOpeningElement(node) && !t.isJSXClosingElement(node)
+        );
+  return candidate
+    ? [candidate, ...getLineage(candidate[0], pos, candidate[1])]
+    : [];
 }
 
-export function getParents(ast: t.File, start: number) {
+export function getLineageNodes(ast: t.File, start: number) {
   return getLineage(ast, start).map(([node]) => node);
 }
 
