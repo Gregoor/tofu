@@ -35,13 +35,15 @@ export function getLineage(
       candidates.push([value, [...parentPath, key]]);
     }
   }
+  // TODO: Invert that control, finding multiple candidates seems to be JSX exclusive
   const candidate =
     candidates.length == 1
       ? candidates[0]
-      : candidates.find(
-          ([node]) =>
-            // TODO: Invert that control
-            !t.isJSXOpeningElement(node) && !t.isJSXClosingElement(node)
+      : !candidates.every(
+          ([node]) => t.isJSXOpeningElement(node) && t.isJSXClosingElement(node)
+        ) &&
+        candidates.find(([node1]) =>
+          candidates.every(([node2]) => node1.start! >= node2.start!)
         );
   return candidate
     ? [candidate, ...getLineage(candidate[0], pos, candidate[1])]

@@ -1,11 +1,11 @@
 import t from "@babel/types";
 import { useState } from "react";
 
-import { getLineageNodes, getNode } from "./ast-utils";
-import { Code } from "./code";
-import { findCursor } from "./cursor/find";
-import { selectNode } from "./cursor/utils";
-import { Direction, Range } from "./utils";
+import { getLineageNodes, getNode } from "../ast-utils";
+import { Code } from "../code";
+import { Direction, Range } from "../utils";
+import { findCursor } from "./find";
+import { selectNode } from "./utils";
 
 const findIndexForCursor = (collection: t.Node[], { start, end }: Range) =>
   collection.findIndex((node) => node.start! <= start && node.end! >= end);

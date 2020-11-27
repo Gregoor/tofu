@@ -5,25 +5,29 @@ import ReactDOM from "react-dom";
 import { justLogErrorButInTheFutureThisWillNeedToReportToSentry } from "../utils";
 import { Runner } from "./utils";
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }> {
-  state = { hasError: false };
+class ErrorBoundary extends React.Component<{
+  iteration: number;
+  children: React.ReactNode;
+}> {
+  state = { errorAtIteration: -1 };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  componentDidCatch() {
+    this.setState({ errorAtIteration: this.props.iteration });
   }
 
   render() {
-    return this.state.hasError ? (
+    const { children, iteration } = this.props;
+    return this.state.errorAtIteration == iteration ? (
       <h1>Something went wrong.</h1>
     ) : (
-      this.props.children
+      children
     );
   }
 }
 
 export const reactRunner: Runner = {
   example: "",
-  run(container, source) {
+  run(container, source, iteration) {
     const result = Babel.transform(source, {
       plugins: [
         Babel.availablePlugins["syntax-jsx"],
@@ -40,11 +44,18 @@ export const reactRunner: Runner = {
         )(React, React) ||
         (() => (
           <p>
-            Declare a component named <code>App</code> to see results
+            Declare a component named <code>App</code> to see results. For
+            example:
+            <pre>
+              <code>
+                function App() {"{\n"}
+                {"  "}return {"<h1>Hello World</h1>"};{"\n}"}
+              </code>
+            </pre>
           </p>
         ));
       ReactDOM.render(
-        <ErrorBoundary>
+        <ErrorBoundary iteration={iteration}>
           <Main />
         </ErrorBoundary>,
         container

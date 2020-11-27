@@ -4,6 +4,7 @@ import { getLineage } from "../ast-utils";
 import { ValidCode } from "../code";
 import { Change, Range } from "../utils";
 import { expression, expressions } from "./expressions";
+import { misc } from "./misc";
 import { statement, statements } from "./statements";
 import {
   NodeAction,
@@ -16,6 +17,7 @@ import {
 const nodeDefs: NodeDefs = {
   ...expressions,
   ...statements,
+  ...misc,
 };
 
 export const findNodeSlot: (

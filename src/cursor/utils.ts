@@ -23,8 +23,12 @@ export function selectOperator(
   return new Range(start!, start + node.operator.length);
 }
 
-export const selectName = ({ start, name }: t.Identifier) =>
+const selectName = ({ start, name }: t.Identifier) =>
   new Range(start!, start! + name.length);
+
+export const selectNameFromPath = (
+  ...params: Parameters<typeof getNodeFromPath>
+) => selectName(getNodeFromPath(...params) as t.Identifier);
 
 export const selectKind = ({ start, kind }: t.VariableDeclaration) =>
   new Range(start!, start! + kind.length);

@@ -2,8 +2,8 @@ import pick from "lodash.pick";
 import { useEffect, useState } from "react";
 
 import { Code, codeFromSource } from "./code";
+import { useSelectRange } from "./cursor/select-range";
 import { useFormat } from "./format";
-import { useSelectRange } from "./select-range";
 import {
   Change,
   Range,

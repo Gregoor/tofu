@@ -108,8 +108,21 @@ const LinksCard = () => (
   </Card>
 );
 
-export function Demo() {
+function useRunner() {
   const [runner, setRunner] = useState<Runner>(reactRunner);
+  const iteration = useRef(0);
+  return [
+    {
+      example: runner.example,
+      run: (...params: any[]) =>
+        (runner.run as any)(...params, iteration.current++),
+    },
+    setRunner,
+  ] as const;
+}
+
+export function Demo() {
+  const [runner, setRunner] = useRunner();
   const [initialSource] = useState(
     () => localStorage.getItem("source") || runner.example
   );
@@ -119,7 +132,7 @@ export function Demo() {
     debounce((source: string) => {
       localStorage.setItem("source", source);
       runner.run(output.current!, source);
-    }, 1000),
+    }, 200),
     []
   );
 

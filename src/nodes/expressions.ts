@@ -10,15 +10,14 @@ import {
 } from "../cursor/utils";
 import { Range } from "../utils";
 import { jsxExpressions } from "./jsx-expressions";
-import { NodeActionParams, NodeActions, NodeDef, NodeDefs } from "./utils";
-
-function findSlotIndex(collection: any[], start: number) {
-  let index = collection.findIndex((n) => n && n.start > start);
-  if (index == -1) {
-    index = collection.length;
-  }
-  return index;
-}
+import {
+  NodeActionParams,
+  NodeActions,
+  NodeDef,
+  NodeDefs,
+  addElementAction,
+  findSlotIndex,
+} from "./utils";
 
 function checkForEmptyElements(
   node: t.ArrayExpression,
@@ -41,35 +40,6 @@ function checkForEmptyElements(
     .filter((n, i) => emptyElementIndexes.includes(i))
     .includes(start);
 }
-
-const addElementAction = (
-  { node, path, code, cursor: { start, end } }: NodeActionParams<t.Node>,
-  collectionKey: string,
-  initialValue: t.Node
-): NodeActions =>
-  start > node.start! &&
-  end < node.end! && {
-    info: { type: "ADD_ELEMENT" },
-    on: { key: "," },
-    do: () => {
-      let index = findSlotIndex((node as any)[collectionKey], start);
-      if (
-        (start == node.start && end == node.start) ||
-        getNode(code.ast, start).start == start
-      ) {
-        index = Math.max(0, index - 1);
-      }
-
-      return {
-        code: code.mutateAST((ast) => {
-          const collection = getNodeFromPath(ast, path) as any;
-          collection[collectionKey].splice(index, 0, initialValue);
-        }),
-        nextCursor: ({ ast }) =>
-          selectNodeFromPath(ast, [...path, collectionKey, index]),
-      };
-    },
-  };
 
 const generateCode = (node: t.Node) =>
   generate(node, { retainLines: true }).code.trim();
@@ -177,7 +147,7 @@ export const expression: NodeDef<t.Expression> = {
           do: () => ({
             code: code.replaceSource(
               new Range(node.start!, node.end),
-              `(${code.source.slice(node.start!, node.end!)}).p`
+              `${code.source.slice(node.start!, node.end!)}.p`
             ),
             nextCursor: ({ ast }, { start }) =>
               selectNodeFromPath(ast, [...path, "property"]),

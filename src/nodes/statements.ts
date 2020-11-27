@@ -1,6 +1,6 @@
 import t from "@babel/types";
 
-import { getNode, getNodeFromPath } from "../ast-utils";
+import { getLineage, getNode, getNodeFromPath } from "../ast-utils";
 import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
 import { expressions } from "./expressions";
@@ -25,20 +25,20 @@ export const statement: NodeDef<t.Statement> = {
 
 export const statements: NodeDefs = {
   Program: {
+    // TODO: these all need cursors
     actions: ({ code, cursor }) => [
       ["[]", "{}"].map((pair) => ({
         on: { key: pair[0] },
-        do: () => ({
-          code: code.replaceSource(cursor, `(${pair})`),
-          nextCursor: () => new Range(cursor.start + 1),
-        }),
+        do: () => ({ code: code.replaceSource(cursor, `(${pair})`) }),
       })),
       {
+        on: { key: ">" },
+        do: () => ({ code: code.replaceSource(cursor, `(() => null)`) }),
+      },
+      {
+        // TODO: oops this is JSX, yet it lives here?
         on: { key: "<" },
-        do: () => ({
-          code: code.replaceSource(cursor, `<></>`),
-          nextCursor: () => new Range(cursor.start + 1),
-        }),
+        do: () => ({ code: code.replaceSource(cursor, `<></>`) }),
       },
     ],
   },

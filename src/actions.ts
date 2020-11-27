@@ -4,7 +4,11 @@ import t from "@babel/types";
 import { getLineage, getNodeFromPath } from "./ast-utils";
 import { Code, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
-import { selectName, selectNode, selectNodeFromPath } from "./cursor/utils";
+import {
+  selectNameFromPath,
+  selectNode,
+  selectNodeFromPath,
+} from "./cursor/utils";
 import { findNodeActions, handleNodeInput } from "./nodes";
 import { NodeAction } from "./nodes/utils";
 import {
@@ -26,7 +30,7 @@ export const isMac = navigator.platform.startsWith("Mac");
 type Keyword = {
   name: string;
   label?: string;
-  create: (child?: string) => string;
+  create: (child: string) => string;
   getInitialCursor: (ast: t.File, path: (string | number)[]) => Range;
   canWrapStatement: boolean;
   hidden?: boolean;
@@ -35,31 +39,22 @@ type Keyword = {
 const keywords: Keyword[] = [
   {
     name: "if",
-    create: (child = "") => `if (someCondition) { ${child} }`,
-    getInitialCursor: (ast, path) =>
-      selectName(getNodeFromPath(ast, [...path, "test"]) as t.Identifier),
+    create: (child) => `if (someCondition) { ${child} }`,
+    getInitialCursor: (ast, path) => selectNameFromPath(ast, [...path, "test"]),
     canWrapStatement: true,
   },
   {
     name: "for",
     label: "for...of",
-    create: (child = "") => `for (const item of iterable) { ${child} }`,
+    create: (child) => `for (const item of iterable) { ${child} }`,
     getInitialCursor: (ast, path) =>
-      selectName(
-        getNodeFromPath(ast, [
-          ...path,
-          "left",
-          "declarations",
-          "0",
-          "id",
-        ]) as t.Identifier
-      ),
+      selectNameFromPath(ast, [...path, "left", "declarations", "0", "id"]),
     canWrapStatement: true,
   },
 
   {
     name: "function",
-    create: () => "function a() {}",
+    create: () => "function fn() {}",
     getInitialCursor: (ast, path) => selectNodeFromPath(ast, [...path, "id"]),
     hidden: true,
     canWrapStatement: true,
@@ -87,14 +82,7 @@ const keywords: Keyword[] = [
             ])
           ).code,
         getInitialCursor: (ast, path) =>
-          selectName(
-            getNodeFromPath(ast, [
-              ...path,
-              "declarations",
-              "0",
-              "id",
-            ]) as t.Identifier
-          ),
+          selectNameFromPath(ast, [...path, "declarations", "0", "id"]),
         canWrapStatement: false,
       } as Keyword)
   ),
@@ -140,7 +128,7 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
           do: () => ({
             code: code.replaceSource(
               new Range(start - name.length, start),
-              create()
+              create("")
             ),
             nextCursor: (code, cursor) =>
               code.isValid()
@@ -172,7 +160,7 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
           []
         );
       let index = accuCharCounts.findIndex(
-        (n) => n >= start - 2 // I don't quite get this one
+        (n) => n >= start - 2 // TODO: I don't quite get this one
       );
       if (isShifted && index > 0) {
         index -= 1;
@@ -236,10 +224,10 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
   },
 
   ...([
-    ["LEFT", "ArrowLeft"],
-    ["RIGHT", "ArrowRight"],
     ["UP", "ArrowUp"],
     ["DOWN", "ArrowDown"],
+    ["LEFT", "ArrowLeft"],
+    ["RIGHT", "ArrowRight"],
   ] as const).map(
     ([direction, keyCode]) =>
       ((code) =>
