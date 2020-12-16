@@ -162,6 +162,13 @@ export const jsxExpressions: NodeDefs = {
 
   JSXElement: {
     hasSlot: (node, start) => node.openingElement.end! == start,
+    actions: ({ code, cursor }) => ({
+      on: { key: "{" },
+      do: () => ({
+        code: code.replaceSource(cursor, "{}"),
+        nextCursor: () => new Range(cursor.start + 1),
+      }),
+    }),
   },
   JSXOpeningElement: {
     hasSlot: isAtOpeningTagEnd,
@@ -214,9 +221,18 @@ export const jsxExpressions: NodeDefs = {
             ),
         }),
       },
+    onInput: ({ node, path, code, cursor }, data) =>
+      t.isStringLiteral(node.value) &&
+      cursor.equals(node.value) && {
+        code: code.replaceSource(cursor, `{${data}}`),
+        cursor: new Range(node.value.start! + 1 + data.length),
+      },
   },
 
   JSXExpressionContainer: {
     hasSlot: (node, start) => node.start! == start || node.end! == start,
+  },
+  JSXEmptyExpression: {
+    hasSlot: (node, start) => node.start == start,
   },
 };

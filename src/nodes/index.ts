@@ -8,10 +8,10 @@ import { misc } from "./misc";
 import { statement, statements } from "./statements";
 import {
   NodeAction,
-  NodeActions,
   NodeDef,
   NodeDefs,
   NodeHasSlot,
+  flattenActions,
 } from "./utils";
 
 const nodeDefs: NodeDefs = {
@@ -43,9 +43,6 @@ export const findNodeSlot: (
   }
   return null;
 };
-
-const flattenActions = (actions: NodeActions): NodeAction[] =>
-  (Array.isArray(actions) ? actions : [actions]).flat(Infinity);
 
 export const findNodeActions: (
   code: ValidCode,

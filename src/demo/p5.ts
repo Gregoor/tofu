@@ -1,21 +1,16 @@
 import { Runner } from "./utils";
 
 export const EXAMPLE_CODE = `// Demo using p5js (https://p5js.org)
-const TOTAL = 23;
-const EXPONENT = 5;
+const TOTAL = 10;
 const WEIGHT = 3;
-const MODULO = 10000;
-
-let factor;
 
 function setup() {
   createCanvas(300, 300);
-  fill(255);
-  factor = (width - WEIGHT) / Math.pow(2, EXPONENT);
+  fill(0, 0);
 }
 
 function draw() {
-  const now = performance.now();
+  const now = performance.now() / 100;
 
   clear();
   stroke(0);
@@ -23,23 +18,18 @@ function draw() {
 
   for (let i = 0; i < TOTAL; i++) {
     let n = 1 - i / TOTAL;
-    circle(
-      width / 2,
-      height / 2,
-      Math.sin((2 * Math.PI * (performance.now() % MODULO)) / MODULO) *
-        Math.pow(1 + n, EXPONENT) *
-        factor,
-    );
+    let radius = width - ((now * i) % width) - WEIGHT;
+    circle(width / 2, height / 2, radius);
   }
-}
-`;
+}`;
 
 export const p5Runner: Runner = {
+  name: "p5",
   example: EXAMPLE_CODE,
   run(container, source) {
     container.textContent = "";
     const iframe = document.createElement("iframe");
-    iframe.style.border = "none";
+    Object.assign(iframe.style, { height: "350px", border: "none" });
     container.appendChild(iframe);
     (iframe.contentWindow as any).eval(source);
     const script = document.createElement("script");
@@ -50,5 +40,8 @@ export const p5Runner: Runner = {
       "justify-content": "center",
     });
     body.appendChild(script);
+  },
+  cleanUp(container) {
+    container.innerText = "";
   },
 };

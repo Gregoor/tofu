@@ -82,13 +82,11 @@ export function CodeTextArea({
 
     const textArea = flask.elTextarea as HTMLTextAreaElement;
 
-    const [scrollX, scrollY] = [window.scrollX, window.scrollY];
-    textArea.blur();
-    textArea.focus();
-    window.scrollTo(scrollX, scrollY);
-
     textArea.selectionStart = start;
     textArea.selectionEnd = end || start;
+
+    textArea.blur();
+    textArea.focus();
 
     textArea.style.height = "auto";
     textArea.style.height = textArea.scrollHeight + "px";

@@ -1,6 +1,11 @@
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from "react";
 
 import { findAction, handleInput } from "./actions";
 import { codeFromSource } from "./code";
@@ -28,17 +33,20 @@ const ResizeHandle = styled.div`
   user-select: none;
 `;
 
-export function Editor({
-  initialValue,
-  onChange,
-}: {
-  initialValue: string;
-  onChange: Function;
-}) {
+export type EditorHandle = { setSource: (value: string) => void };
+
+const EditorInternal: React.ForwardRefRenderFunction<
+  EditorHandle,
+  {
+    initialSource: string;
+    runtimeError: Error | null;
+    onChange: (value: string) => void;
+  }
+> = ({ initialSource, runtimeError, onChange }, ref) => {
   const [printWidth, setPrintWidth] = useState(80);
   const [resizeStartX, setResizeStartX] = useState<null | number>(null);
 
-  const [editorState, applyChange] = useHistory(initialValue, printWidth);
+  const [editorState, applyChange] = useHistory(initialSource, printWidth);
   const { code, cursor } = editorState;
   const { source } = code;
   const { start, end } = cursor;
@@ -52,6 +60,12 @@ export function Editor({
     },
     [cursor, source]
   );
+
+  useImperativeHandle(ref, () => ({
+    setSource(value) {
+      applyChange({ code: codeFromSource(value) });
+    },
+  }));
 
   useEffect(() => {
     onChange(source);
@@ -143,7 +157,7 @@ export function Editor({
         onMouseDown={(event) => setResizeStartX(event.clientX)}
       />
       <Panel
-        editorState={editorState}
+        {...{ editorState, runtimeError }}
         onAction={(action) => {
           const change = action.do(code, cursor);
           if (change) {
@@ -153,4 +167,6 @@ export function Editor({
       />
     </Container>
   );
-}
+};
+
+export const Editor = React.forwardRef(EditorInternal);

@@ -2,8 +2,66 @@ import * as Babel from "@babel/standalone";
 import React from "react";
 import ReactDOM from "react-dom";
 
-import { justLogErrorButInTheFutureThisWillNeedToReportToSentry } from "../utils";
 import { Runner } from "./utils";
+
+const EXAMPLE_CODE = `function App() {
+  const [value, setValue] = useState("");
+  const [items, setItems] = useState(
+    [
+      "Delete actions",
+      "Select previous/next",
+      "Batch events, slow formatting swallows events",
+    ].map((text) => ({
+      text,
+      checked: false,
+    })),
+  );
+
+  return (
+    <div>
+      <h2>ToDo list demo playground</h2>
+      <ul>
+        <input
+          type="text"
+          placeholder="Search/enter new item"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              setValue("");
+              setItems(items.concat({ text: value }));
+            }
+          }}
+          style={{ marginBottom: 10 }}
+        />
+
+        {items
+          .filter((i) => i.text.includes(value))
+          .map((item, i) => (
+            <li
+              key={i}
+              style={{
+                textDecoration: item.checked ? "line-through" : undefined,
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                const newItems = items.slice();
+                newItems[i] = {
+                  ...item,
+                  checked: !item.checked,
+                };
+
+                setItems(newItems);
+              }}
+            >
+              {item.text}
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+`;
 
 class ErrorBoundary extends React.Component<{
   iteration: number;
@@ -26,8 +84,9 @@ class ErrorBoundary extends React.Component<{
 }
 
 export const reactRunner: Runner = {
-  example: "",
-  run(container, source, iteration) {
+  name: "react",
+  example: EXAMPLE_CODE,
+  run(container, source, onError, iteration) {
     const result = Babel.transform(source, {
       plugins: [
         Babel.availablePlugins["syntax-jsx"],
@@ -61,7 +120,10 @@ export const reactRunner: Runner = {
         container
       );
     } catch (e) {
-      justLogErrorButInTheFutureThisWillNeedToReportToSentry(e);
+      onError(e);
     }
+  },
+  cleanUp(container) {
+    ReactDOM.unmountComponentAtNode(container);
   },
 };

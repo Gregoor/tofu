@@ -27,7 +27,7 @@ export const statements: NodeDefs = {
   Program: {
     // TODO: these all need cursors
     actions: ({ code, cursor }) => [
-      ["[]", "{}"].map((pair) => ({
+      ["[]", "{}", "''", '""'].map((pair) => ({
         on: { key: pair[0] },
         do: () => ({ code: code.replaceSource(cursor, `(${pair})`) }),
       })),

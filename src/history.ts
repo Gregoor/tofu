@@ -17,12 +17,12 @@ export type EditorState = Readonly<{
 }>;
 
 export function useHistory(
-  initialValue: string,
+  initialSource: string,
   printWidth: number
 ): [EditorState, (change: Change<Code>) => void] {
   const [history, setHistory] = useState<EditorState[]>(() => [
     {
-      code: codeFromSource(initialValue),
+      code: codeFromSource(initialSource),
       cursor: new Range(0),
       formattedForPrintWidth: null,
     },

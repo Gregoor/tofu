@@ -1,7 +1,7 @@
 import generate from "@babel/generator";
 import t from "@babel/types";
 
-import { getLineage, getNodeFromPath } from "./ast-utils";
+import { getLineage } from "./ast-utils";
 import { Code, codeFromSource } from "./code";
 import { moveCursor } from "./cursor/move";
 import {
@@ -22,10 +22,23 @@ import {
 type BaseAction = {
   info?: any;
   on?: KeyConfig;
-  do: (code: Code, cursor: Range, isShifted?: boolean) => null | Change<Code>;
+  do: (code: Code, cursor: Range) => null | Change<Code>;
 };
 
 export const isMac = navigator.platform.startsWith("Mac");
+
+function isAtLineStart(source: string, start: number) {
+  const reverseBreakIndex = source
+    .slice(0, start + 1)
+    .split("")
+    .reverse()
+    .findIndex((char) => char == "\n");
+  const sourceFromStartOfLine = source.slice(
+    start - (reverseBreakIndex || start),
+    start
+  );
+  return !sourceFromStartOfLine.trim();
+}
 
 type Keyword = {
   name: string;
@@ -152,20 +165,20 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
 
   {
     on: { code: "Enter" },
-    do(code, { start }, isShifted) {
-      const accuCharCounts = (code.source.split("\n") as string[])
-        .map((s, i) => s.length + (i == 0 ? 0 : 1))
-        .reduce<number[]>(
-          (accu, n) => [...accu, (accu[accu.length - 1] || 0) + n],
-          []
-        );
-      let index = accuCharCounts.findIndex(
-        (n) => n >= start - 2 // TODO: I don't quite get this one
-      );
-      if (isShifted && index > 0) {
-        index -= 1;
+    do(code, { start }) {
+      let pos: number = 0;
+      if (isAtLineStart(code.source, start)) {
+        pos = start;
+      } else {
+        const accuCharCounts = (code.source.split("\n") as string[])
+          .map((s, i) => s.length + (i == 0 ? 0 : 1))
+          .reduce(
+            (accu, n) => [...accu, (accu[accu.length - 1] || 0) + n],
+            [] as number[]
+          );
+        const index = accuCharCounts.findIndex((n) => n >= start);
+        pos = index == -1 ? 0 : accuCharCounts[index];
       }
-      const pos = index == -1 ? 0 : accuCharCounts[index];
       return {
         code: code.replaceSource(new Range(pos), "\n"),
         cursor: new Range(pos == 0 ? 0 : pos + 1),
@@ -362,7 +375,7 @@ export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
         : action.on.key === event.key) &&
       modifieresPressed(action.on, event)
     ) {
-      return () => action.do(code, cursor, event.shiftKey);
+      return () => action.do(code, cursor);
     }
   }
 }

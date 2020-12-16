@@ -78,3 +78,6 @@ export const addElementAction = (
       };
     },
   };
+
+export const flattenActions = (actions: NodeActions): NodeAction[] =>
+  (Array.isArray(actions) ? actions : [actions]).flat(Infinity);

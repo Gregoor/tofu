@@ -1,3 +1,5 @@
+import t from "@babel/types";
+
 import { Code } from "./code";
 
 export type Change<C> =
@@ -36,8 +38,8 @@ export class Range {
     return pos >= this.start && pos <= this.end;
   }
 
-  equals(other: Range) {
-    return this.start == other.start && this.end == other.end;
+  equals(other: Range | t.Node) {
+    return this.start == other.start! && this.end == other.end!;
   }
 
   toString = () =>

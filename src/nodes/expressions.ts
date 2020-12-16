@@ -2,7 +2,7 @@ import generate from "@babel/generator";
 import t from "@babel/types";
 import pick from "lodash.pick";
 
-import { getNode, getNodeFromPath } from "../ast-utils";
+import { getLineage, getNode, getNodeFromPath } from "../ast-utils";
 import {
   selectNode,
   selectNodeFromPath,
@@ -17,6 +17,7 @@ import {
   NodeDefs,
   addElementAction,
   findSlotIndex,
+  flattenActions,
 } from "./utils";
 
 function checkForEmptyElements(
@@ -98,15 +99,16 @@ const wrappers: {
   wrap: (source: string) => string;
 }[] = [
   { type: "ARRAY", key: "[", wrap: (source) => `[${source}]` },
-  { type: "OBJECT", key: "{", wrap: (source) => `({key: ${source}})` },
+  { type: "OBJECT", key: "{", wrap: (source) => `({key: ${source || '""'}})` },
   { type: "FUNCTION_CALL", key: "(", wrap: (source) => `fn(${source})` },
   { type: "ARROW_FUNCTION", key: ">", wrap: (source) => `(() => (${source}))` },
+  { type: "JSX_ELEMENT", key: "<", wrap: (source) => `<>{${source}}</>` },
 ];
 
 export const expression: NodeDef<t.Expression> = {
   hasSlot: (node, start) => start == node.start || start == node.end,
   actions: ({ node, path, code, cursor: { start, end } }) =>
-    !t.isJSX(node) && [
+    flattenActions([
       node.start == start &&
         node.end == end && [
           wrappers.map(({ type, key, wrap }) => ({
@@ -149,33 +151,43 @@ export const expression: NodeDef<t.Expression> = {
               new Range(node.start!, node.end),
               `${code.source.slice(node.start!, node.end!)}.p`
             ),
-            nextCursor: ({ ast }, { start }) =>
+            nextCursor: ({ ast }) =>
               selectNodeFromPath(ast, [...path, "property"]),
           }),
         },
 
-        !t.isNumericLiteral(node) &&
-          !t.isObjectExpression(node) && [
-            {
-              info: { type: "MAKE_CALL" },
-              on: { key: "(" },
-              do: () => ({
-                code: code.replaceSource(new Range(start), "()"),
-                nextCursor: ({ ast }, { start }) => new Range(start + 1),
-              }),
-            },
-            {
-              info: { type: "MAKE_COMPUTED_MEMBER" },
-              on: { key: "[" },
-              do: () => ({
-                code: code.replaceSource(new Range(start), "[0]"),
-                nextCursor: ({ ast }, { start }) =>
-                  selectNodeFromPath(ast, [...path, "property"]),
-              }),
-            },
-          ],
+        !t.isNumericLiteral(node) && [
+          !t.isObjectExpression(node) && {
+            info: { type: "MAKE_CALL" },
+            on: { key: "(" },
+            do: () => ({
+              code: code.replaceSource(new Range(start), "()"),
+              nextCursor: ({ ast }, { start }) => new Range(start + 1),
+            }),
+          },
+          {
+            info: { type: "MAKE_COMPUTED_MEMBER" },
+            on: { key: "[" },
+            do: () => ({
+              code: code.replaceSource(new Range(start), "[0]"),
+              nextCursor: ({ ast }) =>
+                selectNodeFromPath(ast, [...path, "property"]),
+            }),
+          },
+        ],
       ],
-    ],
+    ]).map((action) => ({
+      ...action,
+      do: () => {
+        const change = action.do();
+        const [[node], [parent]] = getLineage(code.ast, start).reverse();
+        if (!(t.isStringLiteral(node) && t.isJSXAttribute(parent))) {
+          return change;
+        }
+
+        return change;
+      },
+    })),
 };
 
 export const expressions: NodeDefs = {
@@ -283,6 +295,19 @@ export const expressions: NodeDefs = {
         "properties",
         t.objectProperty(t.identifier("p"), t.identifier("p"), false, true)
       ),
+  },
+  ObjectProperty: {
+    actions: ({ node, path, code }) =>
+      node.shorthand && {
+        on: { key: ":" },
+        do: () => ({
+          code: code.mutateAST((ast) => {
+            (getNodeFromPath(ast, path) as typeof node).value = t.nullLiteral();
+          }),
+          nextCursor: (code) =>
+            selectNodeFromPath(code.ast, path.concat("value")),
+        }),
+      },
   },
 
   MemberExpression: {

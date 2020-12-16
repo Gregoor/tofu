@@ -58,8 +58,8 @@ export function codeFromSource(source: string) {
       parse(source, { sourceType: "module", plugins: ["jsx", "typescript"] })
     );
   } catch (error) {
-    if (!(error instanceof SyntaxError)) {
-      throw error;
+    if (!(error instanceof SyntaxError) && error.message != "Assert fail") {
+      throw new Error(error);
     }
     return new InvalidCode(source, error);
   }

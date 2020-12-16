@@ -27,10 +27,10 @@ export function useSelectRange() {
 
     if (direction == "UP") {
       for (const node of getLineageNodes(ast, cursor.start).reverse()) {
-        const nextCursor = selectNode(node);
+        const nodeCursor = selectNode(node);
 
-        if (cursor.start > nextCursor.start || cursor.end < nextCursor.end) {
-          return nextCursor;
+        if (cursor.start > nodeCursor.start || cursor.end < nodeCursor.end) {
+          return nodeCursor;
         }
       }
       return cursor;

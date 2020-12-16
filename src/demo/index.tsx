@@ -1,9 +1,9 @@
 import * as Babel from "@babel/standalone";
 import styled from "@emotion/styled";
 import * as React from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Editor } from "../editor";
+import { Editor, EditorHandle } from "../editor";
 import { Abyss, Key, font } from "../ui";
 import { p5Runner } from "./p5";
 import { reactRunner } from "./react";
@@ -41,7 +41,7 @@ const Card = styled.section`
 `;
 
 const Output = styled.div`
-  height: 350px;
+  max-height: 100vh;
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -52,7 +52,11 @@ const Keyword = styled.span`
   ${font};
 `;
 
-const AboutCard = () => (
+const AboutCard = ({
+  onSelectRunner,
+}: {
+  onSelectRunner: (runner: Runner) => void;
+}) => (
   <Card>
     <h3 style={{ marginTop: 0 }}>What is this?</h3>
     <p>
@@ -80,6 +84,11 @@ const AboutCard = () => (
         you're already at the start/end of a line).
       </li>
     </ul>
+    <br />
+    <button onClick={() => onSelectRunner(reactRunner)}>
+      Show React example
+    </button>
+    <button onClick={() => onSelectRunner(p5Runner)}>Show P5 example</button>
   </Card>
 );
 
@@ -109,15 +118,24 @@ const LinksCard = () => (
 );
 
 function useRunner() {
-  const [runner, setRunner] = useState<Runner>(reactRunner);
+  const [runner, setRunner] = useState<Runner>(
+    ({ react: reactRunner, p5: p5Runner } as any)[
+      localStorage.getItem("runner")!
+    ] || reactRunner
+  );
   const iteration = useRef(0);
   return [
     {
       example: runner.example,
-      run: (...params: any[]) =>
-        (runner.run as any)(...params, iteration.current++),
+      run: (...params: any[]) => {
+        (runner.run as any)(...params, iteration.current++);
+      },
+      cleanUp: runner.cleanUp,
     },
-    setRunner,
+    (runner: Runner) => {
+      localStorage.setItem("runner", runner.name);
+      setRunner(runner);
+    },
   ] as const;
 }
 
@@ -126,25 +144,45 @@ export function Demo() {
   const [initialSource] = useState(
     () => localStorage.getItem("source") || runner.example
   );
+  const [runtimeError, setRuntimeError] = useState<Error | null>(null);
   const output = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<EditorHandle>(null);
 
   const updateOutput = useCallback(
     debounce((source: string) => {
-      localStorage.setItem("source", source);
-      runner.run(output.current!, source);
+      try {
+        runner.run(output.current!, source, (error: Error) => {
+          setRuntimeError(error);
+        });
+      } catch (e) {
+        console.error("asd", e);
+      }
     }, 200),
-    []
+    [runner]
   );
 
   return (
     <Rows>
       <Output ref={output} />
       <Abyss />
-      <Editor initialValue={initialSource} onChange={updateOutput} />
+      <Editor
+        ref={editorRef}
+        {...{ initialSource, runtimeError }}
+        onChange={(value) => {
+          updateOutput(value);
+          localStorage.setItem("source", value);
+        }}
+      />
 
       <Abyss />
 
-      <AboutCard />
+      <AboutCard
+        onSelectRunner={(newRunner) => {
+          runner.cleanUp(output.current!);
+          setRunner(newRunner);
+          editorRef.current!.setSource(newRunner.example);
+        }}
+      />
       <Abyss />
       <LinksCard />
     </Rows>

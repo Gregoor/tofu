@@ -2,11 +2,10 @@ import styled from "@emotion/styled";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { findActions, isMac } from "../actions";
-import { Code, InvalidCode } from "../code";
+import { findActions } from "../actions";
+import { InvalidCode } from "../code";
 import { EditorState } from "../history";
-import { Key, font } from "../ui";
-import { Range } from "../utils";
+import { Gap, font } from "../ui";
 import { ActionList } from "./action-list";
 import { DEBUG_KEY, DebugBox } from "./debug-box";
 import { HiddenItemsList } from "./hidden-items-list";
@@ -63,9 +62,11 @@ const NodeTitle = styled.div`
 
 export function Panel({
   editorState: { code, cursor, formattedForPrintWidth },
+  runtimeError,
   onAction,
 }: {
   editorState: EditorState;
+  runtimeError: Error | null;
 } & OnAction) {
   const [hiddenItems, toggleItem] = usePersistedSet("hiddenItems", [DEBUG_KEY]);
   const [actions, setActions] = useState(() => findActions(code, cursor));
@@ -81,6 +82,14 @@ export function Panel({
   return (
     <Root>
       <HiddenItemsList {...{ hiddenItems, toggleItem }} />
+
+      {runtimeError && (
+        <div style={{ color: "red" }}>
+          <br />
+          {runtimeError.stack!.split("\n").slice(0, 2).join("\n")}
+          <Gap />
+        </div>
+      )}
 
       {code instanceof InvalidCode && (
         <div style={{ color: "red" }}>{code.error.message}</div>
