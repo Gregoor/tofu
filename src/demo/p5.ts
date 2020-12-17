@@ -1,4 +1,4 @@
-import { Runner } from "./utils";
+import { Runner } from "./runner";
 
 export const EXAMPLE_CODE = `// Demo using p5js (https://p5js.org)
 const TOTAL = 10;

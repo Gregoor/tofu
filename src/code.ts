@@ -12,10 +12,6 @@ class BaseCode {
     this.source = source;
   }
 
-  isValid(): this is ValidCode {
-    return this instanceof ValidCode;
-  }
-
   replaceSource({ start, end }: Range, replacement: string) {
     return codeFromSource(
       this.source.slice(0, Math.max(start, 0)) +
@@ -24,8 +20,6 @@ class BaseCode {
     );
   }
 }
-
-export type Code = BaseCode;
 
 export class InvalidCode extends BaseCode {
   error: SyntaxError;
@@ -47,8 +41,17 @@ export class ValidCode extends BaseCode {
   mutateAST(produceAST: (ast: t.File) => void) {
     (this.ast as any)[immerable] = true;
     const newAST = produce(this.ast as t.File, produceAST);
-    return new ValidCode(generate(newAST, { retainLines: true }).code, newAST);
+    return new ValidCode(
+      generate(newAST as any, { retainLines: true }).code,
+      newAST
+    );
   }
+}
+
+export type Code = ValidCode | InvalidCode;
+
+export function isValid(code: Code): code is ValidCode {
+  return code instanceof ValidCode;
 }
 
 export function codeFromSource(source: string) {

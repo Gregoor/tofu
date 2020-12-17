@@ -1,20 +1,14 @@
 import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
-import React, {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from "react";
+import React, { useEffect, useImperativeHandle, useState } from "react";
 
-import { findAction, handleInput } from "./actions";
 import { codeFromSource } from "./code";
 import { CodeTextArea } from "./code-text-area";
 import { moveCursor } from "./cursor/move";
 import { useHistory } from "./history";
 import { Panel } from "./panel";
 import { font } from "./ui";
-import { Direction, Range } from "./utils";
+import { Range } from "./utils";
 
 const Container = styled.div`
   height: 100vh;
@@ -45,31 +39,17 @@ const EditorInternal: React.ForwardRefRenderFunction<
 > = ({ initialSource, runtimeError, onChange }, ref) => {
   const [printWidth, setPrintWidth] = useState(80);
   const [resizeStartX, setResizeStartX] = useState<null | number>(null);
-
-  const [editorState, applyChange] = useHistory(initialSource, printWidth);
-  const { code, cursor } = editorState;
-  const { source } = code;
-  const { start, end } = cursor;
-
-  const moveCursorInHistory = useCallback(
-    (direction: Direction, from?: Range) => {
-      const nextCursor = moveCursor(code, from || cursor, direction);
-      if (JSON.stringify(cursor) != JSON.stringify(nextCursor)) {
-        applyChange({ cursor: nextCursor });
-      }
-    },
-    [cursor, source]
-  );
+  const [editorState, queueAction] = useHistory(initialSource, printWidth);
 
   useImperativeHandle(ref, () => ({
     setSource(value) {
-      applyChange({ code: codeFromSource(value) });
+      queueAction(() => ({ code: codeFromSource(value) }));
     },
   }));
 
   useEffect(() => {
-    onChange(source);
-  }, [source]);
+    onChange(editorState.code.source);
+  }, [editorState.code]);
 
   useEffect(() => {
     if (resizeStartX == null) {
@@ -106,50 +86,48 @@ const EditorInternal: React.ForwardRefRenderFunction<
         editorState={editorState}
         cols={printWidth}
         onKeyDown={(event) => {
-          const action = findAction(code, cursor, event as any);
-          const change = action && action();
-          if (change) {
-            applyChange(change);
-            event.preventDefault();
-            return;
-          }
-        }}
-        onInput={(event: any) => {
-          if (!event.data) {
-            return;
-          }
-          applyChange(handleInput(code, cursor, event.data));
+          event.preventDefault();
+          queueAction(event);
         }}
         onCut={(event) => {
-          if (start === end) {
-            return;
-          }
-          applyChange({
-            code: codeFromSource(source.substr(0, start) + source.substr(end)),
-            cursor: new Range(start),
-          });
-          event.clipboardData.setData(
-            "text/plain",
-            source.substr(start, end - start)
-          );
           event.preventDefault();
+
+          queueAction(({ source }, { start, end }) => {
+            if (start === end) {
+              return;
+            }
+            event.clipboardData.setData(
+              "text/plain",
+              source.substr(start, end - start)
+            );
+            return {
+              code: codeFromSource(
+                source.substr(0, start) + source.substr(end)
+              ),
+              cursor: new Range(start),
+            };
+          });
         }}
         onPaste={(event) => {
+          event.preventDefault();
+
           const clipboardText = event.clipboardData.getData("text/plain");
-          applyChange({
+          queueAction(({ source }, { start, end }) => ({
             code: codeFromSource(
               source.slice(0, start) + clipboardText + source.slice(end)
             ),
-            nextCursor: () => new Range(start + clipboardText.length),
-          });
-          event.preventDefault();
+            cursor: () => new Range(start + clipboardText.length),
+          }));
         }}
         onClick={(event) => {
           const textArea = event.target as HTMLTextAreaElement;
-          moveCursorInHistory(
-            null,
-            new Range(textArea.selectionStart, textArea.selectionEnd)
-          );
+          queueAction((code) => ({
+            cursor: moveCursor(
+              code,
+              new Range(textArea.selectionStart, textArea.selectionEnd),
+              null
+            ),
+          }));
         }}
       />
       <ResizeHandle
@@ -159,10 +137,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
       <Panel
         {...{ editorState, runtimeError }}
         onAction={(action) => {
-          const change = action.do(code, cursor);
-          if (change) {
-            applyChange(change);
-          }
+          queueAction((code, cursor) => action.do(code, cursor));
         }}
       />
     </Container>

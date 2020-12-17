@@ -2,28 +2,27 @@ import generate from "@babel/generator";
 import t from "@babel/types";
 
 import { getLineage } from "./ast-utils";
-import { Code, codeFromSource } from "./code";
+import { Code, codeFromSource, isValid } from "./code";
 import { moveCursor } from "./cursor/move";
 import {
   selectNameFromPath,
   selectNode,
   selectNodeFromPath,
 } from "./cursor/utils";
-import { findNodeActions, handleNodeInput } from "./nodes";
-import { NodeAction } from "./nodes/utils";
+import { findNodeDetailActions, handleNodeInput } from "./nodes";
+import { reportError } from "./report";
 import {
-  Change,
-  KeyConfig,
+  BareAction,
+  BareChange,
+  BareDetailAction,
+  DetailAction,
   Range,
-  justLogErrorButInTheFutureThisWillNeedToReportToSentry,
   modifierKeys,
 } from "./utils";
 
-type BaseAction = {
-  info?: any;
-  on?: KeyConfig;
-  do: (code: Code, cursor: Range) => null | Change<Code>;
-};
+type BaseDetailAction = {
+  if?: (code: Code, cursor: Range) => boolean;
+} & BareDetailAction<Code>;
 
 export const isMac = navigator.platform.startsWith("Mac");
 
@@ -92,7 +91,7 @@ const keywords: Keyword[] = [
                 t.identifier("n"),
                 initial || ((kind == "const" ? t.nullLiteral() : null) as any)
               ),
-            ])
+            ]) as any
           ).code,
         getInitialCursor: (ast, path) =>
           selectNameFromPath(ast, [...path, "declarations", "0", "id"]),
@@ -101,8 +100,7 @@ const keywords: Keyword[] = [
   ),
 ];
 
-type BaseActionCreator = (code: Code, cursor: Range) => BaseAction | null;
-const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
+const baseDetailActions: BaseDetailAction[] = [
   ...([
     ["ArrowLeft", "LEFT"],
     ["ArrowRight", "RIGHT"],
@@ -115,44 +113,39 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
         do: (code, cursor) => ({
           cursor: moveCursor(code, cursor, direction),
         }),
-      } as BaseAction)
+      } as BaseDetailAction)
   ),
 
-  {
-    on: isMac ? { code: "ArrowLeft", metaKey: true } : { code: "Home" },
-    do: () => ({}),
-  },
-  {
-    on: isMac ? { code: "ArrowRight", metaKey: true } : { code: "End" },
-    do: () => ({}),
-  },
+  // {
+  //   on: isMac ? { code: "ArrowLeft", metaKey: true } : { code: "Home" },
+  //   do: () => ({}),
+  // },
+  // {
+  //   on: isMac ? { code: "ArrowRight", metaKey: true } : { code: "End" },
+  //   do: () => ({}),
+  // },
 
   ...keywords.map(
     ({ name, create, getInitialCursor }) =>
-      ((code, { start }) => {
-        if (
+      ({
+        if: (code, { start }) =>
           code.source.slice(start - name.length, start) != name ||
-          code.source[start + 1] != "\n"
-        ) {
-          return null;
-        }
-        return {
-          on: { code: "Space" },
-          do: () => ({
-            code: code.replaceSource(
-              new Range(start - name.length, start),
-              create("")
-            ),
-            nextCursor: (code, cursor) =>
-              code.isValid()
-                ? getInitialCursor(
-                    code.ast,
-                    getLineage(code.ast, start).pop()![1]
-                  )
-                : cursor,
-          }),
-        };
-      }) as BaseActionCreator
+          code.source[start + 1] != "\n",
+        on: { code: "Space" },
+        do: (code, { start }) => ({
+          code: code.replaceSource(
+            new Range(start - name.length, start),
+            create("")
+          ),
+          cursor: (code, cursor) =>
+            isValid(code)
+              ? getInitialCursor(
+                  code.ast,
+                  getLineage(code.ast, start).pop()![1]
+                )
+              : cursor,
+        }),
+      } as BaseDetailAction)
   ),
   {
     on: { code: "Space" },
@@ -243,138 +236,131 @@ const baseActionCreators: (BaseAction | BaseActionCreator)[] = [
     ["RIGHT", "ArrowRight"],
   ] as const).map(
     ([direction, keyCode]) =>
-      ((code) =>
-        code.isValid()
-          ? {
-              info: { type: "RANGE_SELECT", direction } as const,
-              on: { code: keyCode, shiftKey: true, altKey: false },
-              do: () => ({ rangeSelect: direction }),
-            }
-          : null) as BaseActionCreator
+      ({
+        if: (code) => isValid(code),
+        info: { type: "RANGE_SELECT", direction } as const,
+        on: { code: keyCode, shiftKey: true, altKey: false },
+        do: () => ({ rangeSelect: direction }),
+      } as BaseDetailAction)
   ),
 
-  (code) =>
-    code.isValid()
-      ? {
-          info: { type: "STRETCH" } as const,
-          on: { code: "ArrowUp", altKey: true },
-          do: (_, cursor) => {
-            const nodes = getLineage(code.ast, cursor.start).reverse();
-            const selectedNodeIndex = nodes.findIndex(
-              ([node]) => node.start! <= cursor.start && node.end! >= cursor.end
+  {
+    if: (code) => isValid(code),
+    info: { type: "STRETCH" } as const,
+    on: { code: "ArrowUp", altKey: true },
+    do: (code, cursor) => {
+      if (!isValid(code)) {
+        return;
+      }
+      const nodes = getLineage(code.ast, cursor.start).reverse();
+      const selectedNodeIndex = nodes.findIndex(
+        ([node]) => node.start! <= cursor.start && node.end! >= cursor.end
+      );
+      if (selectedNodeIndex == -1) {
+        reportError(
+          new Error("Assertion: there should always be a selected node")
+        );
+        return;
+      }
+      const [selectedNode] = nodes[selectedNodeIndex];
+      const typeCheck = [t.isExpression, t.isStatement].find((test) =>
+        test(selectedNode)
+      );
+      if (!typeCheck) {
+        return;
+      }
+      const result = nodes
+        .slice(selectedNodeIndex + 1)
+        .find(
+          ([node]) =>
+            typeCheck(node) &&
+            node.start! <= selectedNode.start! &&
+            node.end! >= selectedNode.end!
+        );
+      if (!result) {
+        return;
+      }
+      const [parentNode, parentPath] = result;
+      return {
+        code: code.replaceSource(
+          selectNode(parentNode),
+          code.source.slice(selectedNode.start!, selectedNode.end!)
+        ),
+        cursor: (code, cursor) => {
+          if (isValid(code)) {
+            return selectNodeFromPath(code.ast, parentPath);
+          } else {
+            reportError(
+              new Error("Assertion: move out should always generate valid code")
             );
-            if (selectedNodeIndex == -1) {
-              justLogErrorButInTheFutureThisWillNeedToReportToSentry(
-                new Error("Assertion: there should always be a selected node")
-              );
-              return {};
-            }
-            const [selectedNode] = nodes[selectedNodeIndex];
-            const typeCheck = [t.isExpression, t.isStatement].find((test) =>
-              test(selectedNode)
-            );
-            if (!typeCheck) {
-              return {};
-            }
-            const result = nodes
-              .slice(selectedNodeIndex + 1)
-              .find(
-                ([node]) =>
-                  typeCheck(node) &&
-                  node.start! <= selectedNode.start! &&
-                  node.end! >= selectedNode.end!
-              );
-            if (!result) {
-              return {};
-            }
-            const [parentNode, parentPath] = result;
-            return {
-              code: code.replaceSource(
-                selectNode(parentNode),
-                code.source.slice(selectedNode.start!, selectedNode.end!)
-              ),
-              nextCursor: (code) => {
-                if (code.isValid()) {
-                  return selectNodeFromPath(code.ast, parentPath);
-                } else {
-                  justLogErrorButInTheFutureThisWillNeedToReportToSentry(
-                    new Error(
-                      "Assertion: move out should always generate valid code"
-                    )
-                  );
-                  return {};
-                }
-              },
-            };
-          },
-        }
-      : null,
+            return cursor;
+          }
+        },
+      };
+    },
+  },
 ];
 
-export const getBaseActions = (code: Code, cursor: Range) =>
-  baseActionCreators
-    .map((actionCreator) =>
-      typeof actionCreator == "function"
-        ? actionCreator(code, cursor)
-        : actionCreator
-    )
-    .filter((a) => !!a) as BaseAction[];
+export const getBaseDetailActions = (code: Code, cursor: Range) =>
+  baseDetailActions.filter(
+    (a) => !a.if || a.if(code, cursor)
+  ) as BaseDetailAction[];
 
-const groupByType = (actions: Action[]): Record<string, Action[]> => {
+const groupByType = (
+  detailActions: DetailAction[]
+): Record<string, DetailAction[]> => {
   const grouped: any = {};
-  for (const action of actions) {
-    if (!action.info) {
+  for (const detailAction of detailActions) {
+    if (!detailAction.info) {
       continue;
     }
-    const { type } = action.info;
+    const { type } = detailAction.info;
     grouped[type] ||= [];
-    grouped[type].push(action);
+    grouped[type].push(detailAction);
   }
   return grouped;
 };
 
-export type Action = BaseAction | NodeAction;
-
-export const findActions = (code: Code, cursor: Range) => ({
-  base: groupByType(getBaseActions(code, cursor)),
-  nodes: code.isValid()
-    ? findNodeActions(code, cursor).map(({ node, actions }) => ({
+export const findDetailActions = (code: Code, cursor: Range) => ({
+  base: groupByType(getBaseDetailActions(code, cursor)),
+  nodes: isValid(code)
+    ? findNodeDetailActions(code, cursor).map(({ node, actions }) => ({
         node,
-        actions: groupByType(actions),
+        actions: groupByType(actions as any),
       }))
     : [],
 });
 
-const modifieresPressed = (on: BaseAction["on"], event: KeyboardEvent) =>
-  modifierKeys.every((key) => (on && key in on ? on[key] == event[key] : true));
+function isActionOn(on: DetailAction["on"], event: KeyboardEvent) {
+  return (
+    on &&
+    (Array.isArray(on) ? on : [on]).some(
+      (on) =>
+        ("code" in on ? on.code === event.code : on.key === event.key) &&
+        modifierKeys.every((key) =>
+          on && key in on ? on[key] == event[key] : true
+        )
+    )
+  );
+}
 
-export function findAction(code: Code, cursor: Range, event: KeyboardEvent) {
-  if (code.isValid()) {
-    const action = findNodeActions(code, cursor)
+export function findAction(
+  code: Code,
+  cursor: Range,
+  event: KeyboardEvent
+): undefined | BareAction<Code> {
+  if (isValid(code)) {
+    const action = findNodeDetailActions(code, cursor)
       .map(({ actions }) => actions)
       .flat()
-      .find(
-        (action) =>
-          action.on &&
-          (Array.isArray(action.on) ? action.on : [action.on]).some(
-            (on) =>
-              ("code" in on ? on.code === event.code : on.key === event.key) &&
-              modifieresPressed(on, event)
-          )
-      );
+      .find((action) => isActionOn(action.on, event));
     if (action) {
-      return action.do;
+      return action.do as any;
     }
   }
 
-  for (const action of getBaseActions(code, cursor)) {
-    if (
-      action.on &&
-      ("code" in action.on
-        ? action.on.code === event.code
-        : action.on.key === event.key) &&
-      modifieresPressed(action.on, event)
-    ) {
+  for (const action of getBaseDetailActions(code, cursor)) {
+    if (isActionOn(action.on, event)) {
       return () => action.do(code, cursor);
     }
   }
@@ -384,8 +370,8 @@ export function handleInput(
   code: Code,
   cursor: Range,
   data: string
-): Change<Code> {
-  const change = code.isValid() && handleNodeInput(code, cursor, data);
+): BareChange<any> {
+  const change = isValid(code) && handleNodeInput(code, cursor, data);
   if (change) {
     return change;
   }

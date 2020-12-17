@@ -12,9 +12,9 @@ import { Range } from "../utils";
 import { jsxExpressions } from "./jsx-expressions";
 import {
   NodeActionParams,
-  NodeActions,
   NodeDef,
   NodeDefs,
+  NodeDetailActions,
   addElementAction,
   findSlotIndex,
   flattenActions,
@@ -43,11 +43,11 @@ function checkForEmptyElements(
 }
 
 const generateCode = (node: t.Node) =>
-  generate(node, { retainLines: true }).code.trim();
+  generate(node as any, { retainLines: true }).code.trim();
 
 const changeOperationActions: (
   params: NodeActionParams<t.BinaryExpression | t.LogicalExpression>
-) => NodeActions = ({ node, code, cursor }) =>
+) => NodeDetailActions = ({ node, code, cursor }) =>
   selectOperator(node, code.source).includes(cursor.start) &&
   (["&", "|", "+", "-", "*", "/", "=", "<", ">"] as const).map((operator) => ({
     info: { type: "CHANGE_OPERATION", operator } as const,
@@ -70,14 +70,14 @@ const changeOperationActions: (
               : operator;
         }
       }),
-      nextCursor: ({ ast, source }, { start }) =>
+      cursor: ({ ast, source }, { start }) =>
         selectOperator(getNode(ast, start) as typeof node, source),
     }),
   }));
 
 const removeCallOrMember: (
   params: NodeActionParams<t.CallExpression | t.MemberExpression>
-) => NodeActions = ({ node, path, code, cursor: { start } }) =>
+) => NodeDetailActions = ({ node, path, code, cursor: { start } }) =>
   start == node.end!
     ? {
         on: { code: "Backspace" },
@@ -88,7 +88,7 @@ const removeCallOrMember: (
               ? node.callee
               : node.object;
           }),
-          nextCursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end!),
+          cursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end!),
         }),
       }
     : null;
@@ -121,7 +121,7 @@ export const expression: NodeDef<t.Expression> = {
                   new Range(start, end),
                   wrap(wrapped == "null" ? "" : wrapped)
                 ),
-                nextCursor: ({ ast }) => selectNodeFromPath(ast, path),
+                cursor: ({ ast }) => selectNodeFromPath(ast, path),
               };
             },
           })),
@@ -134,7 +134,7 @@ export const expression: NodeDef<t.Expression> = {
                 selectNode(node),
                 code.source.slice(node.start!, node.end!) + " ? null : null"
               ),
-              nextCursor: ({ ast }) =>
+              cursor: ({ ast }) =>
                 selectNodeFromPath(ast, [...path, "consequent"]),
             }),
           },
@@ -151,8 +151,7 @@ export const expression: NodeDef<t.Expression> = {
               new Range(node.start!, node.end),
               `${code.source.slice(node.start!, node.end!)}.p`
             ),
-            nextCursor: ({ ast }) =>
-              selectNodeFromPath(ast, [...path, "property"]),
+            cursor: ({ ast }) => selectNodeFromPath(ast, [...path, "property"]),
           }),
         },
 
@@ -162,7 +161,7 @@ export const expression: NodeDef<t.Expression> = {
             on: { key: "(" },
             do: () => ({
               code: code.replaceSource(new Range(start), "()"),
-              nextCursor: ({ ast }, { start }) => new Range(start + 1),
+              cursor: ({ ast }, { start }) => new Range(start + 1),
             }),
           },
           {
@@ -170,7 +169,7 @@ export const expression: NodeDef<t.Expression> = {
             on: { key: "[" },
             do: () => ({
               code: code.replaceSource(new Range(start), "[0]"),
-              nextCursor: ({ ast }) =>
+              cursor: ({ ast }) =>
                 selectNodeFromPath(ast, [...path, "property"]),
             }),
           },
@@ -178,8 +177,8 @@ export const expression: NodeDef<t.Expression> = {
       ],
     ]).map((action) => ({
       ...action,
-      do: () => {
-        const change = action.do();
+      do: (code, cursor) => {
+        const change = action.do(code, cursor);
         const [[node], [parent]] = getLineage(code.ast, start).reverse();
         if (!(t.isStringLiteral(node) && t.isJSXAttribute(parent))) {
           return change;
@@ -201,7 +200,7 @@ export const expressions: NodeDefs = {
         on: { key: "." },
         do: () => ({
           code: code.replaceSource(cursor, ".0"),
-          nextCursor: () => new Range(cursor.start + 1, cursor.start + 2),
+          cursor: () => new Range(cursor.start + 1, cursor.start + 2),
         }),
       },
   },
@@ -272,7 +271,7 @@ export const expressions: NodeDefs = {
                 new Range(first.start!, second.end),
                 generateCode(second) + "," + generateCode(first)
               ),
-              nextCursor: ({ ast }) =>
+              cursor: ({ ast }) =>
                 selectNodeFromPath(ast, [...path, "elements", newIndex]),
             }),
           };
@@ -304,8 +303,7 @@ export const expressions: NodeDefs = {
           code: code.mutateAST((ast) => {
             (getNodeFromPath(ast, path) as typeof node).value = t.nullLiteral();
           }),
-          nextCursor: (code) =>
-            selectNodeFromPath(code.ast, path.concat("value")),
+          cursor: (code) => selectNodeFromPath(code.ast, path.concat("value")),
         }),
       },
   },
@@ -327,6 +325,7 @@ export const expressions: NodeDefs = {
           node.start! +
             code.source.slice(node.start!, node.body.start!).indexOf("()") +
             1),
+    actions: (params) => addElementAction(params, "params", t.identifier("p")),
   },
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>

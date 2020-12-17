@@ -2,7 +2,7 @@ import t from "@babel/types";
 import { useState } from "react";
 
 import { getLineageNodes, getNode } from "../ast-utils";
-import { Code } from "../code";
+import { Code, isValid } from "../code";
 import { Direction, Range } from "../utils";
 import { findCursor } from "./find";
 import { selectNode } from "./utils";
@@ -17,7 +17,7 @@ export function useSelectRange() {
     cursor: Range,
     direction: Direction
   ): Range {
-    if (!code.isValid()) {
+    if (!isValid(code)) {
       return initialRange || cursor;
     }
     const { ast } = code;

@@ -1,4 +1,4 @@
-import { Code, ValidCode } from "../code";
+import { Code, ValidCode, isValid } from "../code";
 import { Direction, Range } from "../utils";
 import { findCursor, findCursorY } from "./find";
 
@@ -58,7 +58,7 @@ export function moveCursor(
   cursor: Range,
   direction: Direction
 ): Range {
-  return code.isValid()
+  return isValid(code)
     ? moveCursorWithAST(code, cursor, direction)
     : moveCursorWithoutAST(code.source, cursor, direction);
 }

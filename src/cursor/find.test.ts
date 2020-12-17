@@ -1,7 +1,7 @@
 import { suite, test } from "uvu";
 import * as assert from "uvu/assert";
 
-import { codeFromSource } from "../code";
+import { codeFromSource, isValid } from "../code";
 import { findCursor } from "./find";
 
 const tests = ([
@@ -347,8 +347,8 @@ for (const [source, paths] of tests) {
     for (let [before, after] of path) {
       testSuite(`${direction}: ${before} => ${after}`, () => {
         const code = codeFromSource(source);
-        assert.ok(code.isValid());
-        if (!code.isValid()) {
+        assert.ok(isValid(code));
+        if (!isValid(code)) {
           return;
         }
 

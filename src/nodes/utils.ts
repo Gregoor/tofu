@@ -3,14 +3,16 @@ import t from "@babel/types";
 import { getNode, getNodeFromPath } from "../ast-utils";
 import { ValidCode } from "../code";
 import { selectNodeFromPath } from "../cursor/utils";
-import { Change, KeyConfig, Range } from "../utils";
+import { BareChange, BareDetailAction, Range } from "../utils";
 
-export type NodeAction = {
-  info?: any;
-  on?: KeyConfig | KeyConfig[];
-  do: () => Change<ValidCode>;
-};
-export type NodeActions = false | null | NodeAction | NodeActions[];
+export type NodeDetailAction = BareDetailAction<ValidCode>;
+
+export type NodeDetailActions =
+  | false
+  | null
+  | undefined
+  | NodeDetailAction
+  | NodeDetailActions[];
 
 export type NodeHasSlot<T> = (
   node: T,
@@ -28,11 +30,11 @@ export type NodeActionParams<T> = {
 export type OnNodeInput<T> = (
   params: NodeActionParams<T>,
   data: string
-) => false | Change<ValidCode>;
+) => false | BareChange<ValidCode>;
 
 export type NodeDef<T> = {
   hasSlot?: NodeHasSlot<T>;
-  actions?: (params: NodeActionParams<T>) => NodeActions;
+  actions?: (params: NodeActionParams<T>) => NodeDetailActions;
   onInput?: OnNodeInput<T>;
 };
 
@@ -54,7 +56,7 @@ export const addElementAction = (
   { node, path, code, cursor: { start, end } }: NodeActionParams<t.Node>,
   collectionKey: string,
   initialValue: t.Node
-): NodeActions =>
+): NodeDetailActions =>
   start > node.start! &&
   end < node.end! && {
     info: { type: "ADD_ELEMENT" },
@@ -73,11 +75,13 @@ export const addElementAction = (
           const collection = getNodeFromPath(ast, path) as any;
           collection[collectionKey].splice(index, 0, initialValue);
         }),
-        nextCursor: ({ ast }) =>
+        cursor: ({ ast }) =>
           selectNodeFromPath(ast, [...path, collectionKey, index]),
       };
     },
   };
 
-export const flattenActions = (actions: NodeActions): NodeAction[] =>
+export const flattenActions = (
+  actions: NodeDetailActions
+): NodeDetailAction[] =>
   (Array.isArray(actions) ? actions : [actions]).flat(Infinity);

@@ -1,7 +1,7 @@
 import styled from "@emotion/styled";
 import * as React from "react";
 
-import { Code, ValidCode } from "../code";
+import { Code, ValidCode, isValid } from "../code";
 import { Range } from "../utils";
 import { ActionText, BareButton, HiddenItemsProps, TextButton } from "./utils";
 
@@ -48,7 +48,7 @@ export function DebugBox({
 
   return (
     <Root>
-      {code.isValid() && <LogASTButton ast={code.ast} />}
+      {isValid(code) && <LogASTButton ast={code.ast} />}
       <div style={{ whiteSpace: "nowrap" }}>
         Cursor: <em>{cursor.toString()}</em>
       </div>

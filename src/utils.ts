@@ -2,18 +2,43 @@ import t from "@babel/types";
 
 import { Code } from "./code";
 
-export type Change<C> =
-  | {
-      code?: Code;
-      cursor?: Range;
-      skipFormatting?: true;
-    }
+export const modifierKeys = [
+  "altKey",
+  "ctrlKey",
+  "metaKey",
+  "shiftKey",
+] as const;
+
+type Modifiers = Partial<Record<typeof modifierKeys[number], boolean>>;
+
+type KeyConfig = ({ code: string } | { key: string }) & Modifiers;
+
+export type BareChange<C> =
   | {
       code: Code;
-      nextCursor: (code: C, cursor: Range) => Range;
+      cursor?: Range | ((code: C, cursor: Range) => Range);
+      skipFormatting?: true;
     }
+  | { cursor: Range }
   | { rangeSelect: Direction }
   | { history: "UNDO" | "REDO" };
+
+export type Change = BareChange<Code>;
+
+export type BareAction<C> = (
+  code: C,
+  cursor: Range
+) => undefined | null | BareChange<C>;
+
+export type Action = BareAction<Code>;
+
+export type BareDetailAction<C> = {
+  info?: any;
+  on?: KeyConfig | KeyConfig[];
+  do: BareAction<C>;
+};
+
+export type DetailAction = BareDetailAction<Code>;
 
 export type Direction = "LEFT" | "RIGHT" | "UP" | "DOWN" | null;
 
@@ -44,21 +69,4 @@ export class Range {
 
   toString = () =>
     this._end == null ? this.start : this.start + " - " + this._end;
-}
-
-export const modifierKeys = [
-  "altKey",
-  "ctrlKey",
-  "metaKey",
-  "shiftKey",
-] as const;
-
-type Modifiers = Partial<Record<typeof modifierKeys[number], boolean>>;
-
-export type KeyConfig = ({ code: string } | { key: string }) & Modifiers;
-
-export function justLogErrorButInTheFutureThisWillNeedToReportToSentry(
-  error: Error
-) {
-  console.error(error);
 }

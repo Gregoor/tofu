@@ -1,14 +1,11 @@
-import pick from "lodash.pick";
 import { useEffect, useState } from "react";
 
-import { Code, codeFromSource } from "./code";
+import { findAction, handleInput } from "./actions";
+import { Code, codeFromSource, isValid } from "./code";
 import { useSelectRange } from "./cursor/select-range";
 import { useFormat } from "./format";
-import {
-  Change,
-  Range,
-  justLogErrorButInTheFutureThisWillNeedToReportToSentry,
-} from "./utils";
+import { reportError } from "./report";
+import { Action, Range } from "./utils";
 
 export type EditorState = Readonly<{
   code: Code;
@@ -16,45 +13,35 @@ export type EditorState = Readonly<{
   formattedForPrintWidth: null | number;
 }>;
 
+type QueueItem = Action | KeyboardEvent;
+
 export function useHistory(
   initialSource: string,
   printWidth: number
-): [EditorState, (change: Change<Code>) => void] {
-  const [history, setHistory] = useState<EditorState[]>(() => [
-    {
-      code: codeFromSource(initialSource),
-      cursor: new Range(0),
-      formattedForPrintWidth: null,
-    },
-  ]);
-  const [index, setIndex] = useState(0);
-  const [formatOptions, setFormatOptions] = useState<null | {
-    nextCursor: (code: Code, cursor: Range) => Range;
-  }>(null);
-  const selectRange = useSelectRange();
-  const format = useFormat();
+): [EditorState, (item: QueueItem) => void] {
+  const [[index, editorStates], setHistory] = useState<[number, EditorState[]]>(
+    () => [
+      0,
+      [
+        {
+          code: codeFromSource(initialSource),
+          cursor: new Range(0),
+          formattedForPrintWidth: null,
+        },
+      ],
+    ]
+  );
+  const current = editorStates[index];
 
-  const current = history[index];
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+
+  const selectRange = useSelectRange();
+
+  const format = useFormat();
 
   useEffect(() => {
     const { code, cursor, formattedForPrintWidth } = current;
-    if (formattedForPrintWidth == printWidth && !formatOptions) {
-      return;
-    }
-
-    if (formattedForPrintWidth == printWidth && formatOptions) {
-      const newHistory = history.slice();
-      try {
-        newHistory[index] = {
-          code,
-          cursor: formatOptions.nextCursor(code, cursor),
-          formattedForPrintWidth: printWidth,
-        };
-        setHistory(newHistory);
-      } catch (error) {
-        justLogErrorButInTheFutureThisWillNeedToReportToSentry(error);
-      }
-      setFormatOptions(null);
+    if (!isValid(code) || formattedForPrintWidth == printWidth) {
       return;
     }
 
@@ -67,83 +54,101 @@ export function useHistory(
     formatPromise
       .then((result: any) => {
         if (!result) {
-          if (formatOptions) {
-            justLogErrorButInTheFutureThisWillNeedToReportToSentry(
-              new Error("error while formatting, uck!")
-            );
-          }
+          reportError(new Error("error while formatting, uck!"));
           return;
         }
 
-        const newHistory = history.slice();
+        const newEditorStates = editorStates.slice();
         const newCode = codeFromSource(result.formatted);
-        const newCursor = new Range(Math.max(result.cursorOffset, 0));
-        newHistory[index] = {
+        newEditorStates[index] = {
           code: newCode.source === code.source ? code : newCode,
-          cursor: formatOptions?.nextCursor(newCode, newCursor) || newCursor,
+          cursor: new Range(Math.max(result.cursorOffset, 0)),
           formattedForPrintWidth: printWidth,
         };
-        setHistory(newHistory);
-        setFormatOptions(null);
+        setHistory([index, newEditorStates]);
       })
-      .catch((error: any) => console.error("Error while formatting:", error));
+      .catch((error: any) => reportError(error));
 
     return cancel;
-  }, [history, formatOptions, printWidth]);
+  }, [editorStates, printWidth]);
 
-  return [
-    current,
-    function applyChange(change) {
-      if ("history" in change) {
-        const hasCodeChange = (state: EditorState) =>
-          current.code.source !== state.code.source;
-        if (change.history == "UNDO") {
-          const nextIndex = index + 1;
-          const lastCodeChangeIndex = history
-            .slice(nextIndex)
-            .findIndex(hasCodeChange);
-          if (lastCodeChangeIndex != -1) {
-            setIndex(nextIndex + lastCodeChangeIndex);
-          }
-        } else if (change.history == "REDO") {
-          const previousIndex = index - 1;
-          const lastCodeChangeIndex = history
-            .slice(0, Math.max(previousIndex, 0))
-            .reverse()
-            .findIndex(hasCodeChange);
-          if (lastCodeChangeIndex != -1) {
-            setIndex(previousIndex - lastCodeChangeIndex);
-          }
+  useEffect(() => {
+    if (
+      queue.length == 0 ||
+      (isValid(current.code) && current.formattedForPrintWidth != printWidth)
+    ) {
+      return;
+    }
+
+    const actionOrEvent = queue[0];
+    setQueue(queue.slice(1));
+
+    const { code, cursor } = current;
+    let action: undefined | null | Action;
+    if (actionOrEvent instanceof KeyboardEvent) {
+      const event = actionOrEvent;
+      action = findAction(code, cursor, event);
+      if (!action && event.key.length <= 2) {
+        action = () => handleInput(code, cursor, event.key);
+      }
+    } else {
+      action = actionOrEvent;
+    }
+
+    const change = action && action(code, cursor);
+    if (!change) {
+      return;
+    }
+
+    if ("history" in change) {
+      const hasCodeChange = (state: EditorState) =>
+        code.source !== state.code.source;
+      if (change.history == "UNDO") {
+        const nextIndex = index + 1;
+        const lastCodeChangeIndex = editorStates
+          .slice(nextIndex)
+          .findIndex(hasCodeChange);
+        if (lastCodeChangeIndex != -1) {
+          setHistory([nextIndex + lastCodeChangeIndex, editorStates]);
         }
-        return;
+      } else if (change.history == "REDO") {
+        const previousIndex = index - 1;
+        const lastCodeChangeIndex = editorStates
+          .slice(0, Math.max(previousIndex, 0))
+          .reverse()
+          .findIndex(hasCodeChange);
+        if (lastCodeChangeIndex != -1) {
+          setHistory([previousIndex - lastCodeChangeIndex, editorStates]);
+        }
       }
-      setHistory([
-        {
-          ...current,
-          ...pick(change, "code", "cursor"),
-          formattedForPrintWidth:
-            "code" in change &&
-            change.code &&
-            change.code.source !== current.code.source &&
-            !("skipFormatting" in change && change.skipFormatting)
-              ? null
-              : current.formattedForPrintWidth,
-          ...("rangeSelect" in change
-            ? {
-                cursor: selectRange(
-                  current.code,
-                  current.cursor,
-                  change.rangeSelect
-                ),
-              }
-            : {}),
-        },
-        ...history.slice(index),
+      return;
+    }
+
+    if ("cursor" in change && typeof change.cursor == "function") {
+      const cursorAction = change.cursor;
+      setQueue((queue) => [
+        (code, cursor) => ({ cursor: cursorAction(code, cursor) }),
+        ...queue,
       ]);
-      setIndex(0);
-      if ("nextCursor" in change) {
-        setFormatOptions(pick(change, "nextCursor"));
-      }
-    },
-  ];
+    }
+
+    const newEditorState = {
+      ...current,
+      ...("code" in change && { code: change.code }),
+      ...("cursor" in change &&
+        typeof change.cursor !== "function" && { cursor: change.cursor }),
+      ...("rangeSelect" in change && {
+        cursor: selectRange(current.code, current.cursor, change.rangeSelect),
+      }),
+      formattedForPrintWidth:
+        "code" in change &&
+        change.code.source !== current.code.source &&
+        !("skipFormatting" in change && change.skipFormatting)
+          ? null
+          : current.formattedForPrintWidth,
+    };
+    setHistory([index, [newEditorState, ...editorStates.slice(index)]]);
+  }, [current, queue]);
+
+  return [current, (item) => setQueue((queue) => queue.concat(item))];
 }

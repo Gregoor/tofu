@@ -2,14 +2,14 @@ import t from "@babel/types";
 
 import { getLineage } from "../ast-utils";
 import { ValidCode } from "../code";
-import { Change, Range } from "../utils";
+import { BareChange, Range } from "../utils";
 import { expression, expressions } from "./expressions";
-import { misc } from "./misc";
+import { patterns } from "./patterns";
 import { statement, statements } from "./statements";
 import {
-  NodeAction,
   NodeDef,
   NodeDefs,
+  NodeDetailAction,
   NodeHasSlot,
   flattenActions,
 } from "./utils";
@@ -17,7 +17,7 @@ import {
 const nodeDefs: NodeDefs = {
   ...expressions,
   ...statements,
-  ...misc,
+  ...patterns,
 };
 
 export const findNodeSlot: (
@@ -44,10 +44,10 @@ export const findNodeSlot: (
   return null;
 };
 
-export const findNodeActions: (
+export const findNodeDetailActions: (
   code: ValidCode,
   cursor: Range
-) => { node: t.Node; actions: NodeAction[] }[] = (code, cursor) =>
+) => { node: t.Node; actions: NodeDetailAction[] }[] = (code, cursor) =>
   getLineage(code.ast, cursor.start)
     .reverse()
     .map(([node, path]) => {
@@ -65,14 +65,14 @@ export const findNodeActions: (
       };
     })
     .filter((e) => e && e.node && e.actions.length > 0) as ReturnType<
-    typeof findNodeActions
+    typeof findNodeDetailActions
   >;
 
 export function handleNodeInput(
   code: ValidCode,
   cursor: Range,
   data: string
-): null | Change<ValidCode> {
+): null | BareChange<ValidCode> {
   for (const [node, path] of getLineage(code.ast, cursor.start).reverse()) {
     const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
     const change =

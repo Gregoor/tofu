@@ -2,7 +2,7 @@ import * as Babel from "@babel/standalone";
 import React from "react";
 import ReactDOM from "react-dom";
 
-import { Runner } from "./utils";
+import { Runner } from "./runner";
 
 const EXAMPLE_CODE = `function App() {
   const [value, setValue] = useState("");
@@ -10,7 +10,6 @@ const EXAMPLE_CODE = `function App() {
     [
       "Delete actions",
       "Select previous/next",
-      "Batch events, slow formatting swallows events",
     ].map((text) => ({
       text,
       checked: false,

@@ -60,7 +60,7 @@ export const statements: NodeDefs = {
                   new Range(node.start!, node.start! + node.kind.length),
                   kind
                 ),
-                nextCursor: ({ ast }, { start }) =>
+                cursor: ({ ast }, { start }) =>
                   selectKind(getNode(ast, start) as typeof node),
               }),
             }))
@@ -73,7 +73,7 @@ export const statements: NodeDefs = {
         on: [{ code: "Space" }, { key: "=" }],
         do: () => ({
           code: code.replaceSource(new Range(node.end!), "= null"),
-          nextCursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
+          cursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
         }),
       },
   },
@@ -92,7 +92,7 @@ export const statements: NodeDefs = {
           on: { code: "KeyE" },
           do: () => ({
             code: code.replaceSource(new Range(node.end!), "else {}"),
-            nextCursor({ ast }) {
+            cursor({ ast }) {
               return new Range(
                 getNodeFromPath(ast, [...path, "alternate"]).start! - 1
               );
@@ -104,7 +104,7 @@ export const statements: NodeDefs = {
           on: { code: "KeyI" },
           do: () => ({
             code: code.replaceSource(new Range(node.end!), "else if (null) {}"),
-            nextCursor: ({ ast }) =>
+            cursor: ({ ast }) =>
               selectNodeFromPath(ast, [...path, "alternate", "test"]),
           }),
         },
@@ -114,7 +114,7 @@ export const statements: NodeDefs = {
         on: { code: "KeyI" },
         do: () => ({
           code: code.replaceSource(cursor, " if (t)"),
-          nextCursor: ({ ast }) =>
+          cursor: ({ ast }) =>
             selectNode(getNodeFromPath(ast, [...path, "alternate", "test"])),
         }),
       },

@@ -1,9 +1,9 @@
 import styled from "@emotion/styled";
 import * as React from "react";
 
-import { Action } from "../actions";
+import { DetailAction } from "../utils";
 
-export type OnAction = { onAction: (action: Action) => void };
+export type OnAction = { onAction: (action: DetailAction) => void };
 
 export type HiddenItemsProps = {
   hiddenItems: Set<string>;

@@ -1,13 +1,8 @@
 import styled from "@emotion/styled";
 import CodeFlask from "codeflask";
-import React, {
-  HTMLProps,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { isValid } from "./code";
 import { EditorState } from "./history";
 
 const CodeWrap = styled.div`
@@ -67,11 +62,13 @@ export function CodeTextArea({
   cols,
   disabled,
   onKeyDown,
-  onInput,
   onClick,
   onCut,
   onPaste,
-}: Omit<HTMLProps<"textarea">, "value"> & { editorState: EditorState }) {
+}: Pick<
+  React.HTMLProps<"textarea">,
+  "cols" | "disabled" | "onClick" | "onCut" | "onPaste"
+> & { editorState: EditorState; onKeyDown: (event: KeyboardEvent) => void }) {
   const rootRef = useRef<null | HTMLDivElement>(null);
   const [flask, setFlask] = useState<null | any>(null);
 
@@ -97,12 +94,16 @@ export function CodeTextArea({
       return;
     }
     setFlask(
-      new CodeFlask(rootRef.current, { language: "js", handleTabs: false })
+      new CodeFlask(rootRef.current, {
+        language: "js",
+        handleTabs: false,
+        lineNumbers: true,
+      })
     );
   }, [rootRef]);
 
   useEffect(() => {
-    if (flask && (!code.isValid() || formattedForPrintWidth !== null)) {
+    if (flask && (!isValid(code) || formattedForPrintWidth !== null)) {
       flask.updateCode(code.source);
       updateSelection();
     }
@@ -131,7 +132,6 @@ export function CodeTextArea({
   }, [disabled, flask]);
 
   useEventListener(flask?.elTextarea, "keydown", onKeyDown);
-  useEventListener(flask?.elTextarea, "input", onInput);
   useEventListener(flask?.elTextarea, "click", onClick);
   useEventListener(flask?.elTextarea, "cut", onCut);
   useEventListener(flask?.elTextarea, "paste", onPaste);

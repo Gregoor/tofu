@@ -2,9 +2,8 @@ import styled from "@emotion/styled";
 import * as React from "react";
 import { ButtonHTMLAttributes } from "react";
 
-import { Action } from "../actions";
 import { Gap, Key, Space, font } from "../ui";
-import { Direction, modifierKeys } from "../utils";
+import { DetailAction, Direction, modifierKeys } from "../utils";
 import {
   ActionText,
   BareButton,
@@ -17,7 +16,7 @@ import {
 
 type SomeModifiers = typeof modifierKeys[number][];
 
-const getActionText = (info: Action["info"]) => {
+const getActionText = (info: DetailAction["info"]) => {
   switch (info.type) {
     case "RANGE_SELECT":
       return {
@@ -113,7 +112,10 @@ const ActionButton = ({
   single,
   toggleItem,
   ...props
-}: Action & { single?: true; toggleItem: HiddenItemsProps["toggleItem"] } & {
+}: DetailAction & {
+  single?: true;
+  toggleItem: HiddenItemsProps["toggleItem"];
+} & {
   single?: boolean;
   hideModifiers?: SomeModifiers;
 } & ButtonHTMLAttributes<HTMLButtonElement>) => (
@@ -144,7 +146,7 @@ export const ActionList = ({
   hiddenItems,
   toggleItem,
 }: {
-  actions: Record<string, Action[]>;
+  actions: Record<string, DetailAction[]>;
 } & HiddenItemsProps &
   OnAction) => (
   <>

@@ -2,8 +2,8 @@ import styled from "@emotion/styled";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { findActions } from "../actions";
-import { InvalidCode } from "../code";
+import { findDetailActions } from "../actions";
+import { InvalidCode, isValid } from "../code";
 import { EditorState } from "../history";
 import { Gap, font } from "../ui";
 import { ActionList } from "./action-list";
@@ -69,13 +69,13 @@ export function Panel({
   runtimeError: Error | null;
 } & OnAction) {
   const [hiddenItems, toggleItem] = usePersistedSet("hiddenItems", [DEBUG_KEY]);
-  const [actions, setActions] = useState(() => findActions(code, cursor));
+  const [actions, setActions] = useState(() => findDetailActions(code, cursor));
 
   useEffect(() => {
-    if (!code.isValid() || formattedForPrintWidth !== null) {
+    if (!isValid(code) || formattedForPrintWidth !== null) {
       // by delaying setting of actions until it is formatted, we prevent
       // flickers and unnecessary re-renders
-      setActions(findActions(code, cursor));
+      setActions(findDetailActions(code, cursor));
     }
   }, [code, cursor, formattedForPrintWidth]);
 

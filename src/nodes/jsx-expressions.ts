@@ -3,7 +3,12 @@ import t from "@babel/types";
 import { getNodeFromPath } from "../ast-utils";
 import { selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
-import { NodeActionParams, NodeActions, NodeDefs, OnNodeInput } from "./utils";
+import {
+  NodeActionParams,
+  NodeDefs,
+  NodeDetailActions,
+  OnNodeInput,
+} from "./utils";
 
 const handleFragmentInput: OnNodeInput<
   t.JSXOpeningFragment | t.JSXClosingFragment
@@ -20,7 +25,7 @@ const handleFragmentInput: OnNodeInput<
         parent.children
       );
     }),
-    nextCursor: (code) =>
+    cursor: (code) =>
       new Range(
         getNodeFromPath(code.ast, [
           ...path.slice(0, -1),
@@ -59,7 +64,7 @@ const isInName = (
 
 const shortenElementNameActions: (
   params: NodeActionParams<t.JSXOpeningElement | t.JSXClosingElement>
-) => NodeActions = ({ node, path, code, cursor }) =>
+) => NodeDetailActions = ({ node, path, code, cursor }) =>
   !(t.isJSXOpeningElement(node) && node.selfClosing) &&
   isInName(node, cursor) &&
   t.isJSXIdentifier(node.name) &&
@@ -84,7 +89,7 @@ const shortenElementNameActions: (
             )
         );
       }),
-      nextCursor: (newCode) =>
+      cursor: (newCode) =>
         new Range(
           (getNodeFromPath(newCode.ast, path) as typeof node).name.start! +
             (cursor.start - node.name.start!) -
@@ -113,7 +118,7 @@ const handleElementInput: OnNodeInput<
         nodeIdentifier.name.slice(cursor.end - nameStart);
       changeElementName(ast, path, newName);
     }),
-    nextCursor: (code) =>
+    cursor: (code) =>
       new Range(
         getNodeFromPath(code.ast, [
           ...path.slice(0, -1),
@@ -143,7 +148,7 @@ export const jsxExpressions: NodeDefs = {
       on: { key: "{" },
       do: () => ({
         code: code.replaceSource(cursor, "{}"),
-        nextCursor: () => new Range(cursor.start + 1),
+        cursor: () => new Range(cursor.start + 1),
       }),
     }),
   },
@@ -166,7 +171,7 @@ export const jsxExpressions: NodeDefs = {
       on: { key: "{" },
       do: () => ({
         code: code.replaceSource(cursor, "{}"),
-        nextCursor: () => new Range(cursor.start + 1),
+        cursor: () => new Range(cursor.start + 1),
       }),
     }),
   },
@@ -192,7 +197,7 @@ export const jsxExpressions: NodeDefs = {
               parent.closingElement = null;
             }
           }),
-          nextCursor(code) {
+          cursor(code) {
             const newNode = getNodeFromPath(code.ast, path) as typeof node;
             return newNode.selfClosing
               ? new Range(newNode.end! - 2, newNode.end! - 1)
@@ -215,7 +220,7 @@ export const jsxExpressions: NodeDefs = {
         on: { key: "=" },
         do: () => ({
           code: code.replaceSource(cursor, '=""'),
-          nextCursor: (code) =>
+          cursor: (code) =>
             new Range(
               (getNodeFromPath(code.ast, path) as typeof node).value!.start! + 1
             ),

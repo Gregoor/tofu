@@ -2,7 +2,7 @@ import t from "@babel/types";
 
 import { NodeDefs, addElementAction } from "./utils";
 
-export const misc: NodeDefs = {
+export const patterns: NodeDefs = {
   ArrayPattern: {
     hasSlot: (node, start) =>
       node.elements.length == 0 && start == node.start! + 1,
