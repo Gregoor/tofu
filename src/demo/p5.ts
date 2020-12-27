@@ -1,6 +1,6 @@
 import { Runner } from "./runner";
 
-export const EXAMPLE_CODE = `// Demo using p5js (https://p5js.org)
+export const EXAMPLE_CODE = `
 const TOTAL = 10;
 const WEIGHT = 3;
 
@@ -24,18 +24,25 @@ function draw() {
 }`;
 
 export const p5Runner: Runner = {
-  name: "p5",
+  id: "p5",
+  label: "p5.js",
+  docsURL: "https://p5js.org/get-started/",
   example: EXAMPLE_CODE,
   run(container, source) {
     container.textContent = "";
     const iframe = document.createElement("iframe");
-    Object.assign(iframe.style, { height: "350px", border: "none" });
+    Object.assign(iframe.style, {
+      width: "100%",
+      "min-height": "300px",
+      border: "none",
+    });
     container.appendChild(iframe);
     (iframe.contentWindow as any).eval(source);
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.min.js";
     const { body } = iframe.contentDocument!;
     Object.assign(body.style, {
+      margin: 0,
       display: "flex",
       "justify-content": "center",
     });

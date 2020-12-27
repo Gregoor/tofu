@@ -6,6 +6,7 @@ import { useDebouncedCallback } from "use-debounce";
 
 import { Editor, EditorHandle } from "../editor";
 import { Abyss, Key, font } from "../ui";
+import { jsRunner } from "./javascript";
 import { p5Runner } from "./p5";
 import { reactRunner } from "./react";
 import { Runner } from "./runner";
@@ -22,15 +23,13 @@ const Card = styled.section`
   margin: 0 auto;
   padding: 20px;
   max-width: 600px;
+  width: 100%;
   background: ${({ theme }) => theme.c.cardBg};
   font-family: "Open Sans", sans-serif;
 `;
 
 const Output = styled.div`
   max-height: 100vh;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
 `;
 
 const Keyword = styled.span`
@@ -38,13 +37,13 @@ const Keyword = styled.span`
   ${font};
 `;
 
-const AboutCard = ({
-  onSelectRunner,
-}: {
-  onSelectRunner: (runner: Runner) => void;
-}) => (
+const CardTitle = styled.h3`
+  margin-top: 0;
+`;
+
+const AboutCard = () => (
   <Card>
-    <h3 style={{ marginTop: 0 }}>What is this?</h3>
+    <CardTitle>What is this?</CardTitle>
     <p>
       Tofu is an exploration in fluid code editing, freeing you from making
       meaningless changes to your code, like syntax management or code styling.
@@ -70,17 +69,78 @@ const AboutCard = ({
         you're already at the start/end of a line).
       </li>
     </ul>
-    <br />
-    <button onClick={() => onSelectRunner(reactRunner)}>
-      Show React example
-    </button>
-    <button onClick={() => onSelectRunner(p5Runner)}>Show P5 example</button>
+  </Card>
+);
+
+const ExampleButton = styled.button<{ isActive: boolean }>`
+  border: 1px solid #a2a2a2;
+  margin-right: ${({ theme }) => theme.l.abyss};
+  padding: ${({ theme }) => theme.l.space};
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  background: white;
+
+  ${(p) => p.isActive && "border-color: black;"}
+`;
+
+const ExamplesCard = ({
+  activeRunner,
+  onSelectRunner,
+}: {
+  activeRunner: Runner;
+  onSelectRunner: (runner: Runner) => void;
+}) => (
+  <Card>
+    <CardTitle>Examples</CardTitle>
+    <p>
+      Click one of those buttons to change the editor runtime environment and
+      see the sample code below.
+      <br />
+      Current selection is:{" "}
+      <a href={activeRunner.docsURL} target="_blank" rel="noreferrer">
+        {activeRunner.label} (click here to see the docs)
+      </a>
+    </p>
+
+    <div style={{ display: "flex" }}>
+      <ExampleButton
+        isActive={activeRunner.id == jsRunner.id}
+        onClick={() => onSelectRunner(jsRunner)}
+        style={{ color: "#f0d000" }}
+      >
+        {jsRunner.label}
+      </ExampleButton>
+
+      <ExampleButton
+        isActive={activeRunner.id == reactRunner.id}
+        onClick={() => onSelectRunner(reactRunner)}
+        style={{ color: "#5cceed" }}
+      >
+        <img
+          src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xMS41IC0xMC4yMzE3NCAyMyAyMC40NjM0OCI+CiAgPHRpdGxlPlJlYWN0IExvZ288L3RpdGxlPgogIDxjaXJjbGUgY3g9IjAiIGN5PSIwIiByPSIyLjA1IiBmaWxsPSIjNjFkYWZiIi8+CiAgPGcgc3Ryb2tlPSIjNjFkYWZiIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIi8+CiAgICA8ZWxsaXBzZSByeD0iMTEiIHJ5PSI0LjIiIHRyYW5zZm9ybT0icm90YXRlKDYwKSIvPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIiB0cmFuc2Zvcm09InJvdGF0ZSgxMjApIi8+CiAgPC9nPgo8L3N2Zz4K"
+          height="20"
+          style={{ marginRight: 5 }}
+          alt="React"
+        />
+        {reactRunner.label}
+      </ExampleButton>
+
+      <ExampleButton
+        isActive={activeRunner.id == p5Runner.id}
+        onClick={() => onSelectRunner(p5Runner)}
+        style={{ color: "#ed225d" }}
+      >
+        {p5Runner.label}
+      </ExampleButton>
+    </div>
   </Card>
 );
 
 const LinksCard = () => (
   <Card>
-    <h3 style={{ marginTop: 0 }}>Links</h3>
+    <CardTitle>Links</CardTitle>
     <ul>
       <li>
         <a href="https://github.com/Gregoor/tofu">Source</a>
@@ -105,21 +165,21 @@ const LinksCard = () => (
 
 function useRunner() {
   const [runner, setRunner] = useState<Runner>(
-    ({ react: reactRunner, p5: p5Runner } as any)[
-      localStorage.getItem("runner")!
-    ] || reactRunner
+    () =>
+      [jsRunner, reactRunner, p5Runner].find(
+        (runner) => runner.id == localStorage.getItem("runner")
+      ) || reactRunner
   );
   const iteration = useRef(0);
   return [
     {
-      example: runner.example,
+      ...runner,
       run: (...params: any[]) => {
         (runner.run as any)(...params, iteration.current++);
       },
-      cleanUp: runner.cleanUp,
     },
     (runner: Runner) => {
-      localStorage.setItem("runner", runner.name);
+      localStorage.setItem("runner", runner.id);
       setRunner(runner);
     },
   ] as const;
@@ -154,18 +214,50 @@ export function Demo() {
             background: ${theme.c.bg};
             color: ${theme.c.text};
           }
+
           h2 {
             color: ${theme.c.softText};
           }
+
           a:visited {
             color: ${theme.c.visitedLink};
+          }
+
+          p {
+            margin-block-start: ${theme.l.abyss};
+            margin-block-end: ${theme.l.abyss};
+          }
+
+          body > iframe {
+            display: none !important;
+          }
+
+          .console-log {
+            margin: 0 -${theme.l.abyss};
+            padding: 0 ${theme.l.abyss};
+            width: 100%;
+
+            & > * {
+              border-bottom: 1px solid #dbdbdb;
+              padding: ${theme.l.gap} 0;
+              width: 100%;
+
+              &:last-child {
+                border-bottom: none;
+              }
+            }
           }
         `}
       />
 
       <Abyss />
 
-      <AboutCard
+      <AboutCard />
+
+      <Abyss />
+
+      <ExamplesCard
+        activeRunner={runner}
         onSelectRunner={(newRunner) => {
           runner.cleanUp(output.current!);
           setRunner(newRunner);
@@ -175,7 +267,10 @@ export function Demo() {
 
       <Abyss />
 
-      <Output ref={output} />
+      <Card>
+        <CardTitle>Result</CardTitle>
+        <Output ref={output} />
+      </Card>
       <Abyss />
       <Editor
         ref={editorRef}

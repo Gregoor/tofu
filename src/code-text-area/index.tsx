@@ -107,7 +107,7 @@ export function CodeTextArea({
       flask.updateCode(code.source);
       updateSelection();
     }
-  }, [flask, code, formattedForPrintWidth]);
+  }, [flask, code, formattedForPrintWidth, updateSelection]);
 
   useEffect(() => {
     updateSelection();

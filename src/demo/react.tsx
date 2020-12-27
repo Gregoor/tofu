@@ -7,10 +7,7 @@ import { Runner } from "./runner";
 const EXAMPLE_CODE = `function App() {
   const [value, setValue] = useState("");
   const [items, setItems] = useState(
-    [
-      "Delete actions",
-      "Select previous/next",
-    ].map((text) => ({
+    ["Delete actions"].map((text) => ({
       text,
       checked: false,
     })),
@@ -18,22 +15,20 @@ const EXAMPLE_CODE = `function App() {
 
   return (
     <div>
-      <h2>ToDo list demo playground</h2>
+      <input
+        type="text"
+        placeholder="Search/enter new item"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            setValue("");
+            setItems(items.concat({ text: value }));
+          }
+        }}
+        style={{ marginBottom: 10 }}
+      />
       <ul>
-        <input
-          type="text"
-          placeholder="Search/enter new item"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              setValue("");
-              setItems(items.concat({ text: value }));
-            }
-          }}
-          style={{ marginBottom: 10 }}
-        />
-
         {items
           .filter((i) => i.text.includes(value))
           .map((item, i) => (
@@ -83,7 +78,9 @@ class ErrorBoundary extends React.Component<{
 }
 
 export const reactRunner: Runner = {
-  name: "react",
+  id: "react",
+  label: "React",
+  docsURL: "https://reactjs.org/docs",
   example: EXAMPLE_CODE,
   run(container, source, onError, iteration) {
     const result = Babel.transform(source, {

@@ -1,5 +1,7 @@
 export type Runner = {
-  name: string;
+  id: string;
+  label: string;
+  docsURL: string;
   example: string;
   run: (
     container: HTMLDivElement,
