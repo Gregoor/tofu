@@ -1,7 +1,6 @@
-import t from "@babel/types";
+import * as t from "@babel/types";
 
 import { getNodeFromPath } from "../ast-utils";
-import { selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
 import {
   NodeActionParams,

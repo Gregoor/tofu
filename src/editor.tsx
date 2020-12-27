@@ -50,7 +50,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
 
   useEffect(() => {
     onChange(editorState.code.source);
-  }, [editorState.code]);
+  }, [onChange, editorState.code]);
 
   useEffect(() => {
     if (resizeStartX == null) {

@@ -46,6 +46,7 @@ const Root = styled.div`
   ${font};
   font-size: 13.333px;
   background: ${({ theme }) => theme.c.cardBg};
+  overflow: auto;
 `;
 
 const NodeListItem = styled.li`

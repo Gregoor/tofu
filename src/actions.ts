@@ -1,5 +1,5 @@
 import generate from "@babel/generator";
-import t from "@babel/types";
+import * as t from "@babel/types";
 
 import { getLineage } from "./ast-utils";
 import { Code, codeFromSource, isValid } from "./code";
@@ -316,7 +316,9 @@ const groupByType = (
       continue;
     }
     const { type } = detailAction.info;
-    grouped[type] ||= [];
+    if (!grouped[type]) {
+      grouped[type] = [];
+    }
     grouped[type].push(detailAction);
   }
   return grouped;

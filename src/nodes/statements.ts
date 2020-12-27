@@ -1,6 +1,6 @@
-import t from "@babel/types";
+import * as t from "@babel/types";
 
-import { getLineage, getNode, getNodeFromPath } from "../ast-utils";
+import { getNode, getNodeFromPath } from "../ast-utils";
 import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
 import { Range } from "../utils";
 import { expressions } from "./expressions";

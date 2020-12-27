@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "start": "BROWSER=none snowpack dev",
-    "build": "snowpack build",
+    "start": "BROWSER=none react-scripts start",
+    "build": "react-scripts build",
     "test": "NODE_OPTIONS=\"--loader ts-node/esm --experimental-specifier-resolution=node\" uvu -r ts-node/register",
     "watch:test": "watchlist src -- yarn test"
   },
@@ -20,7 +20,6 @@
     "@emotion/styled": "^11.0.0",
     "@sentry/react": "^5.29.1",
     "@sentry/tracing": "^5.29.1",
-    "@snowpack/plugin-webpack": "^2.2.0",
     "codeflask": "^1.4.1",
     "downshift": "^6.0.7",
     "immer": "^8.0.0",
@@ -28,12 +27,9 @@
     "memoize-one": "^5.1.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "rollup-plugin-node-polyfills": "^0.2.1"
+    "use-debounce": "^5.2.0"
   },
   "devDependencies": {
-    "@snowpack/plugin-optimize": "^0.2.10",
-    "@snowpack/plugin-react-refresh": "^2.3.9",
-    "@snowpack/plugin-typescript": "^1.1.1",
     "@types/babel__generator": "^7.6.2",
     "@types/babel__standalone": "^7.1.3",
     "@types/codeflask": "^1.4.2",
@@ -44,17 +40,17 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@types/redom": "^3.23.1",
-    "@types/snowpack-env": "2.3.2",
     "husky": "^4.3.6",
     "import-sort-style-module": "^6.0.0",
     "prettier": "^2.2.0",
     "prettier-plugin-import-sort": "^0.0.6",
     "pretty-quick": "^3.1.0",
-    "snowpack": "^2.18.4",
+    "react-scripts": "4.0.1",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3",
     "uvu": "0.4.0-next.4",
-    "watchlist": "^0.2.3"
+    "watchlist": "^0.2.3",
+    "worker-loader": "^3.0.7"
   },
   "engines": {
     "node": ">=8.12.0"
@@ -64,6 +60,14 @@
     "last 1 firefox version",
     "last 1 safari version"
   ],
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ],
+    "rules": {
+      "eqeqeq": "off"
+    }
+  },
   "importSort": {
     ".js, .jsx, .es6, .es, .mjs, .ts, .tsx": {
       "parser": "babylon",

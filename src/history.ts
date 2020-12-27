@@ -70,7 +70,7 @@ export function useHistory(
       .catch((error: any) => reportError(error));
 
     return cancel;
-  }, [editorStates, printWidth]);
+  }, [current, format, index, editorStates, printWidth]);
 
   useEffect(() => {
     if (
@@ -157,7 +157,7 @@ export function useHistory(
           : current.formattedForPrintWidth,
     };
     setHistory([index, [newEditorState, ...editorStates.slice(index)]]);
-  }, [current, queue]);
+  }, [editorStates, index, current, queue, printWidth, selectRange]);
 
   return [current, (item) => setQueue((queue) => queue.concat(item))];
 }

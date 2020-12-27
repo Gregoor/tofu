@@ -1,4 +1,4 @@
-import t from "@babel/types";
+import * as t from "@babel/types";
 import { useState } from "react";
 
 import {
@@ -144,7 +144,7 @@ export function useSelectRange() {
     }
 
     const reverseLineage = getLineage(ast, cursor.start).reverse();
-    for (const [node, path] of reverseLineage) {
+    for (const [, path] of reverseLineage) {
       const childCursor = findNextChildCursor(
         ast,
         path,

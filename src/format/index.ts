@@ -1,13 +1,12 @@
 import { useCallback, useState } from "react";
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Worker from "worker-loader!./worker";
 
 import { FormatParameters, FormatResult } from "./worker";
 
-const loadWorker = () =>
-  new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
-
 export function useFormat() {
   const [isWorking, setIsWorking] = useState(false);
-  const [worker, setWorker] = useState(loadWorker);
+  const [worker, setWorker] = useState(() => new Worker());
 
   return useCallback(
     (params: FormatParameters) => {
@@ -38,7 +37,7 @@ export function useFormat() {
         () => {
           if (isWorking) {
             worker.terminate();
-            setWorker(loadWorker);
+            setWorker(new Worker());
           }
         },
       ];

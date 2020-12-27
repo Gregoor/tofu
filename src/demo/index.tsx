@@ -1,28 +1,14 @@
 import { Global, css, useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
 import * as React from "react";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
 
 import { Editor, EditorHandle } from "../editor";
 import { Abyss, Key, font } from "../ui";
 import { p5Runner } from "./p5";
 import { reactRunner } from "./react";
 import { Runner } from "./runner";
-
-function debounce(func: Function, wait: number) {
-  let timeout: null | NodeJS.Timeout;
-  return function () {
-    // @ts-ignore
-    const context = this;
-    const args = arguments;
-    const later = function () {
-      timeout = null;
-      func.apply(context, args);
-    };
-    timeout && clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  } as any;
-}
 
 const Rows = styled.div`
   display: flex;
@@ -150,18 +136,15 @@ export function Demo() {
 
   const theme = useTheme();
 
-  const updateOutput = useCallback(
-    debounce((source: string) => {
-      try {
-        runner.run(output.current!, source, (error: Error) => {
-          setRuntimeError(error);
-        });
-      } catch (e) {
-        console.error("asd", e);
-      }
-    }, 200),
-    [runner]
-  );
+  const updateOutput = useDebouncedCallback((source: string) => {
+    try {
+      runner.run(output.current!, source, (error: Error) => {
+        setRuntimeError(error);
+      });
+    } catch (e) {
+      console.error("asd", e);
+    }
+  }, 200);
 
   return (
     <Rows>
@@ -198,7 +181,7 @@ export function Demo() {
         ref={editorRef}
         {...{ initialSource, runtimeError }}
         onChange={(value) => {
-          updateOutput(value);
+          updateOutput.callback(value);
           localStorage.setItem("source", value);
         }}
       />

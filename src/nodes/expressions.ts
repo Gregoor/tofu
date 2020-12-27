@@ -1,5 +1,5 @@
 import generate from "@babel/generator";
-import t from "@babel/types";
+import * as t from "@babel/types";
 import pick from "lodash.pick";
 
 import { getLineage, getNode, getNodeFromPath } from "../ast-utils";
@@ -75,24 +75,24 @@ const changeOperationActions: (
     }),
   }));
 
-const removeCallOrMember: (
-  params: NodeActionParams<t.CallExpression | t.MemberExpression>
-) => NodeDetailActions = ({ node, path, code, cursor: { start } }) =>
-  start == node.end!
-    ? {
-        on: { code: "Backspace" },
-        do: () => ({
-          code: code.mutateAST((ast) => {
-            const parent = getNodeFromPath(ast, path.slice(0, -1)) as any;
-            parent[path[path.length - 1]] = t.isCallExpression(node)
-              ? node.callee
-              : node.object;
-          }),
-          cursor: ({ ast }) =>
-            new Range((getNodeFromPath(ast, path) as t.Node).end!),
-        }),
-      }
-    : null;
+// const removeCallOrMember: (
+//   params: NodeActionParams<t.CallExpression | t.MemberExpression>
+// ) => NodeDetailActions = ({ node, path, code, cursor: { start } }) =>
+//   start == node.end!
+//     ? {
+//         on: { code: "Backspace" },
+//         do: () => ({
+//           code: code.mutateAST((ast) => {
+//             const parent = getNodeFromPath(ast, path.slice(0, -1)) as any;
+//             parent[path[path.length - 1]] = t.isCallExpression(node)
+//               ? node.callee
+//               : node.object;
+//           }),
+//           cursor: ({ ast }) =>
+//             new Range((getNodeFromPath(ast, path) as t.Node).end!),
+//         }),
+//       }
+//     : null;
 
 const wrappers: {
   type: string;

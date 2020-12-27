@@ -35,7 +35,7 @@ export const BareButton = styled.button`
 
 export const ActionText = styled.span<{ small?: boolean }>`
   text-decoration: underline;
-  ${({ small }) => small && "font-size: 11px;"}
+  font-size: ${(p) => (p.small ? 11 : 13.33)}px;
 `;
 
 export const TextButton = ({

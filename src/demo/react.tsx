@@ -95,6 +95,7 @@ export const reactRunner: Runner = {
 
     try {
       const Main =
+        // eslint-disable-next-line no-new-func
         new Function(
           "React",
           `{${Object.keys(React).join(", ")}}`,

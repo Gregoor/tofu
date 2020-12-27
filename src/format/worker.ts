@@ -1,5 +1,3 @@
-import { log } from "util";
-
 import babel from "prettier/parser-babel";
 import prettier from "prettier/standalone";
 

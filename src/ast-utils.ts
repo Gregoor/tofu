@@ -1,4 +1,4 @@
-import t from "@babel/types";
+import * as t from "@babel/types";
 
 import { selectNode } from "./cursor/utils";
 

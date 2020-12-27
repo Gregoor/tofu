@@ -1,6 +1,6 @@
 import generate from "@babel/generator";
 import { parse } from "@babel/parser";
-import t from "@babel/types";
+import * as t from "@babel/types";
 import produce, { immerable } from "immer";
 
 import { Range } from "./utils";
