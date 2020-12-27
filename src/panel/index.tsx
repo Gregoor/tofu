@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
 import * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { findDetailActions } from "../actions";
 import { InvalidCode, isValid } from "../code";
@@ -45,7 +45,7 @@ const Root = styled.div`
   flex-direction: column;
   ${font};
   font-size: 13.333px;
-  background: white;
+  background: ${({ theme }) => theme.c.cardBg};
 `;
 
 const NodeListItem = styled.li`

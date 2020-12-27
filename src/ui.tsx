@@ -7,17 +7,33 @@ import { isMac } from "./actions";
 const GAP = 5;
 
 export const theme: Theme = {
-  // Lengths
+  kind: "light",
   l: {
     gap: GAP + "px",
     space: 2 * GAP + "px",
     abyss: 3 * GAP + "px",
   },
-
-  // Colors
-  c: {},
-
+  c: {
+    text: "hsl(0, 0%, 5%)",
+    softText: "hsla(0, 0%, 10%)",
+    bg: "hsl(0, 0%, 95%)",
+    cardBg: "white",
+    visitedLink: "initial",
+  },
   borderRadius: "10px",
+};
+
+export const darkTheme: Theme = {
+  ...theme,
+  kind: "dark",
+  c: {
+    ...theme.c,
+    text: "hsl(0, 0%, 85%)",
+    softText: "hsla(0, 0%, 70%)",
+    bg: "hsl(0, 0%, 5%)",
+    cardBg: "#2d2d2d",
+    visitedLink: "lightblue",
+  },
 };
 
 const room = (size: string) => css`

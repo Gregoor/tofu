@@ -27,11 +27,11 @@ const handleFragmentInput: OnNodeInput<
     }),
     cursor: (code) =>
       new Range(
-        getNodeFromPath(code.ast, [
+        (getNodeFromPath(code.ast, [
           ...path.slice(0, -1),
           t.isJSXOpeningFragment(node) ? "openingElement" : "closingElement",
           "name",
-        ]).end!
+        ]) as t.Node).end!
       ),
   };
 
@@ -120,11 +120,11 @@ const handleElementInput: OnNodeInput<
     }),
     cursor: (code) =>
       new Range(
-        getNodeFromPath(code.ast, [
+        (getNodeFromPath(code.ast, [
           ...path.slice(0, -1),
           t.isJSXOpeningElement(node) ? "openingElement" : "closingElement",
           "name",
-        ]).end!
+        ]) as t.Node).end!
       ),
   };
 };

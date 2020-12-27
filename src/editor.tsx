@@ -2,6 +2,7 @@ import { Global, css } from "@emotion/react";
 import styled from "@emotion/styled";
 import React, { useEffect, useImperativeHandle, useState } from "react";
 
+import { isMac } from "./actions";
 import { codeFromSource } from "./code";
 import { CodeTextArea } from "./code-text-area";
 import { moveCursor } from "./cursor/move";
@@ -86,6 +87,14 @@ const EditorInternal: React.ForwardRefRenderFunction<
         editorState={editorState}
         cols={printWidth}
         onKeyDown={(event) => {
+          if (
+            (isMac ? event.metaKey : event.ctrlKey) &&
+            ["c", "v", "r", "t", "w", "l"].some(
+              (key) => event.code == `Key${key.toUpperCase()}`
+            )
+          ) {
+            return;
+          }
           event.preventDefault();
           queueAction(event);
         }}

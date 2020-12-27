@@ -12,7 +12,7 @@ import {
 import { findNodeDetailActions, handleNodeInput } from "./nodes";
 import { reportError } from "./report";
 import {
-  BareAction,
+  Action,
   BareChange,
   BareDetailAction,
   DetailAction,
@@ -128,9 +128,9 @@ const baseDetailActions: BaseDetailAction[] = [
   ...keywords.map(
     ({ name, create, getInitialCursor }) =>
       ({
-        if: (code, { start }) =>
-          code.source.slice(start - name.length, start) != name ||
-          code.source[start + 1] != "\n",
+        if: ({ source }, { start }) =>
+          source.slice(start - name.length, start) == name &&
+          source[start + 1] == "\n",
         on: { code: "Space" },
         do: (code, { start }) => ({
           code: code.replaceSource(
@@ -147,6 +147,7 @@ const baseDetailActions: BaseDetailAction[] = [
         }),
       } as BaseDetailAction)
   ),
+
   {
     on: { code: "Space" },
     do: (code, cursor) => ({
@@ -331,24 +332,21 @@ export const findDetailActions = (code: Code, cursor: Range) => ({
     : [],
 });
 
-function isActionOn(on: DetailAction["on"], event: KeyboardEvent) {
-  return (
-    on &&
-    (Array.isArray(on) ? on : [on]).some(
-      (on) =>
-        ("code" in on ? on.code === event.code : on.key === event.key) &&
-        modifierKeys.every((key) =>
-          on && key in on ? on[key] == event[key] : true
-        )
-    )
+const isActionOn = (on: DetailAction["on"], event: KeyboardEvent) =>
+  on &&
+  (Array.isArray(on) ? on : [on]).some(
+    (on) =>
+      ("code" in on ? on.code === event.code : on.key === event.key) &&
+      modifierKeys.every((key) =>
+        on && key in on ? on[key] == event[key] : true
+      )
   );
-}
 
 export function findAction(
   code: Code,
   cursor: Range,
   event: KeyboardEvent
-): undefined | BareAction<Code> {
+): undefined | Action {
   if (isValid(code)) {
     const action = findNodeDetailActions(code, cursor)
       .map(({ actions }) => actions)
@@ -360,8 +358,11 @@ export function findAction(
   }
 
   for (const action of getBaseDetailActions(code, cursor)) {
-    if (isActionOn(action.on, event)) {
-      return () => action.do(code, cursor);
+    if (
+      (!action.if || action.if(code, cursor)) &&
+      isActionOn(action.on, event)
+    ) {
+      return action.do;
     }
   }
 }

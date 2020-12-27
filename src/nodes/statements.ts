@@ -92,11 +92,11 @@ export const statements: NodeDefs = {
           on: { code: "KeyE" },
           do: () => ({
             code: code.replaceSource(new Range(node.end!), "else {}"),
-            cursor({ ast }) {
-              return new Range(
-                getNodeFromPath(ast, [...path, "alternate"]).start! - 1
-              );
-            },
+            cursor: ({ ast }) =>
+              new Range(
+                (getNodeFromPath(ast, [...path, "alternate"]) as t.Node)
+                  .start! - 1
+              ),
           }),
         },
         {

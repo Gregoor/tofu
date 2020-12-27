@@ -5,7 +5,7 @@ import { Code, codeFromSource, isValid } from "./code";
 import { useSelectRange } from "./cursor/select-range";
 import { useFormat } from "./format";
 import { reportError } from "./report";
-import { Action, Range } from "./utils";
+import { Action, Change, Range } from "./utils";
 
 export type EditorState = Readonly<{
   code: Code;
@@ -95,7 +95,12 @@ export function useHistory(
       action = actionOrEvent;
     }
 
-    const change = action && action(code, cursor);
+    let change: undefined | null | Change;
+    try {
+      change = action && action(code, cursor);
+    } catch (e) {
+      reportError(e);
+    }
     if (!change) {
       return;
     }
@@ -126,10 +131,14 @@ export function useHistory(
 
     if ("cursor" in change && typeof change.cursor == "function") {
       const cursorAction = change.cursor;
-      setQueue((queue) => [
-        (code, cursor) => ({ cursor: cursorAction(code, cursor) }),
-        ...queue,
-      ]);
+      try {
+        setQueue((queue) => [
+          (code, cursor) => ({ cursor: cursorAction(code, cursor) }),
+          ...queue,
+        ]);
+      } catch (e) {
+        reportError(e);
+      }
     }
 
     const newEditorState = {

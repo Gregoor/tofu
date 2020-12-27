@@ -2,16 +2,15 @@ import "@emotion/react";
 
 declare module "@emotion/react" {
   export interface Theme {
-    // Lengths
-    l: {
-      gap: string;
-      space: string;
-      abyss: string;
+    kind: "light" | "dark";
+    l: { gap: string; abyss: string; space: string };
+    c: {
+      softText: string;
+      bg: string;
+      text: string;
+      cardBg: string;
+      visitedLink: string;
     };
-
-    // Colors
-    c: {};
-
     borderRadius: string;
   }
 }

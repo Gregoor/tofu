@@ -88,7 +88,8 @@ const removeCallOrMember: (
               ? node.callee
               : node.object;
           }),
-          cursor: ({ ast }) => new Range(getNodeFromPath(ast, path).end!),
+          cursor: ({ ast }) =>
+            new Range((getNodeFromPath(ast, path) as t.Node).end!),
         }),
       }
     : null;

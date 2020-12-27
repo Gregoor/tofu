@@ -15,7 +15,7 @@ function* forEachProperty(node: t.Node) {
   }
 }
 
-type Path = (string | number)[];
+export type Path = (string | number)[];
 
 export function getLineage(
   parentNode: t.Node,
@@ -60,5 +60,8 @@ export function getNode(ast: t.File, start: number, negIndex = -1) {
 }
 
 export function getNodeFromPath(ast: t.File, path: Path) {
-  return path.reduce<t.Node>((ast, property) => (ast as any)[property], ast);
+  return path.reduce<t.Node | t.Node[]>(
+    (ast, property) => (ast as any)[property],
+    ast
+  );
 }

@@ -29,6 +29,7 @@ export const BareButton = styled.button`
   padding: 0;
 
   background: none;
+  color: ${({ theme }) => theme.c.text};
   cursor: pointer;
 `;
 

@@ -3,11 +3,17 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import { Demo } from "./demo";
-import { theme } from "./ui";
+import { darkTheme, theme } from "./ui";
 
 ReactDOM.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
+    <ThemeProvider
+      theme={
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? darkTheme
+          : theme
+      }
+    >
       <Demo />
     </ThemeProvider>
   </React.StrictMode>,

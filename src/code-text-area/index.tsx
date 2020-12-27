@@ -2,8 +2,8 @@ import styled from "@emotion/styled";
 import CodeFlask from "codeflask";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { isValid } from "./code";
-import { EditorState } from "./history";
+import { isValid } from "../code";
+import { EditorState } from "../history";
 
 const CodeWrap = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius} 0 0

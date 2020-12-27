@@ -1,3 +1,4 @@
+import { Global, css, useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
 import * as React from "react";
 import { useCallback, useRef, useState } from "react";
@@ -35,7 +36,7 @@ const Card = styled.section`
   margin: 0 auto;
   padding: 20px;
   max-width: 600px;
-  background: white;
+  background: ${({ theme }) => theme.c.cardBg};
   font-family: "Open Sans", sans-serif;
 `;
 
@@ -147,6 +148,8 @@ export function Demo() {
   const output = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorHandle>(null);
 
+  const theme = useTheme();
+
   const updateOutput = useCallback(
     debounce((source: string) => {
       try {
@@ -162,6 +165,33 @@ export function Demo() {
 
   return (
     <Rows>
+      <Global
+        styles={css`
+          body {
+            background: ${theme.c.bg};
+            color: ${theme.c.text};
+          }
+          h2 {
+            color: ${theme.c.softText};
+          }
+          a:visited {
+            color: ${theme.c.visitedLink};
+          }
+        `}
+      />
+
+      <Abyss />
+
+      <AboutCard
+        onSelectRunner={(newRunner) => {
+          runner.cleanUp(output.current!);
+          setRunner(newRunner);
+          editorRef.current!.setSource(newRunner.example);
+        }}
+      />
+
+      <Abyss />
+
       <Output ref={output} />
       <Abyss />
       <Editor
@@ -175,14 +205,6 @@ export function Demo() {
 
       <Abyss />
 
-      <AboutCard
-        onSelectRunner={(newRunner) => {
-          runner.cleanUp(output.current!);
-          setRunner(newRunner);
-          editorRef.current!.setSource(newRunner.example);
-        }}
-      />
-      <Abyss />
       <LinksCard />
     </Rows>
   );
