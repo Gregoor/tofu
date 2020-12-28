@@ -1,20 +1,20 @@
 {
   "files": {
-    "main.js": "/tofu.is/static/js/main.2a2dd9ee.chunk.js",
-    "main.js.map": "/tofu.is/static/js/main.2a2dd9ee.chunk.js.map",
-    "runtime-main.js": "/tofu.is/static/js/runtime-main.35708a67.js",
-    "runtime-main.js.map": "/tofu.is/static/js/runtime-main.35708a67.js.map",
-    "static/js/2.f3aee3ec.chunk.js": "/tofu.is/static/js/2.f3aee3ec.chunk.js",
-    "static/js/2.f3aee3ec.chunk.js.map": "/tofu.is/static/js/2.f3aee3ec.chunk.js.map",
-    "f4938e1921839302322e.worker.js": "/tofu.is/f4938e1921839302322e.worker.js",
-    "f4938e1921839302322e.worker.js.LICENSE.txt": "/tofu.is/f4938e1921839302322e.worker.js.LICENSE.txt",
-    "f4938e1921839302322e.worker.js.map": "/tofu.is/f4938e1921839302322e.worker.js.map",
-    "index.html": "/tofu.is/index.html",
-    "static/js/2.f3aee3ec.chunk.js.LICENSE.txt": "/tofu.is/static/js/2.f3aee3ec.chunk.js.LICENSE.txt"
+    "main.js": "/static/js/main.b4b35ad8.chunk.js",
+    "main.js.map": "/static/js/main.b4b35ad8.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.7fc175db.js",
+    "runtime-main.js.map": "/static/js/runtime-main.7fc175db.js.map",
+    "static/js/2.0fb07398.chunk.js": "/static/js/2.0fb07398.chunk.js",
+    "static/js/2.0fb07398.chunk.js.map": "/static/js/2.0fb07398.chunk.js.map",
+    "67ec1521115c4d0b5728.worker.js": "/67ec1521115c4d0b5728.worker.js",
+    "67ec1521115c4d0b5728.worker.js.LICENSE.txt": "/67ec1521115c4d0b5728.worker.js.LICENSE.txt",
+    "67ec1521115c4d0b5728.worker.js.map": "/67ec1521115c4d0b5728.worker.js.map",
+    "index.html": "/index.html",
+    "static/js/2.0fb07398.chunk.js.LICENSE.txt": "/static/js/2.0fb07398.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
-    "static/js/runtime-main.35708a67.js",
-    "static/js/2.f3aee3ec.chunk.js",
-    "static/js/main.2a2dd9ee.chunk.js"
+    "static/js/runtime-main.7fc175db.js",
+    "static/js/2.0fb07398.chunk.js",
+    "static/js/main.b4b35ad8.chunk.js"
   ]
 }
