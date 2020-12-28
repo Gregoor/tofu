@@ -1,4 +1,4 @@
-# Tofu
+# [Tofu](https://tofu.is)
 
 Code editing for more meaning with fewer keystrokes.
 
