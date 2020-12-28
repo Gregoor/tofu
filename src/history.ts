@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import * as FormatWorker from "workerize-loader!./format.worker";
 
 import { findAction, handleInput } from "./actions";
 import { Code, codeFromSource, isValid } from "./code";
 import { useSelectRange } from "./cursor/select-range";
-import { useFormat } from "./format";
+import type { format } from "./format.worker";
 import { reportError } from "./report";
 import { Action, Change, Range } from "./utils";
+
+const formatInWorker = ((FormatWorker as any).format ||
+  new (FormatWorker as any)().format) as typeof format;
 
 export type EditorState = Readonly<{
   code: Code;
@@ -17,7 +22,7 @@ type QueueItem = Action | KeyboardEvent;
 
 export function useHistory(
   initialSource: string,
-  printWidth: number
+  printWidth = 80
 ): [EditorState, (item: QueueItem) => void] {
   const [[index, editorStates], setHistory] = useState<[number, EditorState[]]>(
     () => [
@@ -37,15 +42,13 @@ export function useHistory(
 
   const selectRange = useSelectRange();
 
-  const format = useFormat();
-
   useEffect(() => {
     const { code, cursor, formattedForPrintWidth } = current;
     if (!isValid(code) || formattedForPrintWidth == printWidth) {
       return;
     }
 
-    const [formatPromise, cancel] = format({
+    const formatPromise = formatInWorker({
       code: code.source,
       cursorOffset: cursor.start,
       printWidth,
@@ -68,9 +71,7 @@ export function useHistory(
         setHistory([index, newEditorStates]);
       })
       .catch((error: any) => reportError(error));
-
-    return cancel;
-  }, [current, format, index, editorStates, printWidth]);
+  }, [current, index, editorStates, printWidth]);
 
   useEffect(() => {
     if (

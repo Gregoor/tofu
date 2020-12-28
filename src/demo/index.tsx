@@ -73,16 +73,20 @@ const AboutCard = () => (
 );
 
 const ExampleButton = styled.button<{ isActive: boolean }>`
-  border: 1px solid #a2a2a2;
+  border: 2px solid #a2a2a2;
   margin-right: ${({ theme }) => theme.l.abyss};
   padding: ${({ theme }) => theme.l.space};
   display: flex;
   align-items: center;
   font-weight: bold;
   cursor: pointer;
-  background: white;
+  background: ${({ theme }) => theme.c.bg};
 
-  ${(p) => p.isActive && "border-color: black;"}
+  ${(p) => p.isActive && "border-color: " + p.theme.c.text + ";"}
+`;
+
+const DocsLink = styled.a`
+  color: ${({ theme }) => theme.c.visitedLink};
 `;
 
 const ExamplesCard = ({
@@ -99,9 +103,9 @@ const ExamplesCard = ({
       see the sample code below.
       <br />
       Current selection is:{" "}
-      <a href={activeRunner.docsURL} target="_blank" rel="noreferrer">
+      <DocsLink href={activeRunner.docsURL} target="_blank" rel="noreferrer">
         {activeRunner.label} (click here to see the docs)
-      </a>
+      </DocsLink>
     </p>
 
     <div style={{ display: "flex" }}>
@@ -239,7 +243,7 @@ export function Demo() {
 
             & > * {
               border-bottom: 1px solid #dbdbdb;
-              padding: ${theme.l.gap} 0;
+              margin: ${theme.l.gap} 0;
               width: 100%;
 
               &:last-child {

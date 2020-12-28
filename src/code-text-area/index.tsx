@@ -8,7 +8,7 @@ import { EditorState } from "../history";
 const CodeWrap = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius} 0 0
     ${({ theme }) => theme.borderRadius};
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 2px solid ${({ theme }) => theme.c.cardBg};
   border-right: none;
   display: flex;
   flex-direction: row;
@@ -16,24 +16,43 @@ const CodeWrap = styled.div`
   overflow: hidden;
   min-height: 300px;
 
-  .codeflask.codeflask {
+  .codeflask {
     position: relative;
     width: initial;
     height: initial;
-  }
 
-  .codeflask textarea {
-    position: static;
-    width: auto;
-    height: 100% !important;
-  }
+    background: ${({ theme }) => theme.c.bg};
 
-  .codeflask pre {
-    position: absolute;
-  }
+    &.codeflask--has-line-numbers:before,
+    & .codeflask__lines {
+      background: ${({ theme }) => theme.c.cardBg};
+    }
 
-  .keyword {
-    font-weight: bold;
+    & textarea {
+      position: static;
+      width: auto;
+      height: 100% !important;
+      color: transparent;
+      caret-color: ${({ theme }) => theme.c.text};
+    }
+
+    & pre {
+      position: absolute;
+    }
+
+    & .keyword {
+      font-weight: bold;
+    }
+
+    ${({ theme }) =>
+      theme.kind == "dark" &&
+      `
+      color: ${theme.c.text};
+  
+      & .token {
+        filter: brightness(200%);
+      }
+    `}
   }
 `;
 

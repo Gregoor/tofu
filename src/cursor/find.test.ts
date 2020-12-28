@@ -1,6 +1,3 @@
-import { suite, test } from "uvu";
-import * as assert from "uvu/assert";
-
 import { codeFromSource, isValid } from "../code";
 import { findCursor } from "./find";
 
@@ -318,56 +315,53 @@ t;
 ] as const).map(([code, paths]) => [code.replace(/\r/g, ""), paths] as const);
 
 for (const [source, paths] of tests) {
-  const testSuite = suite(source);
-  for (const [direction, path] of Object.entries(paths).reduce<any>(
-    (a, [direction, path]) =>
-      [
-        ...a,
-        ...(({
-          X: [
-            [
-              "RIGHT",
-              path.map(([from, to]: any) => [
-                Array.isArray(from) ? from[1] : from,
-                to,
-              ]),
+  describe(source, () => {
+    for (const [direction, path] of Object.entries(paths).reduce<any>(
+      (a, [direction, path]) =>
+        [
+          ...a,
+          ...(({
+            X: [
+              [
+                "RIGHT",
+                path.map(([from, to]: any) => [
+                  Array.isArray(from) ? from[1] : from,
+                  to,
+                ]),
+              ],
+              [
+                "LEFT",
+                path.map(([to, from]: any) => [
+                  Array.isArray(from) ? from[0] : from,
+                  to,
+                ]),
+              ],
             ],
-            [
-              "LEFT",
-              path.map(([to, from]: any) => [
-                Array.isArray(from) ? from[0] : from,
-                to,
-              ]),
-            ],
-          ],
-        } as any)[direction] || [[direction, path]]),
-      ] as any,
-    []
-  )) {
-    for (let [before, after] of path) {
-      testSuite(`${direction}: ${before} => ${after}`, () => {
-        const code = codeFromSource(source);
-        assert.ok(isValid(code));
-        if (!isValid(code)) {
-          return;
-        }
+          } as any)[direction] || [[direction, path]]),
+        ] as any,
+      []
+    )) {
+      for (let [before, after] of path) {
+        it(`${direction}: ${before} => ${after}`, () => {
+          const code = codeFromSource(source);
+          expect(isValid(code)).toBeTruthy();
+          if (!isValid(code)) {
+            return;
+          }
 
-        const afterCursor = findCursor(
-          code,
-          direction == "null" ? null : direction,
-          before
-        );
+          const afterCursor = findCursor(
+            code,
+            direction == "null" ? null : direction,
+            before
+          );
 
-        assert.equal(
-          afterCursor.start == afterCursor.end
-            ? afterCursor.start
-            : [afterCursor.start, afterCursor.end],
-          after
-        );
-      });
+          expect(
+            afterCursor.start == afterCursor.end
+              ? afterCursor.start
+              : [afterCursor.start, afterCursor.end]
+          ).toEqual(after);
+        });
+      }
     }
-  }
-  testSuite.run();
+  });
 }
-
-test.run();

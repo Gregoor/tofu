@@ -19,11 +19,10 @@ const Container = styled.div`
 `;
 
 const ResizeHandle = styled.div`
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  border-left: 2px dashed rgba(0, 0, 0, 0.1);
-  padding-right: ${({ theme }) => theme.l.gap};
-  background: white;
+  border-top: 1px solid ${({ theme }) => theme.c.cardBg};
+  border-bottom: 1px solid ${({ theme }) => theme.c.cardBg};
+  border-left: 3px dashed ${({ theme }) => theme.c.cardBg};
+  background: ${({ theme }) => theme.c.bg};
   cursor: col-resize;
   user-select: none;
 `;

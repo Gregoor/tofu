@@ -32,7 +32,7 @@ function usePersistedSet(key: string, defaults: string[]) {
 }
 
 const Root = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid transparent;
   border-radius: 0 ${({ theme }) => theme.borderRadius}
     ${({ theme }) => theme.borderRadius} 0;
   border-left: none;

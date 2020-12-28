@@ -1,7 +1,4 @@
-declare module "worker-loader!*" {
-  class WebpackWorker extends Worker {
-    constructor();
-  }
-
-  export default WebpackWorker;
+declare module "workerize-loader!*format.worker" {
+  type FormatWorker = any;
+  export default FormatWorker;
 }
