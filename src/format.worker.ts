@@ -21,7 +21,8 @@ export async function format({
       trailingComma: "all",
     });
   } catch (error) {
-    reportError(error);
+    // TODO Can't report from a worker!
+    // reportError(error);
     return null;
   }
 }
