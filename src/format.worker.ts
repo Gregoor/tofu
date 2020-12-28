@@ -1,7 +1,7 @@
 import babel from "prettier/parser-babel";
 import prettier from "prettier/standalone";
 
-import { reportError } from "./report";
+// import { reportError } from "./report";
 
 export async function format({
   code,
