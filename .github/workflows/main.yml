@@ -26,6 +26,7 @@ jobs:
 
   test:
     name: Test
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - run: yarn test
