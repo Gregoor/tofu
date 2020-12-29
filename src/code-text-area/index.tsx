@@ -49,9 +49,21 @@ const CodeWrap = styled.div`
       theme.kind == "dark" &&
       `
       color: ${theme.c.text};
-  
-      & .token {
-        filter: brightness(200%);
+      
+      & .token.punctuation {
+        color: #949494;
+      }
+      
+      & .token.keyword {
+        color: #ff46dc
+      }
+      
+      & .token.number {
+        color: #59f057;
+      }
+      
+      & .token.function {
+        color: white;
       }
     `}
   }

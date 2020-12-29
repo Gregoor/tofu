@@ -72,7 +72,7 @@ const AboutCard = () => (
 );
 
 const ExampleButton = styled.button<{ isActive: boolean }>`
-  border: 2px solid #dddddd;
+  border: 2px solid ${({ theme }) => theme.c.cardBg};
   margin-right: ${({ theme }) => theme.l.abyss};
   padding: ${({ theme }) => theme.l.space};
   display: flex;
