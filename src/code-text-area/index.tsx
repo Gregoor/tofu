@@ -41,7 +41,8 @@ const CodeWrap = styled.div`
       position: absolute;
     }
 
-    & .keyword {
+    & .keyword,
+    & .boolean {
       font-weight: bold;
     }
 
@@ -58,8 +59,8 @@ const CodeWrap = styled.div`
         color: #ff46dc
       }
       
-      & .token.number {
-        color: #59f057;
+      & .token.boolean, & .token.number {
+        color: #3ae638;
       }
       
       & .token.function {
