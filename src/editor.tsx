@@ -1,4 +1,4 @@
-import { Global, css } from "@emotion/react";
+import { Global, css, useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
 import React, { useEffect, useImperativeHandle, useState } from "react";
 
@@ -40,6 +40,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
   const [printWidth, setPrintWidth] = useState(80);
   const [resizeStartX, setResizeStartX] = useState<null | number>(null);
   const [editorState, queueAction] = useHistory(initialSource, printWidth);
+  const theme = useTheme();
 
   useImperativeHandle(ref, () => ({
     setSource(value) {
@@ -78,7 +79,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
       <Global
         styles={css`
           ::selection {
-            background: yellow;
+            background: ${theme.kind == "light" ? "yellow" : "#7d99e7"};
           }
         `}
       />
