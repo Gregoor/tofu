@@ -56,9 +56,18 @@ export const addElementAction = (
   { node, path, code, cursor: { start, end } }: NodeActionParams<t.Node>,
   collectionKey: string,
   initialValue: t.Node
-): NodeDetailActions =>
-  start > node.start! &&
-  end < node.end! && {
+): NodeDetailActions => {
+  if (start <= node.start! || end >= node.end!) {
+    return null;
+  }
+  const cursorNode = getNode(code.ast, start);
+  if (
+    (t.isStringLiteral(cursorNode) && start < cursorNode.end!) ||
+    t.isTemplateElement(cursorNode)
+  ) {
+    return null;
+  }
+  return {
     info: { type: "ADD_ELEMENT" },
     on: { key: "," },
     do: () => {
@@ -80,6 +89,7 @@ export const addElementAction = (
       };
     },
   };
+};
 
 export const flattenActions = (
   actions: NodeDetailActions
