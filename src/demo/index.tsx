@@ -45,9 +45,8 @@ const AboutCard = () => (
   <Card>
     <CardTitle>What is this?</CardTitle>
     <p>
-      Tofu is an exploration in fluid code editing, freeing you from making
-      meaningless changes to your code, like syntax management or code styling.
-      Thus keypresses are wholly reserved for meaningful actions:
+      Tofu is an exploration in fluid code editing. It manages syntax and code
+      style for you. Thus keypresses are wholly reserved for meaningful actions:
     </p>
     <ul>
       <li>
