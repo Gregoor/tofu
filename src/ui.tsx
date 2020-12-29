@@ -6,7 +6,7 @@ import { isMac } from "./actions";
 
 const GAP = 5;
 
-export const theme: Theme = {
+export const lightTheme: Theme = {
   kind: "light",
   l: {
     gap: GAP + "px",
@@ -24,10 +24,10 @@ export const theme: Theme = {
 };
 
 export const darkTheme: Theme = {
-  ...theme,
+  ...lightTheme,
   kind: "dark",
   c: {
-    ...theme.c,
+    ...lightTheme.c,
     text: "hsl(0, 0%, 85%)",
     softText: "hsla(0, 0%, 70%)",
     bg: "hsl(0, 0%, 5%)",

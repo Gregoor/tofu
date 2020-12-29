@@ -21,7 +21,8 @@ const CodeWrap = styled.div`
     width: initial;
     height: initial;
 
-    background: ${({ theme }) => theme.c.bg};
+    background: ${({ theme }) =>
+      theme.kind == "light" ? theme.c.cardBg : theme.c.bg};
 
     &.codeflask--has-line-numbers:before,
     & .codeflask__lines {
