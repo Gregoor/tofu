@@ -157,7 +157,7 @@ export function useHistory(
           ? null
           : current.formattedForPrintWidth,
     };
-    setHistory([index, [newEditorState, ...editorStates.slice(index)]]);
+    setHistory([0, [newEditorState, ...editorStates.slice(index)]]);
   }, [editorStates, index, current, queue, printWidth, selectRange]);
 
   return [current, (item) => setQueue((queue) => queue.concat(item))];
