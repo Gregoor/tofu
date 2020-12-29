@@ -18,7 +18,7 @@ export type EditorState = Readonly<{
   formattedForPrintWidth: null | number;
 }>;
 
-type QueueItem = Action | KeyboardEvent;
+export type QueueItem = Action | KeyboardEvent;
 
 export function useHistory(
   initialSource: string,

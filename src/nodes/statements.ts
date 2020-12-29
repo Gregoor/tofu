@@ -25,11 +25,14 @@ export const statement: NodeDef<t.Statement> = {
 
 export const statements: NodeDefs = {
   Program: {
-    // TODO: these all need cursors
     actions: ({ code, cursor }) => [
       ["[]", "{}", "''", '""'].map((pair) => ({
         on: { key: pair[0] },
-        do: () => ({ code: code.replaceSource(cursor, `(${pair})`) }),
+        do: () => ({
+          code: code.replaceSource(cursor, `(${pair})`),
+          cursor: (code, cursor) =>
+            new Range(getNode(code.ast, cursor.start).start! + 1),
+        }),
       })),
       {
         on: { key: ">" },
