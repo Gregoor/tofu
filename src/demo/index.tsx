@@ -72,16 +72,17 @@ const AboutCard = () => (
 );
 
 const ExampleButton = styled.button<{ isActive: boolean }>`
-  border: 2px solid #a2a2a2;
+  border: 2px solid #dddddd;
   margin-right: ${({ theme }) => theme.l.abyss};
   padding: ${({ theme }) => theme.l.space};
   display: flex;
   align-items: center;
   font-weight: bold;
   cursor: pointer;
-  background: ${({ theme }) => theme.c.bg};
+  background: ${({ theme }) =>
+    theme.kind == "light" ? theme.c.cardBg : theme.c.bg};
 
-  ${(p) => p.isActive && "border-color: " + p.theme.c.text + ";"}
+  ${(p) => p.isActive && "border-color: " + p.theme.c.softText + ";"}
 `;
 
 const DocsLink = styled.a`
