@@ -7,8 +7,8 @@ on:
     branches: [twofu]
 
 jobs:
-  setup:
-    name: Setup
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -16,19 +16,17 @@ jobs:
         with:
           node-version: "12"
       - uses: bahmutov/npm-install@v1
-
-  build:
-    name: Build
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
       - run: yarn build
 
   test:
     name: Test
-    needs: setup
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "12"
+      - uses: bahmutov/npm-install@v1
       - run: yarn test
 
   deploy:
