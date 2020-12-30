@@ -89,7 +89,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
         onKeyDown={(event) => {
           if (
             (isMac ? event.metaKey : event.ctrlKey) &&
-            ["c", "v", "r", "t", "w", "l"].some(
+            ["c", "v", "x", "r", "t", "w", "l"].some(
               (key) => event.code == `Key${key.toUpperCase()}`
             )
           ) {
