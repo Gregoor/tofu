@@ -86,14 +86,16 @@ export function Panel({
     <Root>
       <HiddenItemsList {...{ hiddenItems, toggleItem }} />
 
-      {runtimeError && (
+      {isValid(code) && runtimeError && (
         <div style={{ color: "red", marginBottom: theme.l.space }}>
           {runtimeError.stack!.split("\n").slice(0, 2).join(" -- ")}
         </div>
       )}
 
-      {code instanceof InvalidCode && (
-        <div style={{ color: "red" }}>{code.error.message}</div>
+      {!isValid(code) && (
+        <div style={{ color: "red", marginBottom: theme.l.space }}>
+          {code.error.message}
+        </div>
       )}
 
       <DebugBox {...{ code, cursor, hiddenItems, toggleItem }} />
