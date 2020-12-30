@@ -4,7 +4,7 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 
 import { findDetailActions } from "../actions";
-import { InvalidCode, isValid } from "../code";
+import { isValid } from "../code";
 import { EditorState } from "../history";
 import { font } from "../ui";
 import { ActionList } from "./action-list";
