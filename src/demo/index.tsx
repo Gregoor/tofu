@@ -1,8 +1,7 @@
 import { Global, css, useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
 import * as React from "react";
-import { useRef, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Editor, EditorHandle } from "../editor";
 import { Abyss, Key, font } from "../ui";
@@ -175,23 +174,27 @@ function useRunner() {
       ) || reactRunner
   );
   const iteration = useRef(0);
-  return [
-    {
-      ...runner,
-      run: (...params: any[]) => {
-        (runner.run as any)(...params, iteration.current++);
-      },
-    },
-    (runner: Runner) => {
-      localStorage.setItem("runner", runner.id);
-      setRunner(runner);
-    },
-  ] as const;
+  return useMemo(
+    () =>
+      [
+        {
+          ...runner,
+          run: (...params: any[]) => {
+            (runner.run as any)(...params, iteration.current++);
+          },
+        },
+        (runner: Runner) => {
+          localStorage.setItem("runner", runner.id);
+          setRunner(runner);
+        },
+      ] as const,
+    [runner]
+  );
 }
 
 export function Demo() {
   const [runner, setRunner] = useRunner();
-  const [initialSource] = useState(
+  const [source, setSource] = useState(
     () => localStorage.getItem("source") || runner.example
   );
   const [runtimeError, setRuntimeError] = useState<Error | null>(null);
@@ -200,15 +203,28 @@ export function Demo() {
 
   const theme = useTheme();
 
-  const updateOutput = useDebouncedCallback((source: string) => {
-    try {
-      runner.run(output.current!, source, (error: Error) => {
-        setRuntimeError(error);
-      });
-    } catch (e) {
-      console.error("asd", e);
-    }
-  }, 200);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      try {
+        runner.run(output.current!, source, (error: Error) => {
+          setRuntimeError(error);
+        });
+      } catch (e) {
+        setRuntimeError(e);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [runner, source]);
+
+  console.log(runtimeError);
+
+  const handleChange = useCallback((value: string) => {
+    setRuntimeError(null);
+    setSource(value);
+    localStorage.setItem("source", value);
+  }, []);
 
   return (
     <Rows>
@@ -278,11 +294,8 @@ export function Demo() {
       <Abyss />
       <Editor
         ref={editorRef}
-        {...{ initialSource, runtimeError }}
-        onChange={(value) => {
-          updateOutput.callback(value);
-          localStorage.setItem("source", value);
-        }}
+        {...{ initialSource: source, runtimeError }}
+        onChange={handleChange}
       />
 
       <Abyss />

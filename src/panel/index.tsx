@@ -1,3 +1,4 @@
+import { useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
 import * as React from "react";
 import { useEffect, useState } from "react";
@@ -5,7 +6,7 @@ import { useEffect, useState } from "react";
 import { findDetailActions } from "../actions";
 import { InvalidCode, isValid } from "../code";
 import { EditorState } from "../history";
-import { Gap, font } from "../ui";
+import { font } from "../ui";
 import { ActionList } from "./action-list";
 import { DEBUG_KEY, DebugBox } from "./debug-box";
 import { HiddenItemsList } from "./hidden-items-list";
@@ -71,6 +72,7 @@ export function Panel({
 } & OnAction) {
   const [hiddenItems, toggleItem] = usePersistedSet("hiddenItems", [DEBUG_KEY]);
   const [actions, setActions] = useState(() => findDetailActions(code, cursor));
+  const theme = useTheme();
 
   useEffect(() => {
     if (!isValid(code) || formattedForPrintWidth !== null) {
@@ -85,10 +87,8 @@ export function Panel({
       <HiddenItemsList {...{ hiddenItems, toggleItem }} />
 
       {runtimeError && (
-        <div style={{ color: "red" }}>
-          <br />
-          {runtimeError.stack!.split("\n").slice(0, 2).join("\n")}
-          <Gap />
+        <div style={{ color: "red", marginBottom: theme.l.space }}>
+          {runtimeError.stack!.split("\n").slice(0, 2).join(" -- ")}
         </div>
       )}
 
