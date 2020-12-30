@@ -2,8 +2,8 @@ import styled from "@emotion/styled";
 import CodeFlask from "codeflask";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { isValid } from "../code";
-import { EditorState } from "../history";
+import { isValid } from "./code";
+import { EditorState } from "./history";
 
 const CodeWrap = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius} 0 0
@@ -56,15 +56,15 @@ const CodeWrap = styled.div`
       }
       
       & .token.keyword {
-        color: #ff46dc
+        color: #e06ecb;
       }
       
       & .token.boolean, & .token.number {
-        color: #3ae638;
+        color: #3ae038;
       }
       
       & .token.function {
-        color: white;
+        color: #ebdb72;
       }
     `}
   }
