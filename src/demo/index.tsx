@@ -146,21 +146,20 @@ const LinksCard = () => (
     <CardTitle>Links</CardTitle>
     <ul>
       <li>
-        <a href="https://github.com/Gregoor/tofu">Source</a>
+        <a href="https://github.com/Gregoor/tofu">Repo</a>
       </li>
       <li>
         <a href="https://github.com/Gregoor/tofu/issues">Issues</a>
       </li>
       <li>
-        <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - My
-        previous attempt at tackling this
+        <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - a past
+        attempt at solving a smaller problem (JSON editing)
       </li>
       <li>
         <a href="https://dflate.io/code-is-not-just-text">
           Code is not just text
         </a>{" "}
-        - A blog post I wrote in early 2017, lining out my thinking at the time
-        about code editing
+        - A blog post I wrote in early 2017
       </li>
     </ul>
   </Card>
