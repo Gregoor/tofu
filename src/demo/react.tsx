@@ -99,16 +99,18 @@ export const reactRunner: Runner = {
           result.code + "return typeof App == 'undefined' ? null : App;"
         )(React, React) ||
         (() => (
-          <p>
-            Declare a component named <code>App</code> to see results. For
-            example:
+          <>
+            <p>
+              Declare a component named <code>App</code> to see results. For
+              example:
+            </p>
             <pre>
               <code>
                 function App() {"{\n"}
                 {"  "}return {"<h1>Hello World</h1>"};{"\n}"}
               </code>
             </pre>
-          </p>
+          </>
         ));
       ReactDOM.render(
         <ErrorBoundary iteration={iteration}>
