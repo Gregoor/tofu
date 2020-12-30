@@ -176,8 +176,8 @@ export const jsxExpressions: NodeDefs = {
   },
   JSXOpeningElement: {
     hasSlot: isAtOpeningTagEnd,
-    actions: ({ node, path, code, cursor }) => [
-      shortenElementNameActions({ node, path, code, cursor }),
+    actions: ({ node, leafNode, path, code, cursor }) => [
+      shortenElementNameActions({ node, leafNode, path, code, cursor }),
       isAtOpeningTagEnd(node, cursor.start) && {
         on: node.selfClosing
           ? [{ code: "Backspace" }, { code: "Delete" }]

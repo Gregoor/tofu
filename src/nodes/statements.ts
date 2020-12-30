@@ -25,15 +25,16 @@ export const statement: NodeDef<t.Statement> = {
 
 export const statements: NodeDefs = {
   Program: {
-    actions: ({ code, cursor }) => [
-      ["[]", "{}", "''", '""'].map((pair) => ({
-        on: { key: pair[0] },
-        do: () => ({
-          code: code.replaceSource(cursor, `(${pair})`),
-          cursor: (code, cursor) =>
-            new Range(getNode(code.ast, cursor.start).start! + 1),
-        }),
-      })),
+    actions: ({ leafNode, code, cursor }) => [
+      !(t.isStringLiteral(leafNode) && leafNode.end! > cursor.start) &&
+        ["[]", "{}", "''", '""'].map((pair) => ({
+          on: { key: pair[0] },
+          do: () => ({
+            code: code.replaceSource(cursor, `(${pair})`),
+            cursor: (code, cursor) =>
+              new Range(getNode(code.ast, cursor.start).start! + 1),
+          }),
+        })),
       {
         on: { key: ">" },
         do: () => ({ code: code.replaceSource(cursor, `(() => null)`) }),

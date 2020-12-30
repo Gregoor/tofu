@@ -47,19 +47,24 @@ export const findNodeSlot: (
 export const findNodeDetailActions: (
   code: ValidCode,
   cursor: Range
-) => { node: t.Node; actions: NodeDetailAction[] }[] = (code, cursor) =>
-  getLineage(code.ast, cursor.start)
-    .reverse()
+) => { node: t.Node; actions: NodeDetailAction[] }[] = (code, cursor) => {
+  const reverseLineage = getLineage(code.ast, cursor.start).reverse();
+  const leafNode = reverseLineage[0][0];
+  return reverseLineage
     .map(([node, path]) => {
       const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
       return {
         node,
         actions: [
           ...(nodeDef && nodeDef.actions
-            ? flattenActions(nodeDef.actions({ node, path, code, cursor }))
+            ? flattenActions(
+                nodeDef.actions({ node, leafNode, path, code, cursor })
+              )
             : []),
           ...(t.isExpression(node) && expression.actions
-            ? flattenActions(expression.actions({ node, path, code, cursor }))
+            ? flattenActions(
+                expression.actions({ node, leafNode, path, code, cursor })
+              )
             : []),
         ].filter((a) => !!a),
       };
@@ -67,18 +72,21 @@ export const findNodeDetailActions: (
     .filter((e) => e && e.node && e.actions.length > 0) as ReturnType<
     typeof findNodeDetailActions
   >;
+};
 
 export function handleNodeInput(
   code: ValidCode,
   cursor: Range,
   data: string
 ): null | BareChange<ValidCode> {
-  for (const [node, path] of getLineage(code.ast, cursor.start).reverse()) {
+  const reverseLineage = getLineage(code.ast, cursor.start).reverse();
+  const leafNode = reverseLineage[0][0];
+  for (const [node, path] of reverseLineage) {
     const nodeDef = nodeDefs[node.type] as NodeDef<t.Node>;
     const change =
       nodeDef &&
       "onInput" in nodeDef &&
-      nodeDef.onInput!({ node, path, code, cursor }, data);
+      nodeDef.onInput!({ node, leafNode, path, code, cursor }, data);
     if (change) {
       return change;
     }

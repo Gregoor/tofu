@@ -22,6 +22,7 @@ export type NodeHasSlot<T> = (
 
 export type NodeActionParams<T> = {
   node: T;
+  leafNode: t.Node;
   path: (string | number)[];
   cursor: Range;
   code: ValidCode;
@@ -53,21 +54,22 @@ export function findSlotIndex(collection: any[], start: number) {
 }
 
 export const addElementAction = (
-  { node, path, code, cursor: { start, end } }: NodeActionParams<t.Node>,
+  {
+    node,
+    leafNode,
+    path,
+    code,
+    cursor: { start, end },
+  }: NodeActionParams<t.Node>,
   collectionKey: string,
   initialValue: t.Node
-): NodeDetailActions => {
-  if (start <= node.start! || end >= node.end!) {
-    return null;
-  }
-  const cursorNode = getNode(code.ast, start);
-  if (
-    (t.isStringLiteral(cursorNode) && start < cursorNode.end!) ||
-    t.isTemplateElement(cursorNode)
-  ) {
-    return null;
-  }
-  return {
+): NodeDetailActions =>
+  !(
+    start <= node.start! ||
+    end >= node.end! ||
+    (t.isStringLiteral(leafNode) && start < leafNode.end!) ||
+    t.isTemplateElement(leafNode)
+  ) && {
     info: { type: "ADD_ELEMENT" },
     on: { key: "," },
     do: () => {
@@ -89,7 +91,6 @@ export const addElementAction = (
       };
     },
   };
-};
 
 export const flattenActions = (
   actions: NodeDetailActions

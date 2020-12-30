@@ -42,7 +42,7 @@ it("changes declaration kind", async () => {
   expect(result.current[0].code.source).toBe("let n = 23;\n");
 });
 
-it("change value to string", async () => {
+it("changes value to string", async () => {
   const hook = renderHook(() => useHistory("s = null;\n"));
   const { result } = hook;
 
@@ -58,4 +58,16 @@ it("change value to string", async () => {
   expect(code.source).toBe('s = "";\n');
   expect(cursor.isSingle()).toBeTruthy();
   expect(cursor.start).toBe(5);
+});
+
+it("changes value to string", async () => {
+  const hook = renderHook(() => useHistory('s = "some string";\n'));
+
+  await queueActionFor(hook, (code) => ({
+    cursor: moveCursor(code, new Range(7), null),
+  }));
+  expect(hook.result.current[0].cursor.start).toBe(7);
+
+  await queueActionFor(hook, new KeyboardEvent("keydown", { key: "(" }));
+  expect(hook.result.current[0].code.source).toBe('s = "so(me string";\n');
 });

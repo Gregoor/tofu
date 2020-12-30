@@ -240,7 +240,7 @@ export const expressions: NodeDefs = {
       }
       return checkForEmptyElements(node, start);
     },
-    actions: ({ node, path, code, cursor }) => [
+    actions: ({ node, leafNode, path, code, cursor }) => [
       cursor.start > node.start! &&
         cursor.end < node.end! &&
         (["LEFT", "RIGHT"] as const).map((direction) => {
@@ -278,7 +278,7 @@ export const expressions: NodeDefs = {
           };
         }),
       addElementAction(
-        { node, path, code, cursor },
+        { node, leafNode, path, code, cursor },
         "elements",
         t.nullLiteral()
       ),
@@ -331,10 +331,10 @@ export const expressions: NodeDefs = {
   ArrowFunctionExpression: {
     hasSlot: (node, start) =>
       node.params.length == 0 && node.start! + 1 == start,
-    actions: ({ node, cursor, code, path }) => [
+    actions: ({ node, leafNode, cursor, code, path }) => [
       cursor.start < node.body.start! &&
         addElementAction(
-          { node, path, code, cursor },
+          { node, leafNode, path, code, cursor },
           "params",
           t.identifier("p")
         ),
