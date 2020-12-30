@@ -203,9 +203,10 @@ export function Demo() {
   const theme = useTheme();
 
   useEffect(() => {
+    const container = output.current!;
     const timeout = setTimeout(() => {
       try {
-        runner.run(output.current!, source, (error: Error) => {
+        runner.run(container, source, (error: Error) => {
           setRuntimeError(error);
         });
       } catch (e) {
@@ -213,7 +214,7 @@ export function Demo() {
       }
     }, 500);
     return () => {
-      runner.cleanUp(output.current!);
+      runner.cleanUp(container);
       clearTimeout(timeout);
     };
   }, [runner, source]);
