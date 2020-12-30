@@ -312,6 +312,15 @@ t;
       ],
     },
   ],
+  [
+    `let el = (
+  <div>
+    a<h1>hi</h1>
+  </div>
+);
+`,
+    { X: [[17, 23]] },
+  ],
 ] as const).map(([code, paths]) => [code.replace(/\r/g, ""), paths] as const);
 
 for (const [source, paths] of tests) {

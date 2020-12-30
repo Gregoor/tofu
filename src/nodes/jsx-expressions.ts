@@ -142,7 +142,11 @@ function isAtOpeningTagEnd(node: t.JSXOpeningElement, start: number) {
 export const jsxExpressions: NodeDefs = {
   JSXIdentifier: { hasSlot: () => true },
   JSXText: {
-    hasSlot: (node) => !!node.value.trim(),
+    hasSlot(node, start) {
+      const pos = start - node.start!;
+      const { value } = node;
+      return !!value.slice(0, pos).trim() || !!value[pos].trim();
+    },
     actions: ({ code, cursor }) => ({
       on: { key: "{" },
       do: () => ({
@@ -165,7 +169,7 @@ export const jsxExpressions: NodeDefs = {
   },
 
   JSXElement: {
-    hasSlot: (node, start) => node.openingElement.end! == start,
+    // hasSlot: (node, start) => node.openingElement.end! == start,
     actions: ({ code, cursor }) => ({
       on: { key: "{" },
       do: () => ({
