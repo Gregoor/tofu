@@ -211,13 +211,12 @@ export function Demo() {
       } catch (e) {
         setRuntimeError(e);
       }
-    }, 300);
+    }, 500);
     return () => {
+      runner.cleanUp(output.current!);
       clearTimeout(timeout);
     };
   }, [runner, source]);
-
-  console.log(runtimeError);
 
   const handleChange = useCallback((value: string) => {
     setRuntimeError(null);
