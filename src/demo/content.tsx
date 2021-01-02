@@ -102,13 +102,13 @@ export const DesignCard = () => (
       </li>
     </ul>
 
-    <h4>Every available action should be discoverable in-context</h4>
+    <h4>Every available action should be discoverable in context</h4>
     <p>
       The action panel on the side should show all actions applicable to the
       current context, but only those.
     </p>
 
-    <h4>Breaking syntax where necessary should be straight-forward</h4>
+    <h4>Entering "raw-mode" should be straightforward</h4>
     <p>
       This is the only principle which <em>might</em> be temporary. If no
       meaningful interaction can be introduced or if the break-out key is
