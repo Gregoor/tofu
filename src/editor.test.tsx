@@ -22,6 +22,14 @@ async function queueActionFor(
   });
 }
 
+const queueMoveCursorFor = (
+  hook: Parameters<typeof queueActionFor>[0],
+  cursor: Range
+) =>
+  queueActionFor(hook, (code) => ({
+    cursor: moveCursor(code, cursor, null),
+  }));
+
 it("changes declaration kind", async () => {
   const hook = renderHook(() => useHistory("const n = 23;"));
   const { result } = hook;
@@ -46,9 +54,7 @@ it("changes value to string", async () => {
   const hook = renderHook(() => useHistory("s = null;\n"));
   const { result } = hook;
 
-  await queueActionFor(hook, (code) => ({
-    cursor: moveCursor(code, new Range(5), null),
-  }));
+  await queueMoveCursorFor(hook, new Range(5));
   const { start, end } = result.current[0].cursor;
   expect(start).toBe(4);
   expect(end).toBe(8);
@@ -63,9 +69,7 @@ it("changes value to string", async () => {
 it("changes value to string", async () => {
   const hook = renderHook(() => useHistory('s = "some string";\n'));
 
-  await queueActionFor(hook, (code) => ({
-    cursor: moveCursor(code, new Range(7), null),
-  }));
+  await queueMoveCursorFor(hook, new Range(7));
   expect(hook.result.current[0].cursor.start).toBe(7);
 
   await queueActionFor(hook, new KeyboardEvent("keydown", { key: "(" }));
@@ -75,9 +79,7 @@ it("changes value to string", async () => {
 it("adds a new line under cursor", async () => {
   const hook = renderHook(() => useHistory('s = "some string";\n'));
 
-  await queueActionFor(hook, (code) => ({
-    cursor: moveCursor(code, new Range(7), null),
-  }));
+  await queueMoveCursorFor(hook, new Range(7));
   await queueActionFor(hook, new KeyboardEvent("keydown", { code: "Enter" }));
   expect(hook.result.current[0].code.source).toBe('s = "some string";\n\n');
   expect(hook.result.current[0].cursor.start).toBe(19);
@@ -86,9 +88,7 @@ it("adds a new line under cursor", async () => {
 it("splits an identifier at cursor position", async () => {
   const hook = renderHook(() => useHistory("(ab) => a + b;\n"));
 
-  await queueActionFor(hook, (code) => ({
-    cursor: moveCursor(code, new Range(2), null),
-  }));
+  await queueMoveCursorFor(hook, new Range(2));
   await queueActionFor(hook, new KeyboardEvent("keydown", { key: "," }));
   expect(hook.result.current[0].code.source).toBe("(a, b) => a + b;\n");
   expect(hook.result.current[0].cursor.start).toBe(4);
@@ -97,9 +97,7 @@ it("splits an identifier at cursor position", async () => {
 it("appends array element after identifier", async () => {
   const hook = renderHook(() => useHistory("[a];\n"));
 
-  await queueActionFor(hook, (code) => ({
-    cursor: moveCursor(code, new Range(2), null),
-  }));
+  await queueMoveCursorFor(hook, new Range(2));
   await queueActionFor(hook, new KeyboardEvent("keydown", { key: "," }));
   expect(hook.result.current[0].code.source).toBe("[a, null];\n");
   expect(hook.result.current[0].cursor.start).toBe(4);
