@@ -78,7 +78,7 @@ export const DesignCard = () => (
       situations:
     </p>
 
-    <h4>Meaningless interactions should be replaced meaningful ones</h4>
+    <h4>Meaningless interactions should be replaced by meaningful ones</h4>
     <p>
       This is the core <Spin>tenet</Spin>. Meaningful changes are those that not
       only affect code style and syntax, but program semantics. Any action which
@@ -97,7 +97,8 @@ export const DesignCard = () => (
         Changes should have a textual relationship to the key that was pressed.
       </li>
       <li>
-        Additive changes should be reversible with the Backspace and Delete keys
+        Additive changes should be reversible with the Backspace and Delete
+        keys.
       </li>
     </ul>
 
