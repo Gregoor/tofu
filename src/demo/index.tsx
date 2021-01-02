@@ -46,11 +46,12 @@ const ExamplesCard = ({
   activeRunner: Runner;
   onSelectRunner: (runner: Runner) => void;
 }) => (
-  <Card>
-    <CardTitle id="examples">Examples</CardTitle>
+  <Card id="examples">
+    <CardTitle>Examples</CardTitle>
     <p>
-      Click one of these buttons to change the editor runtime environment and
-      see the sample code below.
+      Click one of the buttons to change the <a href="#editor">editor</a>{" "}
+      runtime environment. The automatically updated{" "}
+      <a href="#result">result</a> is just below:
       <br />
       Current selection is:{" "}
       <DocsLink href={activeRunner.docsURL} target="_blank" rel="noreferrer">
@@ -213,7 +214,7 @@ export function Demo() {
 
       <Abyss />
 
-      <Card>
+      <Card id="result">
         <CardTitle>Result</CardTitle>
         <Output ref={output} />
       </Card>

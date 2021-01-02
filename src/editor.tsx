@@ -75,7 +75,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
   }, [printWidth, resizeStartX]);
 
   return (
-    <Container>
+    <Container id="editor">
       <Global
         styles={css`
           ::selection {

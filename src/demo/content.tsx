@@ -69,8 +69,8 @@ const Spin = styled.span`
 `;
 
 export const DesignCard = () => (
-  <Card>
-    <CardTitle id="design">Design Principles</CardTitle>
+  <Card id="design">
+    <CardTitle>Design Principles</CardTitle>
 
     <p>
       These are the base assumptions I am making while developing Tofu. The list
@@ -119,8 +119,8 @@ export const DesignCard = () => (
 );
 
 export const LinksCard = () => (
-  <Card>
-    <CardTitle id="links">Links</CardTitle>
+  <Card id="links">
+    <CardTitle>Links</CardTitle>
     <ul>
       <li>
         <a href="https://github.com/Gregoor/tofu">Repo</a>
