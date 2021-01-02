@@ -71,3 +71,14 @@ it("changes value to string", async () => {
   await queueActionFor(hook, new KeyboardEvent("keydown", { key: "(" }));
   expect(hook.result.current[0].code.source).toBe('s = "so(me string";\n');
 });
+
+it("adds a new line under cursor", async () => {
+  const hook = renderHook(() => useHistory('s = "some string";\n'));
+
+  await queueActionFor(hook, (code) => ({
+    cursor: moveCursor(code, new Range(7), null),
+  }));
+  await queueActionFor(hook, new KeyboardEvent("keydown", { code: "Enter" }));
+  expect(hook.result.current[0].code.source).toBe('s = "some string";\n\n');
+  expect(hook.result.current[0].cursor.start).toBe(19);
+});

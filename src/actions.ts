@@ -33,7 +33,7 @@ function isAtLineStart(source: string, start: number) {
     .reverse()
     .findIndex((char) => char == "\n");
   const sourceFromStartOfLine = source.slice(
-    start - (reverseBreakIndex || start),
+    reverseBreakIndex == -1 ? 0 : start - (reverseBreakIndex || start),
     start
   );
   return !sourceFromStartOfLine.trim();
@@ -160,7 +160,7 @@ const baseDetailActions: BaseDetailAction[] = [
   {
     on: { code: "Enter" },
     do(code, { start }) {
-      let pos: number = 0;
+      let pos = 0;
       if (isAtLineStart(code.source, start)) {
         pos = start;
       } else {
