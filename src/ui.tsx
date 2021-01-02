@@ -29,6 +29,7 @@ export const darkTheme: Theme = {
   kind: "dark",
   c: {
     ...lightTheme.c,
+    light: "hsla(0, 0%, 40%)",
     text: "hsl(0, 0%, 85%)",
     softText: "hsla(0, 0%, 70%)",
     bg: "hsl(0, 0%, 5%)",
