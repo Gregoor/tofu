@@ -6,6 +6,7 @@ declare module "@emotion/react" {
     l: { gap: string; abyss: string; space: string };
     c: {
       softText: string;
+      light: string;
       bg: string;
       text: string;
       cardBg: string;

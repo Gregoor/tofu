@@ -22,7 +22,7 @@ const Output = styled.div`
 `;
 
 const ExampleButton = styled.button<{ isActive: boolean }>`
-  border: 2px solid ${({ theme }) => theme.c.cardBg};
+  border: 2px solid ${({ theme }) => theme.c.light};
   margin-right: ${({ theme }) => theme.l.abyss};
   padding: ${({ theme }) => theme.l.space};
   display: flex;

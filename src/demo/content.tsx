@@ -110,9 +110,10 @@ export const DesignCard = () => (
 
     <h4>Entering "raw-mode" should be straightforward</h4>
     <p>
-      This is the only principle which <em>might</em> be temporary. If no
-      meaningful interaction can be introduced or if the break-out key is
-      pressed, Tofu should permit raw text editing.
+      Tofu should permit raw text editing, when no meaningful interaction can be
+      introduced or when the break-out key is pressed. This is the only
+      principle which <em>might</em> be temporary, if there is meaningful ways
+      to transition between all valid code states.
     </p>
   </Card>
 );

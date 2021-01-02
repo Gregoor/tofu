@@ -16,6 +16,7 @@ export const lightTheme: Theme = {
   c: {
     text: "hsl(0, 0%, 5%)",
     softText: "hsla(0, 0%, 30%)",
+    light: "hsla(0, 0%, 70%)",
     bg: "hsl(0, 0%, 95%)",
     cardBg: "white",
     visitedLink: "initial",
