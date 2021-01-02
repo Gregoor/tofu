@@ -4,7 +4,8 @@ import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Editor, EditorHandle } from "../editor";
-import { Abyss, Key, font } from "../ui";
+import { Abyss } from "../ui";
+import { AboutCard, Card, CardTitle, DesignCard, LinksCard } from "./content";
 import { jsRunner } from "./javascript";
 import { p5Runner } from "./p5";
 import { reactRunner } from "./react";
@@ -16,59 +17,9 @@ const Rows = styled.div`
   justify-content: center;
 `;
 
-const Card = styled.section`
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  margin: 0 auto;
-  padding: 20px;
-  max-width: 600px;
-  width: 100%;
-  background: ${({ theme }) => theme.c.cardBg};
-  font-family: "Open Sans", sans-serif;
-`;
-
 const Output = styled.div`
   max-height: 100vh;
 `;
-
-const Keyword = styled.span`
-  font-weight: bold;
-  ${font};
-`;
-
-const CardTitle = styled.h3`
-  margin-top: 0;
-`;
-
-const AboutCard = () => (
-  <Card>
-    <CardTitle>What is this?</CardTitle>
-    <p>
-      Tofu is an exploration in fluid code editing. It manages syntax and code
-      style for you. Thus keypresses are wholly reserved for meaningful actions:
-    </p>
-    <ul>
-      <li>
-        Cursor keys only take you to places where you can make meaningful edits.
-      </li>
-      <li>
-        Switching between <Keyword>const</Keyword>/<Keyword>let</Keyword>{" "}
-        declaration requires only a single keypress.
-      </li>
-      <li>
-        Putting a space after <Keyword>if</Keyword> always creates a complete
-        if-statement (that being the only syntactically valid option since{" "}
-        <Keyword>if</Keyword> can't be used as an identifier). Other keywords
-        behave similarly.
-      </li>
-      <li>
-        <Key value="Enter" /> always creates a new line underneath. Compare that
-        to other editors, where Enter either breaks syntax or code style (unless
-        you're already at the start/end of a line).
-      </li>
-    </ul>
-  </Card>
-);
 
 const ExampleButton = styled.button<{ isActive: boolean }>`
   border: 2px solid ${({ theme }) => theme.c.cardBg};
@@ -96,9 +47,9 @@ const ExamplesCard = ({
   onSelectRunner: (runner: Runner) => void;
 }) => (
   <Card>
-    <CardTitle>Examples</CardTitle>
+    <CardTitle id="examples">Examples</CardTitle>
     <p>
-      Click one of those buttons to change the editor runtime environment and
+      Click one of these buttons to change the editor runtime environment and
       see the sample code below.
       <br />
       Current selection is:{" "}
@@ -138,30 +89,6 @@ const ExamplesCard = ({
         {p5Runner.label}
       </ExampleButton>
     </div>
-  </Card>
-);
-
-const LinksCard = () => (
-  <Card>
-    <CardTitle>Links</CardTitle>
-    <ul>
-      <li>
-        <a href="https://github.com/Gregoor/tofu">Repo</a>
-      </li>
-      <li>
-        <a href="https://github.com/Gregoor/tofu/issues">Issues</a>
-      </li>
-      <li>
-        <a href="https://gregoor.github.io/syntactor/">Syntactor</a> - a past
-        attempt at solving a smaller problem (JSON editing)
-      </li>
-      <li>
-        <a href="https://dflate.io/code-is-not-just-text">
-          Code is not just text
-        </a>{" "}
-        - A blog post I wrote in early 2017
-      </li>
-    </ul>
   </Card>
 );
 
@@ -296,6 +223,10 @@ export function Demo() {
         {...{ initialSource: source, runtimeError }}
         onChange={handleChange}
       />
+
+      <Abyss />
+
+      <DesignCard />
 
       <Abyss />
 
