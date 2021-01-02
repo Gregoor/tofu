@@ -82,3 +82,25 @@ it("adds a new line under cursor", async () => {
   expect(hook.result.current[0].code.source).toBe('s = "some string";\n\n');
   expect(hook.result.current[0].cursor.start).toBe(19);
 });
+
+it("splits an identifier at cursor position", async () => {
+  const hook = renderHook(() => useHistory("(ab) => a + b;\n"));
+
+  await queueActionFor(hook, (code) => ({
+    cursor: moveCursor(code, new Range(2), null),
+  }));
+  await queueActionFor(hook, new KeyboardEvent("keydown", { key: "," }));
+  expect(hook.result.current[0].code.source).toBe("(a, b) => a + b;\n");
+  expect(hook.result.current[0].cursor.start).toBe(4);
+});
+
+it("appends array element after identifier", async () => {
+  const hook = renderHook(() => useHistory("[a];\n"));
+
+  await queueActionFor(hook, (code) => ({
+    cursor: moveCursor(code, new Range(2), null),
+  }));
+  await queueActionFor(hook, new KeyboardEvent("keydown", { key: "," }));
+  expect(hook.result.current[0].code.source).toBe("[a, null];\n");
+  expect(hook.result.current[0].cursor.start).toBe(4);
+});

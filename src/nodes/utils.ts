@@ -68,7 +68,10 @@ export const addElementAction = (
     start <= node.start! ||
     end >= node.end! ||
     (t.isStringLiteral(leafNode) && start < leafNode.end!) ||
-    t.isTemplateElement(leafNode)
+    t.isTemplateElement(leafNode) ||
+    (t.isIdentifier(leafNode) &&
+      start > leafNode.start! &&
+      start < leafNode.end!)
   ) && {
     info: { type: "ADD_ELEMENT" },
     on: { key: "," },
