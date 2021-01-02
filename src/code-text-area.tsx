@@ -93,14 +93,13 @@ export function CodeTextArea({
     formattedForPrintWidth,
   },
   cols,
-  disabled,
   onKeyDown,
   onClick,
   onCut,
   onPaste,
 }: Pick<
   React.HTMLProps<"textarea">,
-  "cols" | "disabled" | "onClick" | "onCut" | "onPaste"
+  "cols" | "onClick" | "onCut" | "onPaste"
 > & { editorState: EditorState; onKeyDown: (event: KeyboardEvent) => void }) {
   const rootRef = useRef<null | HTMLDivElement>(null);
   const [flask, setFlask] = useState<null | any>(null);
@@ -152,17 +151,6 @@ export function CodeTextArea({
     }
     flask.elTextarea.cols = cols;
   }, [flask, cols]);
-
-  useEffect(() => {
-    if (!flask) {
-      return;
-    }
-    if (disabled) {
-      flask.enableReadonlyMode();
-    } else {
-      flask.disableReadonlyMode();
-    }
-  }, [disabled, flask]);
 
   useEventListener(flask?.elTextarea, "keydown", onKeyDown);
   useEventListener(flask?.elTextarea, "click", onClick);
