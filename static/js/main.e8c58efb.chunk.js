@@ -1,0 +1,285 @@
+(this.webpackJsonptofu=this.webpackJsonptofu||[]).push([[0],{380:function(e,t,n){"use strict";n.r(t);var r=n(1),o=n(15),s=n(2),i=n.n(s),c=n(52),a=n.n(c),l=n(13),d=n(5),u=n(42),h=n.n(u),p=n(3);const m=["altKey","ctrlKey","metaKey","shiftKey"];class f{constructor(e,t=null){this.start=void 0,this._end=void 0,this.toString=()=>null==this._end?this.start:this.start+" - "+this._end,this.start=e,this._end=t}get end(){var e;return null!==(e=this._end)&&void 0!==e?e:this.start}isSingle(){return this.start==this.end}includes(e){return e>=this.start&&e<=this.end}equals(e){return this.start==e.start&&this.end==e.end}}function g(e){return Array.isArray(e)?new f(e[0].start,e[e.length-1].end):new f(e.start,e.end)}const b=(...e)=>g(v(...e));function j(e,t){const n=e.left.end+t.slice(e.left.end,e.right.start).indexOf(e.operator);return new f(n,n+e.operator.length)}const x=(...e)=>(({start:e,name:t})=>new f(e,e+t.length))(v(...e)),y=({start:e,kind:t})=>new f(e,e+t.length);function O(e,t,n=[]){const r=[];for(const{key:s,value:i}of function*(e){for(const t in e)new Set(["__clone"]).has(t)||(yield{value:e[t],key:t,computed:!1})}(e))if(Array.isArray(i))for(let e=0;e<i.length;e++){const o=i[e];p.isNode(o)&&g(o).includes(t)&&r.push([o,[...n,s,e]])}else p.isNode(i)&&g(i).includes(t)&&r.push([i,[...n,s]]);const o=1==r.length?r[0]:!r.every((([e])=>p.isJSXOpeningElement(e)&&p.isJSXClosingElement(e)))&&r.find((([e])=>r.every((([t])=>e.start>=t.start))));return o?[o,...O(o[0],t,o[1])]:[]}function w(e,t){return O(e,t).map((([e])=>e))}function S(e,t,n=-1){const r=O(e,t);return r[r.length+n][0]}function v(e,t){return t.reduce(((e,t)=>e[t]),e)}var E=n(165),k=n(96);class I{constructor(e){this.source=void 0,this.source=e}replaceSource({start:e,end:t},n){return L(this.source.slice(0,Math.max(e,0))+n+this.source.slice(t))}}class C extends I{constructor(e,t){super(e),this.error=void 0,this.error=t}}class A extends I{constructor(e,t){super(e),this.ast=void 0,this.ast=t}mutateAST(e){this.ast[k.b]=!0;const t=Object(k.a)(this.ast,e);return new A(h()(t,{retainLines:!0}).code,t)}}function T(e){return e instanceof A}function L(e){try{return new A(e,Object(E.parse)(e,{sourceType:"module",plugins:["jsx","typescript"]}))}catch(t){if(!(t instanceof SyntaxError)&&"Assert fail"!=t.message)throw new Error(t);return new C(e,t)}}var N=n(166),R=n.n(N);const D=({node:e,path:t,code:n,cursor:r},o)=>r.isSingle()&&{code:n.mutateAST((e=>{const n=p.jsxIdentifier(o),r=v(e,t.slice(0,-1));v(e,t.slice(0,-2))[t[t.length-2]]=p.jsxElement(p.jsxOpeningElement(n,[]),p.jsxClosingElement(n),r.children)})),cursor:n=>new f(v(n.ast,[...t.slice(0,-1),p.isJSXOpeningFragment(e)?"openingElement":"closingElement","name"]).end)};function $(e,t,n){const r=p.jsxIdentifier(n),o=v(e,t.slice(0,-1));v(e,t.slice(0,-2))[t[t.length-2]]=n?p.jsxElement(p.jsxOpeningElement(r,o.openingElement.attributes),p.jsxClosingElement(r),o.children):p.jsxFragment(p.jsxOpeningFragment(),p.jsxClosingFragment(),o.children)}const F=(e,t)=>e.name.start<=t.start&&e.name.end>=t.end,M=({node:e,path:t,code:n,cursor:r})=>!(p.isJSXOpeningElement(e)&&e.selfClosing)&&F(e,r)&&p.isJSXIdentifier(e.name)&&["Backspace","Delete"].map((o=>({on:{code:o},do:()=>({code:n.mutateAST((n=>{const{name:s}=e.name;$(n,t,s.slice(0,r.start-e.name.start-("Backspace"==o&&r.isSingle()?1:0))+s.slice(r.end-e.name.start+("Delete"==o&&r.isSingle()?1:0)))})),cursor:n=>new f(v(n.ast,t).name.start+(r.start-e.name.start)-("Backspace"==o&&r.isSingle()?1:0))})}))),P=({node:e,path:t,code:n,cursor:r},o)=>{if(!p.isJSXIdentifier(e.name)||!F(e,r)||p.isJSXOpeningElement(e)&&e.selfClosing)return!1;const s=e.name;return{code:n.mutateAST((e=>{const n=s.start,i=s.name.slice(0,r.start-n)+o+s.name.slice(r.end-n);$(e,t,i)})),cursor:n=>new f(v(n.ast,[...t.slice(0,-1),p.isJSXOpeningElement(e)?"openingElement":"closingElement","name"]).end)}};function W(e,t){const n=e.end;return e.selfClosing&&t==n-2?new f(n-2,n-1):t==n-1}function _(e,t){let n=e.findIndex((e=>e&&e.start>t));return-1==n&&(n=e.length),n}const B=({node:e,leafNode:t,path:n,code:r,cursor:{start:o,end:s}},i,c)=>!(o<=e.start||s>=e.end||p.isStringLiteral(t)&&o<t.end||p.isTemplateElement(t)||p.isIdentifier(t)&&o>t.start&&o<t.end)&&{info:{type:"ADD_ELEMENT"},on:{key:","},do:()=>{let t=_(e[i],o);return(o==e.start&&s==e.start||S(r.ast,o).start==o)&&(t=Math.max(0,t-1)),{code:r.mutateAST((e=>{v(e,n)[i].splice(t,0,c)})),cursor:({ast:e})=>b(e,[...n,i,t])}}},K=e=>(Array.isArray(e)?e:[e]).flat(1/0);const G=e=>h()(e,{retainLines:!0}).code.trim(),U=({node:e,code:t,cursor:n})=>j(e,t.source).includes(n.start)&&["&","|","+","-","*","/","=","<",">"].map((r=>({info:{type:"CHANGE_OPERATION",operator:r},on:{key:r},do:()=>({code:t.mutateAST((t=>{const o=S(t,n.start),s=["&","|","="].includes(r);o.operator="="===r?">"==e.operator||"<"==e.operator?e.operator+"=":r.repeat("=="==e.operator?3:2):!s||1!=o.operator.length&&o.operator[0]===r?r:r+r})),cursor:({ast:e,source:t},{start:n})=>j(S(e,n),t)})}))),J=[{type:"ARRAY",key:"[",wrap:e=>`[${e}]`},{type:"OBJECT",key:"{",wrap:e=>`({key: ${e||'""'}})`},{type:"FUNCTION_CALL",key:"(",wrap:e=>`fn(${e})`},{type:"ARROW_FUNCTION",key:">",wrap:e=>`(() => (${e}))`},{type:"JSX_ELEMENT",key:"<",wrap:e=>`<>{${e}}</>`}],H=(e,t)=>t==e.start||t==e.end,X=({node:e,path:t,code:n,cursor:{start:r,end:o}})=>K([e.start==r&&e.end==o&&[J.map((({type:e,key:s,wrap:i})=>({info:{type:"WRAP",wrapper:e},on:{key:s},do:()=>{const e=n.source.slice(r,o);return{code:n.replaceSource(new f(r,o),i("null"==e?"":e)),cursor:({ast:e})=>b(e,t)}}}))),{info:{type:"WRAP",wrapper:"TERNARY"},on:{key:"?"},do:()=>({code:n.replaceSource(g(e),n.source.slice(e.start,e.end)+" ? null : null"),cursor:({ast:e})=>b(e,[...t,"consequent"])})}],e.end==r&&[{info:{type:"MAKE_MEMBER"},on:{key:"."},do:()=>({code:n.replaceSource(new f(e.start,e.end),`${n.source.slice(e.start,e.end)}.p`),cursor:({ast:e})=>b(e,[...t,"property"])})},!p.isNumericLiteral(e)&&[!p.isObjectExpression(e)&&{info:{type:"MAKE_CALL"},on:{key:"("},do:()=>({code:n.replaceSource(new f(r),"()"),cursor:({ast:e},{start:t})=>new f(t+1)})},{info:{type:"MAKE_COMPUTED_MEMBER"},on:{key:"["},do:()=>({code:n.replaceSource(new f(r),"[0]"),cursor:({ast:e})=>b(e,[...t,"property"])})}]]]).map((e=>({...e,do:(t,n)=>{const o=e.do(t,n),[[s],[i]]=O(t.ast,r).reverse();return p.isStringLiteral(s)&&p.isJSXAttribute(i),o}}))),Z={NumericLiteral:{hasSlot:()=>!0,actions:({node:e,code:t,cursor:n})=>Number.isInteger(e.value)&&n.isSingle()&&n.start==e.end&&{info:{type:"DOT"},on:{key:"."},do:()=>({code:t.replaceSource(n,".0"),cursor:()=>new f(n.start+1,n.start+2)})}},StringLiteral:{hasSlot:(e,t)=>!0},TemplateLiteral:{hasSlot:()=>!0},BooleanLiteral:{hasSlot:g},NullLiteral:{hasSlot:g},Identifier:{hasSlot:()=>!0},UnaryExpression:{hasSlot:()=>!0},BinaryExpression:{hasSlot:(e,t,{source:n})=>{const r=j(e,n);return!!r.includes(t)&&r},actions:U},LogicalExpression:{hasSlot(e,t,{source:n}){const r=j(e,n);return!!r.includes(t)&&r},actions:U},ArrayExpression:{hasSlot:(e,t)=>0==e.elements.length&&t==e.start+1||t==e.end||function(e,t){const n=[],r=[];for(let o=0;o<e.elements.length;o++){const t=e.elements[o];t?r.push(t.end):(n.push(o),r.push(0==o?e.start+1:r[o-1]+2))}return r.filter(((e,t)=>n.includes(t))).includes(t)}(e,t),actions:({node:e,leafNode:t,path:n,code:r,cursor:o})=>[o.start>e.start&&o.end<e.end&&["LEFT","RIGHT"].map((t=>{const s=_(e.elements,o.start)-1;let i=null;if("LEFT"==t&&s>0&&(i=-1),"RIGHT"==t&&s<e.elements.length-1&&(i=1),null===i)return null;const c=s+i,a=e.elements[Math.min(s,c)],l=e.elements[Math.max(s,c)];return{info:{type:"MOVE_ELEMENT",direction:t},on:{key:"LEFT"==t?"ArrowLeft":"ArrowRight",altKey:!0},do:()=>({code:r.replaceSource(new f(a.start,l.end),G(l)+","+G(a)),cursor:({ast:e})=>b(e,[...n,"elements",c])})}})),B({node:e,leafNode:t,path:n,code:r,cursor:o},"elements",p.nullLiteral())]},ObjectExpression:{hasSlot:(e,t)=>0==e.properties.length&&t==e.start+1||t==e.end,actions:e=>B(e,"properties",p.objectProperty(p.identifier("p"),p.identifier("p"),!1,!0))},ObjectProperty:{actions:({node:e,path:t,code:n})=>e.shorthand&&{on:{key:":"},do:()=>({code:n.mutateAST((e=>{v(e,t).value=p.nullLiteral()})),cursor:e=>b(e.ast,t.concat("value"))})}},MemberExpression:{hasSlot:(e,t)=>e.computed&&t==e.end},FunctionExpression:{hasSlot:(e,t,n)=>t==e.start+n.source.slice(e.start,e.body.start).indexOf("function ")+"function ".length||0==e.params.length&&t==e.start+n.source.slice(e.start,e.body.start).indexOf("()")+1,actions:e=>B(e,"params",p.identifier("p"))},ArrowFunctionExpression:{hasSlot:(e,t)=>0==e.params.length&&e.start+1==t,actions:({node:e,leafNode:t,cursor:n,code:r,path:o})=>[n.start<e.body.start&&B({node:e,leafNode:t,path:o,code:r,cursor:n},"params",p.identifier("p")),{info:{type:"CONVERT",to:"FunctionExpression"},do:()=>({code:r.mutateAST((t=>{v(t,o.slice(0,-1))[o[o.length-1]]=Object.assign(p.functionExpression(null,[],p.blockStatement([])),R()(e,"params","async","body"))}))})}]},CallExpression:{hasSlot:(e,t)=>0==e.arguments.length&&e.end-1==t,actions:({node:e,cursor:t,...n})=>t.start>e.callee.end&&B({node:e,cursor:t,...n},"arguments",p.nullLiteral())},...{JSXIdentifier:{hasSlot:()=>!0},JSXText:{hasSlot(e,t){const n=t-e.start,{value:r}=e;return!!r.slice(0,n).trim()||!!r[n].trim()},actions:({code:e,cursor:t})=>({on:{key:"{"},do:()=>({code:e.replaceSource(t,"{}"),cursor:()=>new f(t.start+1)})})},JSXFragment:{hasSlot:(e,t)=>e.openingFragment.end==t},JSXOpeningFragment:{hasSlot:(e,t)=>e.start+1==t,onInput:D},JSXClosingFragment:{hasSlot:(e,t)=>e.start+2==t,onInput:D},JSXElement:{actions:({code:e,cursor:t})=>({on:{key:"{"},do:()=>({code:e.replaceSource(t,"{}"),cursor:()=>new f(t.start+1)})})},JSXOpeningElement:{hasSlot:W,actions:({node:e,leafNode:t,path:n,code:r,cursor:o})=>[M({node:e,leafNode:t,path:n,code:r,cursor:o}),W(e,o.start)&&{on:e.selfClosing?[{code:"Backspace"},{code:"Delete"}]:{key:"/"},do:()=>({code:r.mutateAST((t=>{const r=v(t,n.slice(0,-1));e.selfClosing?(e.selfClosing=!1,r.closingElement=p.jsxClosingElement(e.name)):(e.selfClosing=!0,r.closingElement=null)})),cursor(e){const t=v(e.ast,n);return t.selfClosing?new f(t.end-2,t.end-1):new f(t.end-1)}})}],onInput:P},JSXClosingElement:{actions:M,onInput:P},JSXAttribute:{actions:({node:e,path:t,code:n,cursor:r})=>r.start==e.end&&!e.value&&{on:{key:"="},do:()=>({code:n.replaceSource(r,'=""'),cursor:e=>new f(v(e.ast,t).value.start+1)})},onInput:({node:e,path:t,code:n,cursor:r},o)=>p.isStringLiteral(e.value)&&r.equals(e.value)&&{code:n.replaceSource(r,`{${o}}`),cursor:new f(e.value.start+1+o.length)}},JSXExpressionContainer:{hasSlot:(e,t)=>e.start==t||e.end==t},JSXEmptyExpression:{hasSlot:(e,t)=>e.start==t}}},z={ArrayPattern:{hasSlot:(e,t)=>0==e.elements.length&&t==e.start+1,actions:e=>B(e,"elements",p.identifier("a"))}},V=(e,t)=>!e.alternate&&e.consequent.end==t,Y=(e,t,n)=>e.alternate&&t==e.consequent.end+n.slice(e.consequent.end,e.alternate.start).indexOf("else")+"else".length,q=(e,t)=>(p.isIfStatement(e)||p.isFor(e)||p.isDeclaration(e))&&t==e.start,Q={Program:{actions:({leafNode:e,code:t,cursor:n})=>[!(p.isStringLiteral(e)&&e.end>n.start)&&["[]","{}","''",'""'].map((e=>({on:{key:e[0]},do:()=>({code:t.replaceSource(n,`(${e})`),cursor:(e,t)=>new f(S(e.ast,t.start).start+1)})}))),{on:{key:">"},do:()=>({code:t.replaceSource(n,"(() => null)")})},{on:{key:"<"},do:()=>({code:t.replaceSource(n,"<></>")})}]},VariableDeclaration:{hasSlot(e,t){const n=y(e);return!!n.includes(t)&&n},actions:({node:e,code:t,cursor:n})=>y(e).equals(n)?["const","let","var"].filter((t=>e.kind!=t)).map((n=>({info:{type:"CHANGE_DECLARATION_KIND",kind:n},on:{code:"Key"+n[0].toUpperCase()},do:()=>({code:t.replaceSource(new f(e.start,e.start+e.kind.length),n),cursor:({ast:e},{start:t})=>y(S(e,t))})}))):null},VariableDeclarator:{actions:({node:e,path:t,code:n,cursor:r})=>!e.init&&r.start==e.id.end&&{on:[{code:"Space"},{key:"="}],do:()=>({code:n.replaceSource(new f(e.end),"= null"),cursor:({ast:e})=>b(e,[...t,"init"])})}},BlockStatement:{hasSlot:(e,t)=>0==e.body.length&&e.start+1==t},IfStatement:{hasSlot:(e,t,{source:n})=>Boolean(V(e,t)||Y(e,t,n)),actions:({node:e,path:t,cursor:n,code:r})=>[V(e,n.start)&&[{info:{type:"ADD_ELSE"},on:{code:"KeyE"},do:()=>({code:r.replaceSource(new f(e.end),"else {}"),cursor:({ast:e})=>new f(v(e,[...t,"alternate"]).start-1)})},{info:{type:"ADD_ELSE_IF"},on:{code:"KeyI"},do:()=>({code:r.replaceSource(new f(e.end),"else if (null) {}"),cursor:({ast:e})=>b(e,[...t,"alternate","test"])})}],Y(e,n.start,r.source)&&{info:{type:"CHANGE_ELSE_TO_ELSE_IF"},on:{code:"KeyI"},do:()=>({code:r.replaceSource(n," if (t)"),cursor:({ast:e})=>g(v(e,[...t,"alternate","test"]))})}]},ForStatement:{hasSlot:(e,t)=>{const n=e.init?e.init.end:e.start+5,r=e.test?e.test.end:n+(e.init?2:1),o=e.update?e.update.end:r+(e.test?2:1);return!e.init&&t==n||!e.test&&t==r||!e.update&&t==o}},ForOfStatement:{actions:({node:e,path:t,code:n})=>({info:{type:"CONVERT",to:"ForStatement"},on:{code:"KeyO"},do:()=>({code:n.mutateAST((n=>{const r=p.identifier("i");v(n,t.slice(0,-1))[t[t.length-1]]=p.forStatement(p.variableDeclaration("let",[p.variableDeclarator(r,p.numericLiteral(0))]),p.binaryExpression("<",r,p.memberExpression(e.right,p.identifier("length"))),p.updateExpression("++",r),p.blockStatement([p.variableDeclaration("const",[p.variableDeclarator(e.left.declarations[0].id,p.memberExpression(e.right,r,!0))]),...e.body.body]))}))})})},FunctionDeclaration:Z.FunctionExpression,ReturnStatement:{hasSlot:(e,t)=>!e.argument&&e.end-1==t}},ee={...Z,...Q,...z},te=(e,t,n)=>{const r=ee[e.type];if(r&&"hasSlot"in r&&r.hasSlot){const o=r.hasSlot(e,t,n);if(o)return o instanceof f?o:new f(t)}for(const[o,s]of[[p.isExpression,H],[p.isStatement,q]])if(o(e)){const r=s(e,t,n);if(r)return r instanceof f?r:new f(t)}return null},ne=(e,t)=>{const n=O(e.ast,t.start).reverse(),r=n[0][0];return n.map((([n,o])=>{const s=ee[n.type];return{node:n,actions:[...s&&s.actions?K(s.actions({node:n,leafNode:r,path:o,code:e,cursor:t})):[],...p.isExpression(n)&&X?K(X({node:n,leafNode:r,path:o,code:e,cursor:t})):[]].filter((e=>!!e))}})).filter((e=>e&&e.node&&e.actions.length>0))};function re(e,t,n){const{ast:r,source:o}=e,{isLeft:s,isRight:i}={isLeft:"LEFT"===t,isRight:"RIGHT"===t},c=n+(s?-1:i?1:0);if(r.start>c)return new f(r.start);if(r.end<c)return new f(r.end);if("\n"==o[c-1]&&"\n"==o[c])return new f(c);for(const a of w(r,c).reverse()){if(Array.isArray(a))continue;const t=te(a,c,e);if(t)return t}if(!t||"UP"==t||"DOWN"==t){const r=re(e,"LEFT",n),s=re(e,"RIGHT",n),i=o.slice(r.end,n).includes("\n"),c=o.slice(n,s.start).includes("\n");return("UP"===t&&c||!i)&&("DOWN"!==t&&c||n-r.end<s.start-n)?r:s}return re(e,t,c)}function oe(e,t,n){const r="UP"==n,o=e.split("\n").map(((e,t)=>e.length+(0==t?0:1))),s=o.reduce(((e,t)=>[...e,(e[e.length-1]||0)+t]),[]),i=s.findIndex((e=>e>=t)),c=i+(r?-1:1);return-1==i?e.length:c<0?0:t-(s[i-1]||0)>o[c]?s[c]:t+(r?-o[c]+(0==c?-1:0):o[i]+(0==i?1:0))}const se=(e,t,n)=>re(e,t,t&&"LEFT"!=t&&"RIGHT"!=t?oe(e.source,n,t):n);function ie(e,t,n){return T(e)?function(e,{start:t,end:n},r){let o=null;return t!=n&&("LEFT"==r?o=new f(t):"RIGHT"==r&&(o=new f(n))),o||(o=se(e,r,("DOWN"==r?Math.max:Math.min)(t,n))),o}(e,t,n):function(e,{start:t},n){if(!n)return new f(t);const r=(()=>{switch(n){case"LEFT":return t-1;case"RIGHT":return t+1;case"UP":case"DOWN":return oe(e,t,n)}})();return new f(Math.max(Math.min(r,e.length),0))}(e.source,t,n)}var ce=n(385),ae=n(16),le=n(170);function de(e){console.error(e),ae.a(e)}ce.a({dsn:"https://2c3ec152a48344829f1aac2c608affe6@o492889.ingest.sentry.io/5561026",autoSessionTracking:!0,integrations:[new le.a.BrowserTracing]});const ue=navigator.platform.startsWith("Mac");const he=[{name:"if",create:e=>`if (someCondition) { ${e} }`,getInitialCursor:(e,t)=>x(e,[...t,"test"]),canWrapStatement:!0},{name:"for",label:"for...of",create:e=>`for (const item of iterable) { ${e} }`,getInitialCursor:(e,t)=>x(e,[...t,"left","declarations","0","id"]),canWrapStatement:!0},{name:"function",create:()=>"function fn() {}",getInitialCursor:(e,t)=>b(e,[...t,"id"]),hidden:!0,canWrapStatement:!0},{name:"return",create:()=>"return null;",getInitialCursor:(e,t)=>b(e,[...t,"argument"]),hidden:!0,canWrapStatement:!1},...["const","let","var"].map((e=>({name:e,create:t=>h()(p.variableDeclaration(e,[p.variableDeclarator(p.identifier("n"),t||("const"==e?p.nullLiteral():null))])).code,getInitialCursor:(e,t)=>x(e,[...t,"declarations","0","id"]),canWrapStatement:!1})))],pe=[...[["ArrowLeft","LEFT"],["ArrowRight","RIGHT"],["ArrowUp","UP"],["ArrowDown","DOWN"]].map((([e,t])=>({on:{key:e,shiftKey:!1,altKey:!1},do:(e,n)=>({cursor:ie(e,n,t)})}))),...he.map((({name:e,create:t,getInitialCursor:n})=>({if:({source:t},{start:n})=>t.slice(n-e.length,n)==e&&"\n"==t[n+1],on:{code:"Space"},do:(r,{start:o})=>({code:r.replaceSource(new f(o-e.length,o),t("")),cursor:(e,t)=>T(e)?n(e.ast,O(e.ast,o).pop()[1]):t})}))),{on:{code:"Space"},do:(e,t)=>({code:e.replaceSource(t," "),cursor:new f(t.start+1),skipFormatting:!0})},{on:{code:"Enter"},do(e,{start:t}){let n=0;if(function(e,t){const n=e.slice(0,t+1).split("").reverse().findIndex((e=>"\n"==e));return!e.slice(-1==n?0:t-(n||t),t).trim()}(e.source,t))n=t;else{const r=e.source.split("\n").map(((e,t)=>e.length+(0==t?0:1))).reduce(((e,t)=>[...e,(e[e.length-1]||0)+t]),[]),o=r.findIndex((e=>e>=t));n=-1==o?0:r[o]}return{code:e.replaceSource(new f(n),"\n"),cursor:new f(0==n?0:n+1),skipFormatting:!0}}},{on:{code:"Backspace"},do:({source:e},{start:t,end:n})=>({code:L(e.slice(0,t===n?t-1:t)+e.slice(n)),cursor:ie(L(e.slice(0,t===n?t-1:t)+e.slice(n)),new f(t,n),"LEFT")})},{on:{code:"Delete"},do:({source:e},{start:t,end:n})=>({code:L(e.slice(0,t)+e.slice(t===n?n+1:n))})},{on:{code:"KeyZ",...ue?{metaKey:!0}:{ctrlKey:!0}},do:()=>({history:"UNDO"})},{on:{code:"KeyZ",shiftKey:!0,...ue?{metaKey:!0}:{ctrlKey:!0}},do:()=>({history:"REDO"})},{on:{code:"KeyA",...ue?{metaKey:!0}:{ctrlKey:!0}},do:({source:e})=>({cursor:new f(0,e.length)})},...[["UP","ArrowUp"],["DOWN","ArrowDown"],["LEFT","ArrowLeft"],["RIGHT","ArrowRight"]].map((([e,t])=>({if:e=>T(e),info:{type:"RANGE_SELECT",direction:e},on:{code:t,shiftKey:!0,altKey:!1},do:()=>({rangeSelect:e})}))),{if:e=>T(e),info:{type:"STRETCH"},on:{code:"ArrowUp",altKey:!0},do:(e,t)=>{if(!T(e))return;const n=O(e.ast,t.start).reverse(),r=n.findIndex((([e])=>e.start<=t.start&&e.end>=t.end));if(-1==r)return void de(new Error("Assertion: there should always be a selected node"));const[o]=n[r],s=[p.isExpression,p.isStatement].find((e=>e(o)));if(!s)return;const i=n.slice(r+1).find((([e])=>s(e)&&e.start<=o.start&&e.end>=o.end));if(!i)return;const[c,a]=i;return{code:e.replaceSource(g(c),e.source.slice(o.start,o.end)),cursor:(e,t)=>T(e)?b(e.ast,a):(de(new Error("Assertion: move out should always generate valid code")),t)}}}],me=(e,t)=>pe.filter((n=>!n.if||n.if(e,t))),fe=e=>{const t={};for(const n of e){if(!n.info)continue;const{type:e}=n.info;t[e]||(t[e]=[]),t[e].push(n)}return t},ge=(e,t)=>({base:fe(me(e,t)),nodes:T(e)?ne(e,t).map((({node:e,actions:t})=>({node:e,actions:fe(t)}))):[]}),be=(e,t)=>e&&(Array.isArray(e)?e:[e]).some((e=>("code"in e?e.code===t.code:e.key===t.key)&&m.every((n=>!e||!(n in e)||e[n]==t[n]))));function je(e,t,n){const r=T(e)&&function(e,t,n){const r=O(e.ast,t.start).reverse(),o=r[0][0];for(const[s,i]of r){const r=ee[s.type],c=r&&"onInput"in r&&r.onInput({node:s,leafNode:o,path:i,code:e,cursor:t},n);if(c)return c}return null}(e,t,n);if(r)return r;const{source:o}=e,{start:s,end:i}=t,c=o.slice(0,s)+n+o.slice(i),a=s+n.length;return{code:L(c),cursor:new f(a)}}var xe=n(169);const ye=d.a.div`
+  border-radius: ${({theme:e})=>e.borderRadius} 0 0
+    ${({theme:e})=>e.borderRadius};
+  border: 2px solid ${({theme:e})=>e.c.cardBg};
+  border-right: none;
+  display: flex;
+  flex-direction: row;
+  background: white;
+  overflow: hidden;
+  min-height: 300px;
+
+  .codeflask {
+    position: relative;
+    width: initial;
+    height: initial;
+
+    background: ${({theme:e})=>"light"==e.kind?e.c.cardBg:e.c.bg};
+
+    &.codeflask--has-line-numbers:before,
+    & .codeflask__lines {
+      background: ${({theme:e})=>e.c.cardBg};
+    }
+
+    & textarea {
+      position: static;
+      width: auto;
+      height: 100% !important;
+      color: transparent;
+      caret-color: ${({theme:e})=>e.c.text};
+    }
+
+    & pre {
+      position: absolute;
+    }
+
+    & .keyword,
+    & .boolean {
+      font-weight: bold;
+    }
+
+    ${({theme:e})=>"dark"==e.kind&&`\n      color: ${e.c.text};\n      \n      & .token.punctuation {\n        color: #949494;\n      }\n      \n      & .token.keyword {\n        color: #e06ecb;\n      }\n      \n      & .token.boolean, & .token.number {\n        color: #3ae038;\n      }\n      \n      & .token.function {\n        color: #ebdb72;\n      }\n    `}
+  }
+`;function Oe(e,t,n){Object(s.useEffect)((()=>{if(e)return e.addEventListener(t,n),()=>{e.removeEventListener(t,n)}}),[e,t,n])}function we({editorState:{code:e,cursor:{start:t,end:n},formattedForPrintWidth:o},cols:i,onKeyDown:c,onClick:a,onCut:l,onPaste:d}){const u=Object(s.useRef)(null),[h,p]=Object(s.useState)(null),m=Object(s.useCallback)((()=>{if(!h)return;const e=h.elTextarea;e.selectionStart=t,e.selectionEnd=n||t,e.blur(),e.focus(),e.style.height="auto",e.style.height=e.scrollHeight+"px"}),[h,t,n]);return Object(s.useEffect)((()=>{u.current&&p(new xe.a(u.current,{language:"js",handleTabs:!1,lineNumbers:!0}))}),[u]),Object(s.useEffect)((()=>{!h||T(e)&&null===o||(h.updateCode(e.source),m())}),[h,e,o,m]),Object(s.useEffect)((()=>{m()}),[m]),Object(s.useEffect)((()=>{h&&(h.elTextarea.cols=i)}),[h,i]),Oe(null===h||void 0===h?void 0:h.elTextarea,"keydown",c),Oe(null===h||void 0===h?void 0:h.elTextarea,"click",a),Oe(null===h||void 0===h?void 0:h.elTextarea,"cut",l),Oe(null===h||void 0===h?void 0:h.elTextarea,"paste",d),Object(r.jsx)(ye,{ref:u})}var Se=n(99);function ve(e,t,n,r,o){if("number"!=typeof t[t.length-1])return;const s=v(e,t.slice(0,-1));if(!Array.isArray(s))return;const[i,c,a]=[r||n,new f(n.start),new f(n.end)].map((e=>((e,{start:t,end:n})=>e.findIndex((e=>e.start<=t&&e.end>=n)))(s,e))),l=s.length-1;let d,u;o?c==i?(d=c,u=Math.min(a+1,l)):(d=Math.min(c+1,l),u=a):a==i?(d=Math.max(c-1,0),u=a):(d=c,u=a-1);const h=new f(s[d].start,s[u].end);return h.equals(n)?void 0:h}function Ee(){const[e,t]=Object(s.useState)(null);return function(n,r,o){if(!T(n))return e||r;const{ast:s}=n;if(e&&!r.isSingle()||t(r),"UP"==o)return function(e,t){for(const n of w(e,t.start).reverse()){const e=g(n);if(t.start>e.start||t.end<e.end)return e}return t}(s,r);if("DOWN"==o)return function(e,t,n){let r=!1;if(!n||t.isSingle())return t;for(const o of w(e,n.start)){const e=g(o),n=t.start==e.start&&t.end==e.end;if(!n&&r)return e;r=n}return n}(s,r,e);const i=S(s,r.start),c="RIGHT"==o,a=se(n,o,(c?Math.max:Math.min)(r.start,r.end)),l=S(s,a.start);if(i==l&&(p.isLiteral(l)||p.isIdentifier(l))&&l.start<=a.start&&l.end>=a.end)return new f(Math.min(r.start,a.start),Math.max(r.end,a.end));const d=O(s,r.start).reverse();for(const[,t]of d){const n=ve(s,t,r,e,c);if(n)return n}return r}}const ke=Se.format||(new Se).format;function Ie(e,t=80){const[[n,r],o]=Object(s.useState)((()=>[0,[{code:L(e),cursor:new f(0),formattedForPrintWidth:null}]])),i=r[n],[c,a]=Object(s.useState)([]),l=Ee();return Object(s.useEffect)((()=>{const{code:e,cursor:s,formattedForPrintWidth:c}=i;if(!T(e)||c==t)return;ke({code:e.source,cursorOffset:s.start,printWidth:t}).then((s=>{if(!s)return void de(new Error("error while formatting, uck!"));const i=r.slice(),c=L(s.formatted);i[n]={code:c.source===e.source?e:c,cursor:new f(Math.max(s.cursorOffset,0)),formattedForPrintWidth:t},o([n,i])})).catch((e=>de(e)))}),[i,n,r,t]),Object(s.useEffect)((()=>{if(0==c.length||T(i.code)&&i.formattedForPrintWidth!=t)return;const e=c[0];a(c.slice(1));const{code:s,cursor:d}=i;let u,h;if(e instanceof KeyboardEvent){const t=e;u=function(e,t,n){if(T(e)){const r=ne(e,t).map((({actions:e})=>e)).flat().find((e=>be(e.on,n)));if(r)return r.do}for(const r of me(e,t))if((!r.if||r.if(e,t))&&be(r.on,n))return r.do}(s,d,t),!u&&t.key.length<=2&&(u=()=>je(s,d,t.key))}else u=e;try{h=u&&u(s,d)}catch(m){de(m)}if(!h)return;if("history"in h){const e=e=>s.source!==e.code.source;if("UNDO"==h.history){const t=n+1,s=r.slice(t).findIndex(e);-1!=s&&o([t+s,r])}else if("REDO"==h.history){const t=n-1,s=r.slice(0,Math.max(t,0)).reverse().findIndex(e);-1!=s&&o([t-s,r])}return}if("cursor"in h&&"function"==typeof h.cursor){const e=h.cursor;try{a((t=>[(t,n)=>({cursor:e(t,n)}),...t]))}catch(m){de(m)}}const p={...i,..."code"in h&&{code:h.code},..."cursor"in h&&"function"!==typeof h.cursor&&{cursor:h.cursor},..."rangeSelect"in h&&{cursor:l(i.code,i.cursor,h.rangeSelect)},formattedForPrintWidth:!("code"in h)||h.code.source===i.code.source||"skipFormatting"in h&&h.skipFormatting?i.formattedForPrintWidth:null};o([0,[p,...r.slice(n)]])}),[r,n,i,c,t,l]),[i,e=>a((t=>t.concat(e)))]}const Ce={kind:"light",l:{gap:"5px",space:"10px",abyss:"15px"},c:{text:"hsl(0, 0%, 5%)",softText:"hsla(0, 0%, 30%)",light:"hsla(0, 0%, 70%)",bg:"hsl(0, 0%, 95%)",cardBg:"white",visitedLink:"initial"},borderRadius:"10px"},Ae={...Ce,kind:"dark",c:{...Ce.c,light:"hsla(0, 0%, 40%)",text:"hsl(0, 0%, 85%)",softText:"hsla(0, 0%, 70%)",bg:"hsl(0, 0%, 5%)",cardBg:"#2d2d2d",visitedLink:"lightblue"}},Te=e=>l.b`
+  width: ${e};
+  height: ${e};
+  display: inline-block;
+`,Le=d.a.div`
+  ${({theme:e})=>Te(e.l.gap)}
+`,Ne=d.a.div`
+  ${({theme:e})=>Te(e.l.space)}
+`,Re=d.a.div`
+  ${({theme:e})=>Te(e.l.abyss)}
+`,De=l.b`
+  font-family: "Roboto Mono", monospace;
+`,$e=d.a.div`
+  display: inline-block;
+  border: 1px solid grey;
+  padding: 0 ${({theme:e})=>e.l.gap};
+  height: 22px;
+  font-weight: normal;
+  font-size: 15px;
+  ${De};
+`,Fe={ArrowUp:"\u2191",ArrowDown:"\u2193",ArrowLeft:"\u2190",ArrowRight:"\u2192",shiftKey:"\u21e7",altKey:ue?"\u2325":"Alt",Enter:"\u21b5"},Me=({value:e})=>Object(r.jsx)($e,{title:e,children:Fe[e]||(e.startsWith("Key")?e.slice(3).toLowerCase():e)});function Pe(e){return e.toLowerCase().split("_").map((e=>e[0].toUpperCase()+e.slice(1))).join(" ")}const We=d.a.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`,_e=d.a.button`
+  border: none;
+  padding: 0;
+
+  background: none;
+  color: ${({theme:e})=>e.c.text};
+  cursor: pointer;
+`,Be=d.a.span`
+  text-decoration: underline;
+  font-size: ${e=>e.small?11:13.33}px;
+`,Ke=({children:e,small:t,...n})=>Object(r.jsx)(_e,{...n,children:Object(r.jsx)(Be,{children:e,small:t})}),Ge=e=>{switch(e.type){case"RANGE_SELECT":return{UP:"Surrounding",DOWN:"Inner",LEFT:"Previous",RIGHT:"Next"}[e.direction];case"MOVE_ELEMENT":return Pe(e.direction);case"CHANGE_OPERATION":return{UP:"Surrounding",DOWN:"inner",LEFT:"Previous",RIGHT:"Next"}[e.operator]||e.operator;case"WRAP":return Pe(e.wrapper);case"CHANGE_DECLARATION_KIND":return e.kind;case"ADD_ELSE":return Object(r.jsxs)(r.Fragment,{children:["Add ",Object(r.jsxs)("code",{children:["else ","{}"]})]});case"ADD_ELSE_IF":return Object(r.jsxs)(r.Fragment,{children:["Add ",Object(r.jsxs)("code",{children:["else if (t) ","{}"]})]});case"CHANGE_ELSE_TO_ELSE_IF":return Object(r.jsxs)(r.Fragment,{children:["Change ",Object(r.jsx)("code",{children:"else"})," to ",Object(r.jsx)("code",{children:"else if"})]});default:{const{type:t,...n}=e;return Pe(t)+(Object.keys(n).length?` (${JSON.stringify(n)})`:"")}}},Ue=d.a.li`
+  margin-bottom: ${({theme:e})=>e.l.gap};
+  display: flex;
+  align-items: center;
+`,Je=Object(d.a)(We)`
+  margin-bottom: ${({theme:e})=>e.l.space};
+`,He=d.a.span`
+  margin-bottom: ${({theme:e})=>e.l.gap};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`,Xe=d.a.div`
+  ${({single:e,theme:t})=>e?`margin-bottom: ${t.l.gap};`:""};
+
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  ${De};
+`,Ze=({info:e,on:t,hideModifiers:n,single:o,toggleItem:s,...i})=>Object(r.jsxs)(Xe,{single:o,children:[Object(r.jsxs)("div",{children:[Object(r.jsx)(_e,{...i,children:Object(r.jsx)(Be,{children:Ge(e)})}),Object(r.jsx)(Le,{}),o&&Object(r.jsx)(Ke,{small:!0,onClick:()=>s(e.type),children:"\u2573"})]}),Object(r.jsx)(_e,{...i,children:t&&(Array.isArray(t)?t:[t]).map(((e,t)=>Object(r.jsx)(Me,{value:"key"in e?e.key:e.code},t)))})]}),ze=({actions:e,onAction:t,hiddenItems:n,toggleItem:o})=>Object(r.jsx)(r.Fragment,{children:Object.entries(e).map((([e,i],c)=>{if(n.has(e))return null;if(1==i.length&&1==Object.keys(i[0].info).length)return Object(r.jsx)(Ze,{...i[0],single:!0,toggleItem:o},c);const a=i.reduce(((e,t)=>e.filter((e=>t.on&&(Array.isArray(t.on)?t.on:[t.on]).every((t=>t[e]))))),m);return Object(r.jsxs)(s.Fragment,{children:[Object(r.jsxs)(He,{children:[Object(r.jsxs)("div",{children:[Pe(e),Object(r.jsx)(Ne,{}),Object(r.jsx)(Ke,{small:!0,onClick:()=>o(e),children:"\u2573"})]}),Object(r.jsx)("div",{style:{cursor:"default"},children:a.map((e=>Object(r.jsxs)(s.Fragment,{children:[Object(r.jsx)("span",{style:{padding:"0 5px"},children:"+"}),Object(r.jsx)(Me,{value:e})]},e)))})]}),Object(r.jsx)(Je,{children:i.map(((e,n)=>Object(r.jsxs)(Ue,{children:[Object(r.jsx)("span",{style:{paddingRight:5},children:"-"}),Object(r.jsx)(Ze,{...e,toggleItem:()=>null,hideModifiers:a,onClick:()=>t(e)})]},n)))})]},c)}))}),Ve="DEBUG_BOX",Ye=e=>Array.isArray(e)?e.map(Ye):"object"==typeof e&&null!==e?Object.entries(e).filter((([e])=>"loc"!=e)).map((([e,t])=>[e,Ye(t)])).reduce(((e,[t,n])=>(e[t]=n,e)),{}):e,qe=d.a.div`
+  margin-bottom: ${({theme:e})=>e.l.space};
+  display: flex;
+  justify-content: space-between;
+`,Qe=({ast:e})=>Object(r.jsx)(_e,{onClick:()=>{console.log(JSON.stringify(Ye(e),null,2))},children:Object(r.jsx)(Be,{children:"Log AST"})});function et({code:e,cursor:t,hiddenItems:n,toggleItem:o}){return n.has(Ve)?null:Object(r.jsxs)(qe,{children:[T(e)&&Object(r.jsx)(Qe,{ast:e.ast}),Object(r.jsxs)("div",{style:{whiteSpace:"nowrap"},children:["Cursor: ",Object(r.jsx)("em",{children:t.toString()})]}),Object(r.jsx)(Ke,{small:!0,onClick:()=>{o(Ve)},children:"\u2573"})]})}const tt=l.c`
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform:scale(1.5);
+  }
+`,nt=Object(d.a)(Ke)`
+  animation: ${tt} 300ms ease-in-out infinite;
+  animation-play-state: ${({play:e})=>e?"running":"paused"};
+`;function rt({hiddenItems:e,toggleItem:t}){const[n,o]=Object(s.useState)(!1),[i,c]=Object(s.useState)(!1);Object(s.useEffect)((()=>{c(!0)}),[e]);const a=e.size;return 0==a?null:Object(r.jsxs)("div",{style:{display:"flex",flexDirection:"column",alignItems:"flex-end",marginBottom:10},onAnimationIteration:()=>c(!1),children:[Object(r.jsx)(nt,{onClick:()=>o(!n),style:{width:"fit-content"},play:i,children:"..."}),n&&Object(r.jsxs)(r.Fragment,{children:[a," item",a>1&&"s"," hidden:",Object(r.jsx)(We,{children:Array.from(e).reverse().map((e=>Object(r.jsx)("li",{children:Object(r.jsx)(Ke,{onClick:()=>{1==a&&o(!1),t(e)},children:Pe(e)})},e)))})]})]})}const ot=d.a.div`
+  border: 1px solid transparent;
+  border-radius: 0 ${({theme:e})=>e.borderRadius}
+    ${({theme:e})=>e.borderRadius} 0;
+  border-left: none;
+  padding: ${({theme:e})=>e.l.abyss} 20px;
+  min-width: 300px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  ${De};
+  font-size: 13.333px;
+  background: ${({theme:e})=>e.c.cardBg};
+  overflow: auto;
+`,st=d.a.li`
+  margin-bottom: ${({theme:e})=>e.l.abyss};
+`,it=d.a.div`
+  margin-bottom: ${({theme:e})=>e.l.gap};
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 15px;
+`;function ct({editorState:{code:e,cursor:t,formattedForPrintWidth:n},runtimeError:i,onAction:c}){const[a,l]=function(e,t){const[n,r]=Object(s.useState)((()=>{const n=localStorage.getItem(e);return new Set(n?JSON.parse(n):t)}));return[n,function(t){const o=new Set(n);n.has(t)?o.delete(t):o.add(t),r(o),localStorage.setItem(e,JSON.stringify(Array.from(o)))}]}("hiddenItems",[Ve]),[d,u]=Object(s.useState)((()=>ge(e,t))),h=Object(o.f)();return Object(s.useEffect)((()=>{T(e)&&null===n||u(ge(e,t))}),[e,t,n]),Object(r.jsxs)(ot,{children:[Object(r.jsx)(rt,{hiddenItems:a,toggleItem:l}),T(e)&&i&&Object(r.jsx)("div",{style:{color:"red",marginBottom:h.l.space},children:i.stack.split("\n").slice(0,2).join(" -- ")}),!T(e)&&Object(r.jsx)("div",{style:{color:"red",marginBottom:h.l.space},children:e.error.message}),Object(r.jsx)(et,{code:e,cursor:t,hiddenItems:a,toggleItem:l}),Object(r.jsx)(ze,{actions:d.base,onAction:c,hiddenItems:a,toggleItem:l}),Object(r.jsx)(We,{children:d.nodes.map((({node:e,actions:t},n)=>0==Object.keys(t).length?Object(r.jsx)(it,{children:"..."},n):Object(r.jsxs)(st,{children:[Object(r.jsx)(it,{children:e.type}),Object(r.jsx)(ze,{actions:t,onAction:c,hiddenItems:a,toggleItem:l})]},n)))})]})}const at=d.a.div`
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  ${De};
+`,lt=d.a.div`
+  border-top: 1px solid ${({theme:e})=>e.c.cardBg};
+  border-bottom: 1px solid ${({theme:e})=>e.c.cardBg};
+  border-left: 3px dashed ${({theme:e})=>e.c.cardBg};
+  background: ${({theme:e})=>e.c.bg};
+  cursor: col-resize;
+  user-select: none;
+`,dt=({initialSource:e,runtimeError:t,onChange:n},i)=>{const[c,a]=Object(s.useState)(80),[d,u]=Object(s.useState)(null),[h,p]=Ie(e,c),m=Object(o.f)();return Object(s.useImperativeHandle)(i,(()=>({setSource(e){p((()=>({code:L(e)})))}}))),Object(s.useEffect)((()=>{n(h.code.source)}),[n,h.code]),Object(s.useEffect)((()=>{if(null==d)return;const e=e=>{const t=Math.round((e.clientX-d)/2.9);0!=t&&(u(e.clientX),a(Math.max(20,c+t)))},t=()=>u(null);return document.addEventListener("mousemove",e),document.addEventListener("mouseup",t),()=>{document.removeEventListener("mousemove",e),document.removeEventListener("mouseup",t)}}),[c,d]),Object(r.jsxs)(at,{id:"editor",children:[Object(r.jsx)(l.a,{styles:l.b`
+          ::selection {
+            background: ${"light"==m.kind?"yellow":"#7d99e7"};
+          }
+        `}),Object(r.jsx)(we,{editorState:h,cols:c,onKeyDown:e=>{(ue?e.metaKey:e.ctrlKey)&&["c","v","x","r","t","w","l"].some((t=>e.code==`Key${t.toUpperCase()}`))||(e.preventDefault(),p(e))},onCut:e=>{e.preventDefault(),p((({source:t},{start:n,end:r})=>{if(n!==r)return e.clipboardData.setData("text/plain",t.substr(n,r-n)),{code:L(t.substr(0,n)+t.substr(r)),cursor:new f(n)}}))},onPaste:e=>{e.preventDefault();const t=e.clipboardData.getData("text/plain");p((({source:e},{start:n,end:r})=>({code:L(e.slice(0,n)+t+e.slice(r)),cursor:()=>new f(n+t.length)})))},onClick:e=>{const t=e.target;p((e=>({cursor:ie(e,new f(t.selectionStart,t.selectionEnd),null)})))}}),Object(r.jsx)(lt,{title:c.toString(),onMouseDown:e=>u(e.clientX)}),Object(r.jsx)(ct,{editorState:h,runtimeError:t,onAction:e=>{p(((t,n)=>e.do(t,n)))}})]})},ut=i.a.forwardRef(dt),ht=d.a.section`
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  background: ${({theme:e})=>e.c.cardBg};
+  font-family: "Open Sans", sans-serif;
+`,pt=d.a.h3`
+  margin-top: 0;
+`,mt=d.a.span`
+  font-weight: bold;
+  ${De};
+`,ft=()=>Object(r.jsxs)(ht,{children:[Object(r.jsx)(pt,{children:"What is this?"}),Object(r.jsx)("p",{children:"Tofu is an exploration in fluid code editing. It manages syntax and code style for you. Thus keypresses are wholly reserved for meaningful actions:"}),Object(r.jsxs)("ul",{children:[Object(r.jsxs)("li",{children:["Switching between ",Object(r.jsx)(mt,{children:"const"}),"/",Object(r.jsx)(mt,{children:"let"})," ","declaration requires only a single keypress."]}),Object(r.jsxs)("li",{children:["Putting a space after ",Object(r.jsx)(mt,{children:"if"})," always creates a complete if-statement (that being the only syntactically valid option since"," ",Object(r.jsx)(mt,{children:"if"})," can't be used as an identifier). Other keywords behave similarly."]}),Object(r.jsxs)("li",{children:[Object(r.jsx)(Me,{value:"Enter"})," always creates a new line underneath. Compare that to other editors, where Enter either breaks syntax or code style (unless you're already at the start/end of a line)."]}),Object(r.jsx)("li",{children:"Cursor keys only take you to places where you can make meaningful edits."})]}),Object(r.jsxs)("p",{children:["Tofu is embedded in this very page, you can use it with a set of"," ",Object(r.jsx)("a",{href:"#examples",children:"examples"})," in the editor below. At the bottom of the page you can read about its ",Object(r.jsx)("a",{href:"#design",children:"design principles"})," and find various ",Object(r.jsx)("a",{href:"#links",children:"links"})," regarding the project."]})]}),gt=d.a.span`
+  display: inline-block;
+  transition: transform 300ms ease-in-out;
+
+  &:hover {
+    transform: rotateY(180deg);
+  }
+`,bt=()=>Object(r.jsxs)(ht,{id:"design",children:[Object(r.jsx)(pt,{children:"Design Principles"}),Object(r.jsx)("p",{children:"These are the base assumptions I am making while developing Tofu. The list is ordered by importance, higher principles beat lower ones in conflicting situations:"}),Object(r.jsx)("h4",{children:"Meaningless interactions should be replaced by meaningful ones"}),Object(r.jsxs)("p",{children:["This is the core ",Object(r.jsx)(gt,{children:"tenet"}),". Meaningful changes are those that not only affect code style and syntax, but program semantics. Any action which would result in a meaningless change should be turned into a meaningful one."]}),Object(r.jsx)("h4",{children:"Interactions should confirm existing expectations"}),Object(r.jsx)("p",{children:"Prior text-editing experience creates expectations which Tofu plays into by appearing text-like. Its interaction model should confirm them to both prevent dissonance and to give people a head-start."}),Object(r.jsxs)("ul",{children:[Object(r.jsx)("li",{children:"Changes should have a textual relationship to the key that was pressed."}),Object(r.jsx)("li",{children:"Additive changes should be reversible with the Backspace and Delete keys."})]}),Object(r.jsx)("h4",{children:"Every available action should be discoverable in context"}),Object(r.jsx)("p",{children:"The action panel on the side should show all actions applicable to the current context, but only those."}),Object(r.jsx)("h4",{children:'Entering "raw-mode" should be straightforward'}),Object(r.jsxs)("p",{children:["Tofu should permit raw text editing, when no meaningful interaction can be introduced or when the break-out key is pressed. This is the only principle which ",Object(r.jsx)("em",{children:"might"})," be temporary, if there is meaningful ways to transition between all valid code states."]})]}),jt=()=>Object(r.jsxs)(ht,{id:"links",children:[Object(r.jsx)(pt,{children:"Links"}),Object(r.jsxs)("ul",{children:[Object(r.jsx)("li",{children:Object(r.jsx)("a",{href:"https://github.com/Gregoor/tofu",children:"Repo"})}),Object(r.jsx)("li",{children:Object(r.jsx)("a",{href:"https://github.com/Gregoor/tofu/issues",children:"Issues"})}),Object(r.jsxs)("li",{children:[Object(r.jsx)("a",{href:"https://gregoor.github.io/syntactor/",children:"Syntactor"})," - a past attempt at solving a smaller problem (JSON editing)"]}),Object(r.jsxs)("li",{children:[Object(r.jsx)("a",{href:"https://dflate.io/code-is-not-just-text",children:"Code is not just text"})," ","- A blog post I wrote in early 2017"]})]})]}),xt=()=>Object(r.jsxs)(r.Fragment,{children:[Object(r.jsx)(l.a,{styles:l.b`
+        .github-corner:hover .octo-arm {
+          animation: octocat-wave 560ms ease-in-out;
+        }
+        @keyframes octocat-wave {
+          0%,
+          100% {
+            transform: rotate(0);
+          }
+          20%,
+          60% {
+            transform: rotate(-25deg);
+          }
+          40%,
+          80% {
+            transform: rotate(10deg);
+          }
+        }
+        @media (max-width: 500px) {
+          .github-corner:hover .octo-arm {
+            animation: none;
+          }
+          .github-corner .octo-arm {
+            animation: octocat-wave 560ms ease-in-out;
+          }
+        }
+      `}),Object(r.jsx)("a",{href:"https://github.com/Gregoor/tofu",className:"github-corner","aria-label":"View source on GitHub",children:Object(r.jsxs)("svg",{width:"80",height:"80",viewBox:"0 0 250 250",style:{fill:"#fff",color:"#151513",position:"absolute",top:0,border:0,right:0},"aria-hidden":"true",children:[Object(r.jsx)("path",{d:"M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"}),Object(r.jsx)("path",{d:"M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2",fill:"currentColor",style:{transformOrigin:"130px 106px"},className:"octo-arm"}),Object(r.jsx)("path",{d:"M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z",fill:"currentColor",className:"octo-body"})]})})]}),yt={id:"js",label:"JS Console",docsURL:"https://developer.mozilla.org/en-US/docs/Web/JavaScript",example:'\nfunction greet(who) {\n  return `Hello ${who}!`;\n}\n\nconsole.log(greet("World"));\n',run(e,t){e.textContent="";const n=document.createElement("iframe");Object.assign(n.style,{display:"none"}),e.appendChild(n);const r=document.createElement("div");r.classList.add("console-log"),e.appendChild(r);const o=document.createElement("code");o.textContent="console.log(value)";let s=document.createElement("em");s.append("Nothing has been logged yet. Use ",o," to see your logs here."),r.appendChild(s),n.contentWindow.console.log=(...e)=>{s&&(s.remove(),s=null);const t=document.createElement("div");t.textContent=e.map((e=>e.toString())).join(" "),r.appendChild(t)},n.contentWindow.eval(t)},cleanUp(e){e.innerText=""}},Ot={id:"p5",label:"p5.js",docsURL:"https://p5js.org/get-started/",example:"\nconst TOTAL = 10;\nconst WEIGHT = 3;\n\nfunction setup() {\n  createCanvas(300, 300);\n  fill(0, 0);\n}\n\nfunction draw() {\n  const now = performance.now() / 100;\n\n  clear();\n  stroke(0);\n  strokeWeight(WEIGHT);\n\n  for (let i = 0; i < TOTAL; i++) {\n    let n = 1 - i / TOTAL;\n    let radius = width - ((now * i) % width) - WEIGHT;\n    circle(width / 2, height / 2, radius);\n  }\n}",run(e,t){e.textContent="";const n=document.createElement("iframe");Object.assign(n.style,{width:"100%","min-height":"300px",border:"none"}),e.appendChild(n),n.contentWindow.eval(t);const r=document.createElement("script");r.src="https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.min.js";const{body:o}=n.contentDocument;Object.assign(o.style,{margin:0,display:"flex","justify-content":"center"}),o.appendChild(r)},cleanUp(e){e.innerText=""}};var wt=n(69);class St extends i.a.Component{constructor(...e){super(...e),this.state={errorAtIteration:-1}}componentDidCatch(){this.setState({errorAtIteration:this.props.iteration})}render(){const{children:e,iteration:t}=this.props;return this.state.errorAtIteration==t?Object(r.jsx)("h1",{children:"Something went wrong."}):e}}const vt={id:"react",label:"React",docsURL:"https://reactjs.org/docs",example:'function App() {\n  const [value, setValue] = useState("");\n  const [items, setItems] = useState(\n    ["Delete actions"].map((text) => ({\n      text,\n      checked: false,\n    })),\n  );\n\n  return (\n    <div>\n      <input\n        type="text"\n        placeholder="Search/enter new item"\n        value={value}\n        onChange={(e) => setValue(e.target.value)}\n        onKeyDown={(e) => {\n          if (e.key === "Enter") {\n            setValue("");\n            setItems(items.concat({ text: value }));\n          }\n        }}\n        style={{ marginBottom: 10 }}\n      />\n      <ul>\n        {items\n          .filter((i) => i.text.includes(value))\n          .map((item, i) => (\n            <li\n              key={i}\n              style={{\n                textDecoration: item.checked ? "line-through" : undefined,\n                cursor: "pointer",\n              }}\n              onClick={() => {\n                const newItems = items.slice();\n                newItems[i] = {\n                  ...item,\n                  checked: !item.checked,\n                };\n\n                setItems(newItems);\n              }}\n            >\n              {item.text}\n            </li>\n          ))}\n      </ul>\n    </div>\n  );\n}\n',run(e,t,n,o){const s=wt.transform(t,{plugins:[wt.availablePlugins["syntax-jsx"],wt.availablePlugins["transform-react-jsx"]]});try{const t=new Function("React",`{${Object.keys(i.a).join(", ")}}`,s.code+"return typeof App == 'undefined' ? null : App;")(i.a,i.a)||(()=>Object(r.jsxs)(r.Fragment,{children:[Object(r.jsxs)("p",{children:["Declare a component named ",Object(r.jsx)("code",{children:"App"})," to see results. For example:"]}),Object(r.jsx)("pre",{children:Object(r.jsxs)("code",{children:["function App() ","{\n","  ","return ","<h1>Hello World</h1>",";","\n}"]})})]}));a.a.render(Object(r.jsx)(St,{iteration:o,children:Object(r.jsx)(t,{})}),e)}catch(c){n(c)}},cleanUp(e){a.a.unmountComponentAtNode(e)}},Et=d.a.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+`,kt=d.a.div`
+  position: absolute;
+  top: 10px;
+  left: -40px;
+  transform: rotate(-45deg);
+  padding: 10px 50px;
+  font-family: monospace;
+  font-weight: bold;
+  background: orange;
+  color: white;
+`,It=d.a.div`
+  max-height: 100vh;
+`,Ct=d.a.button`
+  border: 2px solid ${({theme:e})=>e.c.light};
+  margin-right: ${({theme:e})=>e.l.abyss};
+  padding: ${({theme:e})=>e.l.space};
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer;
+  background: ${({theme:e})=>"light"==e.kind?e.c.cardBg:e.c.bg};
+
+  ${e=>e.isActive&&"border-color: "+e.theme.c.softText+";"}
+`,At=d.a.a`
+  color: ${({theme:e})=>e.c.visitedLink};
+`,Tt=({activeRunner:e,onSelectRunner:t})=>Object(r.jsxs)(ht,{id:"examples",children:[Object(r.jsx)(pt,{children:"Examples"}),Object(r.jsxs)("p",{children:["Click one of the buttons to change the ",Object(r.jsx)("a",{href:"#editor",children:"editor"})," ","runtime environment. The automatically updated"," ",Object(r.jsx)("a",{href:"#result",children:"result"})," is just below:",Object(r.jsx)("br",{}),"Current selection is:"," ",Object(r.jsxs)(At,{href:e.docsURL,target:"_blank",rel:"noreferrer",children:[e.label," (click here to see the docs)"]})]}),Object(r.jsxs)("div",{style:{display:"flex"},children:[Object(r.jsx)(Ct,{isActive:e.id==yt.id,onClick:()=>t(yt),style:{color:"#f0d000"},children:yt.label}),Object(r.jsxs)(Ct,{isActive:e.id==vt.id,onClick:()=>t(vt),style:{color:"#5cceed"},children:[Object(r.jsx)("img",{src:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xMS41IC0xMC4yMzE3NCAyMyAyMC40NjM0OCI+CiAgPHRpdGxlPlJlYWN0IExvZ288L3RpdGxlPgogIDxjaXJjbGUgY3g9IjAiIGN5PSIwIiByPSIyLjA1IiBmaWxsPSIjNjFkYWZiIi8+CiAgPGcgc3Ryb2tlPSIjNjFkYWZiIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIi8+CiAgICA8ZWxsaXBzZSByeD0iMTEiIHJ5PSI0LjIiIHRyYW5zZm9ybT0icm90YXRlKDYwKSIvPgogICAgPGVsbGlwc2Ugcng9IjExIiByeT0iNC4yIiB0cmFuc2Zvcm09InJvdGF0ZSgxMjApIi8+CiAgPC9nPgo8L3N2Zz4K",height:"20",style:{marginRight:5},alt:"React"}),vt.label]}),Object(r.jsx)(Ct,{isActive:e.id==Ot.id,onClick:()=>t(Ot),style:{color:"#ed225d"},children:Ot.label})]})]});function Lt(){const[e,t]=function(){const[e,t]=Object(s.useState)((()=>[yt,vt,Ot].find((e=>e.id==localStorage.getItem("runner")))||vt)),n=Object(s.useRef)(0);return Object(s.useMemo)((()=>[{...e,run:(...t)=>{e.run(...t,n.current++)}},e=>{localStorage.setItem("runner",e.id),t(e)}]),[e])}(),[n,i]=Object(s.useState)((()=>localStorage.getItem("source")||e.example)),[c,a]=Object(s.useState)(null),d=Object(s.useRef)(null),u=Object(s.useRef)(null),h=Object(o.f)();Object(s.useEffect)((()=>{const t=d.current,r=setTimeout((()=>{try{e.run(t,n,(e=>{a(e)}))}catch(r){a(r)}}),500);return()=>{e.cleanUp(t),clearTimeout(r)}}),[e,n]);const p=Object(s.useCallback)((e=>{a(null),i(e),localStorage.setItem("source",e)}),[]);return Object(r.jsxs)(Et,{children:[Object(r.jsx)(xt,{}),Object(r.jsx)(l.a,{styles:l.b`
+          body {
+            background: ${h.c.bg};
+            color: ${h.c.text};
+          }
+
+          h1,
+          h2 {
+            font-family: "Roboto Mono", monospace;
+          }
+          h1 {
+            margin-top: 10px;
+            margin-bottom: 0;
+            text-align: center;
+            font-weight: lighter;
+          }
+          h2 {
+            margin-top: 0;
+            font-weight: lighter;
+            text-align: center;
+            color: ${h.c.softText};
+          }
+
+          hmr-error-overlay {
+            display: none;
+          }
+
+          a:visited {
+            color: ${h.c.visitedLink};
+          }
+
+          p {
+            margin-block-start: ${h.l.abyss};
+            margin-block-end: ${h.l.abyss};
+          }
+
+          body > iframe {
+            display: none !important;
+          }
+
+          .console-log {
+            margin: 0 -${h.l.abyss};
+            padding: 0 ${h.l.abyss};
+            width: 100%;
+
+            & > * {
+              border-bottom: 1px solid #dbdbdb;
+              margin: ${h.l.gap} 0;
+              width: 100%;
+
+              &:last-child {
+                border-bottom: none;
+              }
+            }
+          }
+        `}),Object(r.jsx)(kt,{children:"BETA"}),Object(r.jsx)("h1",{children:"Tofu"}),Object(r.jsx)("h2",{children:"Code editing with extra protein"}),Object(r.jsx)(Re,{}),Object(r.jsx)(ft,{}),Object(r.jsx)(Re,{}),Object(r.jsx)(Tt,{activeRunner:e,onSelectRunner:n=>{e.cleanUp(d.current),t(n),u.current.setSource(n.example)}}),Object(r.jsx)(Re,{}),Object(r.jsx)(ut,{ref:u,initialSource:n,runtimeError:c,onChange:p}),Object(r.jsx)(Re,{}),Object(r.jsxs)(ht,{id:"result",children:[Object(r.jsx)(pt,{children:"Result"}),Object(r.jsx)(It,{ref:d})]}),Object(r.jsx)(Re,{}),Object(r.jsx)(bt,{}),Object(r.jsx)(Re,{}),Object(r.jsx)(jt,{})]})}const Nt=window.matchMedia("(prefers-color-scheme: dark)");function Rt(){const[e,t]=Object(s.useState)((()=>Nt.matches?Ae:Ce));return Object(s.useEffect)((()=>{Nt.addEventListener("change",(()=>{t(Nt.matches?Ae:Ce)}))}),[t]),Object(r.jsx)(o.c,{theme:e,children:Object(r.jsx)(Lt,{})})}a.a.render(Object(r.jsx)(i.a.StrictMode,{children:Object(r.jsx)(Rt,{})}),document.getElementById("root"))},99:function(e,t,n){var r=n(379),o=["format"];e.exports=function(){var e=new Worker(n.p+"74a8553848b150efd6a6.worker.js",{name:"[hash].worker.js"});return r(e,o),e}}},[[380,1,2]]]);
+//# sourceMappingURL=main.e8c58efb.chunk.js.map
