@@ -21,7 +21,7 @@ const getActionText = (info: DetailAction["info"]) => {
     case "RANGE_SELECT":
       return {
         UP: "Surrounding",
-        DOWN: "inner",
+        DOWN: "Inner",
         LEFT: "Previous",
         RIGHT: "Next",
       }[info.direction as NonNullable<Direction>];

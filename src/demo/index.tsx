@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Editor, EditorHandle } from "../editor";
 import { Abyss } from "../ui";
 import { AboutCard, Card, CardTitle, DesignCard, LinksCard } from "./content";
+import { GitHubBadge } from "./GithubBadge";
 import { jsRunner } from "./javascript";
 import { p5Runner } from "./p5";
 import { reactRunner } from "./react";
@@ -15,6 +16,18 @@ const Rows = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
+`;
+
+const Ribbon = styled.div`
+  position: absolute;
+  top: 10px;
+  left: -40px;
+  transform: rotate(-45deg);
+  padding: 10px 50px;
+  font-family: monospace;
+  font-weight: bold;
+  background: orange;
+  color: white;
 `;
 
 const Output = styled.div`
@@ -155,6 +168,7 @@ export function Demo() {
 
   return (
     <Rows>
+      <GitHubBadge />
       <Global
         styles={css`
           body {
@@ -162,8 +176,25 @@ export function Demo() {
             color: ${theme.c.text};
           }
 
+          h1,
           h2 {
+            font-family: "Roboto Mono", monospace;
+          }
+          h1 {
+            margin-top: 10px;
+            margin-bottom: 0;
+            text-align: center;
+            font-weight: lighter;
+          }
+          h2 {
+            margin-top: 0;
+            font-weight: lighter;
+            text-align: center;
             color: ${theme.c.softText};
+          }
+
+          hmr-error-overlay {
+            display: none;
           }
 
           a:visited {
@@ -197,6 +228,10 @@ export function Demo() {
         `}
       />
 
+      <Ribbon>BETA</Ribbon>
+      <h1>Tofu</h1>
+      <h2>Code editing with extra protein</h2>
+
       <Abyss />
 
       <AboutCard />
@@ -214,16 +249,17 @@ export function Demo() {
 
       <Abyss />
 
-      <Card id="result">
-        <CardTitle>Result</CardTitle>
-        <Output ref={output} />
-      </Card>
-      <Abyss />
       <Editor
         ref={editorRef}
         {...{ initialSource: source, runtimeError }}
         onChange={handleChange}
       />
+
+      <Abyss />
+      <Card id="result">
+        <CardTitle>Result</CardTitle>
+        <Output ref={output} />
+      </Card>
 
       <Abyss />
 
