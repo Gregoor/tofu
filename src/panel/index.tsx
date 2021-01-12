@@ -68,7 +68,7 @@ export function Panel({
   onAction,
 }: {
   editorState: EditorState;
-  runtimeError: Error | null;
+  runtimeError?: Error | null;
 } & OnAction) {
   const [hiddenItems, toggleItem] = usePersistedSet("hiddenItems", [DEBUG_KEY]);
   const [actions, setActions] = useState(() => findDetailActions(code, cursor));
@@ -76,7 +76,7 @@ export function Panel({
 
   useEffect(() => {
     if (!isValid(code) || formattedForPrintWidth !== null) {
-      // by delaying setting of actions until it is formatted, we prevent
+      // by delaying setting of actions until after formatting, we prevent
       // flickers and unnecessary re-renders
       setActions(findDetailActions(code, cursor));
     }
