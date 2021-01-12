@@ -1,7 +1,10 @@
-import babel from "prettier/parser-babel";
+import type { CursorOptions } from "prettier";
+import typescript from "prettier/parser-typescript";
 import prettier from "prettier/standalone";
 
 // import { reportError } from "./report";
+
+export const options: Omit<CursorOptions, "cursorOffset"> = {};
 
 export async function format({
   code,
@@ -14,15 +17,16 @@ export async function format({
 }) {
   try {
     return prettier.formatWithCursor(code, {
-      parser: "babel",
-      plugins: [babel],
+      ...options,
+      parser: "typescript",
+      plugins: [typescript],
       cursorOffset,
       printWidth,
-      trailingComma: "all",
     });
   } catch (error) {
     // TODO Can't report from a worker!
     // reportError(error);
+    console.error(error);
     return null;
   }
 }

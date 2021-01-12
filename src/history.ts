@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import * as FormatWorker from "workerize-loader!./format.worker";
+import * as FormatWorker from "workerize-loader?inline!./format.worker";
 
 import { findAction, handleInput } from "./actions";
 import { Code, codeFromSource, isValid } from "./code";
