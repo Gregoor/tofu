@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tsc_watch",
+      "type": "npm",
+      "script": "watch",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "crp",
+      "type": "shell",
+      "command": "cd .. && yarn start",
+      "problemMatcher": {
+        "pattern": { "regexp": "^.*problemlwefmw*$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Compiled*$",
+          "endsPattern": "^.*ErrorNotPossible*$"
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
+      }
+    },
+    {
+      "label": "proxy_crp",
+      "type": "shell",
+      "command": "yarn lcp --proxyUrl localhost:3000",
+      "dependsOn": ["tsc_watch"]
+    }
+  ]
+}

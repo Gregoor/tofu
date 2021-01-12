@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "main": "index.js",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "homepage": "https://tofu.is",
   "scripts": {
     "start": "BROWSER=none react-scripts start",

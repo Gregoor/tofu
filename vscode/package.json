@@ -1,0 +1,72 @@
+{
+  "name": "tofu-vscode",
+  "displayName": "Tofu",
+  "description": "Tofu editor embedded in VSCode",
+  "version": "2.0.0",
+  "publisher": "Gregor Weber",
+  "engines": {
+    "vscode": "^1.46.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCustomEditor:tofu",
+    "AAAonCommand:tofu.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "tofu",
+        "displayName": "Tofu",
+        "selector": [
+          {
+            "filenamePattern": "*.js"
+          },
+          {
+            "filenamePattern": "*.jsx"
+          },
+          {
+            "filenamePattern": "*.ts"
+          },
+          {
+            "filenamePattern": "*.tsx"
+          }
+        ]
+      }
+    ],
+    "AAcommands": [
+      {
+        "command": "tofu.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "AAkeybindings": [
+      {
+        "command": "tofu.helloWorld",
+        "key": ",",
+        "mac": ",",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p ."
+  },
+  "devDependencies": {
+    "@types/diff": "^5.0.0",
+    "@types/node": "^12.12.0",
+    "@types/vscode": "^1.46.0",
+    "diff": "^5.0.0",
+    "local-cors-proxy": "^1.1.0",
+    "typescript": "^4.0.2"
+  },
+  "dependencies": {
+    "@types/node-fetch": "^2.5.7",
+    "cheerio": "^1.0.0-rc.5",
+    "node-fetch": "^2.6.1"
+  }
+}
