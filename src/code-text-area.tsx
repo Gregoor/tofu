@@ -12,7 +12,6 @@ const CodeWrap = styled.div`
   border-right: none;
   display: flex;
   flex-direction: row;
-  background: white;
   overflow: hidden;
   min-height: 300px;
 
@@ -21,12 +20,16 @@ const CodeWrap = styled.div`
     width: initial;
     height: initial;
 
-    background: ${({ theme }) =>
-      theme.kind == "light" ? theme.c.cardBg : theme.c.bg};
+    ${({ theme }) =>
+      `background: ${theme.kind == "light" ? theme.c.cardBg : theme.c.bg};`};
 
     &.codeflask--has-line-numbers:before,
     & .codeflask__lines {
       background: ${({ theme }) => theme.c.cardBg};
+    }
+
+    & .codeflask__code {
+      color: ${({ theme }) => theme.c.text};
     }
 
     & textarea {
@@ -35,15 +38,22 @@ const CodeWrap = styled.div`
       height: 100% !important;
       color: transparent;
       caret-color: ${({ theme }) => theme.c.text};
+
+      &:focus {
+        outline: none;
+      }
     }
 
     & pre {
       position: absolute;
     }
 
-    & .keyword,
-    & .boolean {
-      font-weight: bold;
+    & .token.keyword {
+      color: #0070c1;
+    }
+
+    & .token.function {
+      color: #795e26;
     }
 
     ${({ theme }) =>
@@ -100,7 +110,10 @@ export function CodeTextArea({
 }: Pick<
   React.HTMLProps<"textarea">,
   "cols" | "onClick" | "onCut" | "onPaste"
-> & { editorState: EditorState; onKeyDown: (event: KeyboardEvent) => void }) {
+> & {
+  editorState: EditorState;
+  onKeyDown: (event: KeyboardEvent) => void;
+}) {
   const rootRef = useRef<null | HTMLDivElement>(null);
   const [flask, setFlask] = useState<null | any>(null);
 

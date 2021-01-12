@@ -33,8 +33,8 @@ const EditorInternal: React.ForwardRefRenderFunction<
   EditorHandle,
   {
     initialSource: string;
-    runtimeError: Error | null;
-    onChange: (value: string) => void;
+    runtimeError?: Error | null;
+    onChange?: (value: string) => void;
   }
 > = ({ initialSource, runtimeError, onChange }, ref) => {
   const [printWidth, setPrintWidth] = useState(80);
@@ -49,7 +49,9 @@ const EditorInternal: React.ForwardRefRenderFunction<
   }));
 
   useEffect(() => {
-    onChange(editorState.code.source);
+    if (onChange) {
+      onChange(editorState.code.source);
+    }
   }, [onChange, editorState.code]);
 
   useEffect(() => {
@@ -87,12 +89,7 @@ const EditorInternal: React.ForwardRefRenderFunction<
         editorState={editorState}
         cols={printWidth}
         onKeyDown={(event) => {
-          if (
-            (isMac ? event.metaKey : event.ctrlKey) &&
-            ["c", "v", "x", "r", "t", "w", "l"].some(
-              (key) => event.code == `Key${key.toUpperCase()}`
-            )
-          ) {
+          if (isMac ? event.metaKey : event.ctrlKey) {
             return;
           }
           event.preventDefault();
