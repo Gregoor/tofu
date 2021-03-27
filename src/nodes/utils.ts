@@ -1,47 +1,42 @@
 import * as t from "@babel/types";
 
 import { getNode, getNodeFromPath } from "../ast-utils";
-import { ValidCode } from "../code";
+import { Code } from "../code";
 import { selectNodeFromPath } from "../cursor/utils";
-import { BareChange, BareDetailAction, Range } from "../utils";
-
-export type NodeDetailAction = BareDetailAction<ValidCode>;
-
-export type NodeDetailActions =
-  | false
-  | null
-  | undefined
-  | NodeDetailAction
-  | NodeDetailActions[];
+import { Change, DetailAction, Range } from "../utils";
 
 export type NodeHasSlot<T> = (
   node: T,
   start: number,
-  code: ValidCode
+  code: Code
 ) => boolean | Range;
 
 export type NodeActionParams<T> = {
   node: T;
-  leafNode: t.Node;
   path: (string | number)[];
+  leafNode: t.Node;
   cursor: Range;
-  code: ValidCode;
+  code: Code;
 };
 
 export type OnNodeInput<T> = (
   params: NodeActionParams<T>,
   data: string
-) => false | BareChange<ValidCode>;
+) => false | Change;
 
-export type NodeDef<T> = {
+export type NodeDef<T extends t.Node> = {
   hasSlot?: NodeHasSlot<T>;
-  actions?: (params: NodeActionParams<T>) => NodeDetailActions;
+  actions?: DetailAction<T>[];
   onInput?: OnNodeInput<T>;
 };
 
 export type NodeDefs = Partial<
   {
-    [T in t.Node["type"]]: NodeDef<Extract<t.Node, { type: T }>>;
+    [T in t.Node["type"] | "Expression" | "Statement"]: T extends "Expression"
+      ? NodeDef<t.Expression>
+      : T extends "Statement"
+      ? NodeDef<t.Statement>
+      : NodeDef<Extract<t.Node, { type: T }>>;
   }
 >;
 
@@ -54,48 +49,37 @@ export function findSlotIndex(collection: any[], start: number) {
 }
 
 export const addElementAction = (
-  {
-    node,
-    leafNode,
-    path,
-    code,
-    cursor: { start, end },
-  }: NodeActionParams<t.Node>,
   collectionKey: string,
   initialValue: t.Node
-): NodeDetailActions =>
-  !(
-    start <= node.start! ||
-    end >= node.end! ||
-    (t.isStringLiteral(leafNode) && start < leafNode.end!) ||
-    t.isTemplateElement(leafNode) ||
-    (t.isIdentifier(leafNode) &&
-      start > leafNode.start! &&
-      start < leafNode.end!)
-  ) && {
-    info: { type: "ADD_ELEMENT" },
-    on: { key: "," },
-    do: () => {
-      let index = findSlotIndex((node as any)[collectionKey], start);
-      if (
-        (start == node.start && end == node.start) ||
-        getNode(code.ast, start).start == start
-      ) {
-        index = Math.max(0, index - 1);
-      }
+): DetailAction<t.Node> => ({
+  id: "addElement",
+  if: ({ node, leafNode, cursor: { start, end } }) =>
+    !(
+      start <= node.start! ||
+      end >= node.end! ||
+      (t.isStringLiteral(leafNode) && start < leafNode.end!) ||
+      t.isTemplateElement(leafNode) ||
+      (t.isIdentifier(leafNode) &&
+        start > leafNode.start! &&
+        start < leafNode.end!)
+    ),
+  on: "[Comma]",
+  do: ({ node, path, code, cursor: { start, end } }) => {
+    let index = findSlotIndex((node as any)[collectionKey], start);
+    if (
+      (start == node.start && end == node.start) ||
+      getNode(code.ast, start).start == start
+    ) {
+      index = Math.max(0, index - 1);
+    }
 
-      return {
-        code: code.mutateAST((ast) => {
-          const collection = getNodeFromPath(ast, path) as any;
-          collection[collectionKey].splice(index, 0, initialValue);
-        }),
-        cursor: ({ ast }) =>
-          selectNodeFromPath(ast, [...path, collectionKey, index]),
-      };
-    },
-  };
-
-export const flattenActions = (
-  actions: NodeDetailActions
-): NodeDetailAction[] =>
-  (Array.isArray(actions) ? actions : [actions]).flat(Infinity);
+    return {
+      ast(ast) {
+        const collection = getNodeFromPath(ast, path) as any;
+        collection[collectionKey].splice(index, 0, initialValue);
+      },
+      cursor: ({ ast }) =>
+        selectNodeFromPath(ast, [...path, collectionKey, index]),
+    };
+  },
+});

@@ -2,9 +2,9 @@ import * as t from "@babel/types";
 
 import { getNode, getNodeFromPath } from "../ast-utils";
 import { selectKind, selectNode, selectNodeFromPath } from "../cursor/utils";
-import { Range } from "../utils";
+import { DetailAction, Range } from "../utils";
 import { expressions } from "./expressions";
-import { NodeDef, NodeDefs } from "./utils";
+import { NodeDefs } from "./utils";
 
 const isAtSingleIfEnd = (node: t.IfStatement, start: number) =>
   !node.alternate && node.consequent.end! == start;
@@ -17,107 +17,124 @@ const isAtElse = (node: t.IfStatement, start: number, source: string) =>
         .indexOf("else") +
       "else".length;
 
-export const statement: NodeDef<t.Statement> = {
-  hasSlot: (node, start) =>
-    (t.isIfStatement(node) || t.isFor(node) || t.isDeclaration(node)) &&
-    start == node.start,
-};
+const isAtElseEnd = (node: t.IfStatement, start: number) =>
+  node.alternate && node.alternate.end == start;
 
 export const statements: NodeDefs = {
-  Program: {
-    actions: ({ leafNode, code, cursor }) => [
-      !(t.isStringLiteral(leafNode) && leafNode.end! > cursor.start) &&
-        ["[]", "{}", "''", '""'].map((pair) => ({
-          on: { key: pair[0] },
-          do: () => ({
-            code: code.replaceSource(cursor, `(${pair})`),
-            cursor: (code, cursor) =>
-              new Range(getNode(code.ast, cursor.start).start! + 1),
-          }),
-        })),
-      {
-        on: { key: ">" },
-        do: () => ({ code: code.replaceSource(cursor, `(() => null)`) }),
-      },
-      {
-        // TODO: oops this is JSX, yet it lives here?
-        on: { key: "<" },
-        do: () => ({ code: code.replaceSource(cursor, `<></>`) }),
-      },
-    ],
+  Statement: {
+    hasSlot: (node, start) =>
+      (t.isIfStatement(node) || t.isFor(node) || t.isDeclaration(node)) &&
+      start == node.start,
   },
+
+  // Program: {
+  //   actions: [
+  //     ...["[]", "{}", "''", '""'].map(
+  //       (pair) =>
+  //         ({
+  //           id: ["wrap", pair],
+  //           on: pair[0],
+  //           if: ({ leafNode, cursor }) =>
+  //             !(t.isStringLiteral(leafNode) && leafNode.end! > cursor.start),
+  //           do: ({ cursor }) => ({
+  //             sourceReplace: [cursor, `(${pair})`],
+  //             cursor: ({ ast }, { start }) =>
+  //               new Range(getNode(ast, start).start! + 1),
+  //           }),
+  //         } as DetailAction<t.Program>)
+  //     ),
+  //     {
+  //       id: "addArrowFunction",
+  //       on: ">",
+  //       do: ({ cursor }) => ({ sourceReplace: [cursor, `(() => null)`] }),
+  //     },
+  //     {
+  //       // TODO: oops this is JSX, yet it lives here?
+  //       id: "addJSXFragment",
+  //       on: "<",
+  //       do: ({ cursor }) => ({ sourceReplace: [cursor, `<></>`] }),
+  //     },
+  //   ],
+  // },
 
   VariableDeclaration: {
     hasSlot(node, start) {
       const kindRange = selectKind(node);
       return kindRange.includes(start) ? kindRange : false;
     },
-    actions: ({ node, code, cursor }) =>
-      selectKind(node).equals(cursor)
-        ? (["const", "let", "var"] as const)
-            .filter((kind) => node.kind != kind)
-            .map((kind) => ({
-              info: { type: "CHANGE_DECLARATION_KIND", kind },
-              on: { code: "Key" + kind[0].toUpperCase() },
-              do: () => ({
-                code: code.replaceSource(
-                  new Range(node.start!, node.start! + node.kind.length),
-                  kind
-                ),
-                cursor: ({ ast }, { start }) =>
-                  selectKind(getNode(ast, start) as typeof node),
-              }),
-            }))
-        : null,
+    actions: (["const", "let", "var"] as const).map((kind) => ({
+      id: ["changeDeclarationKind", kind],
+      on: kind[0],
+      if: ({ node, cursor }) =>
+        node.kind != kind && selectKind(node).equals(cursor),
+      do: ({ node }) => ({
+        sourceReplace: [
+          new Range(node.start!, node.start! + node.kind.length),
+          kind,
+        ],
+        cursor: ({ ast }, { start }) =>
+          selectKind(getNode(ast, start) as typeof node),
+      }),
+    })),
   },
   VariableDeclarator: {
-    actions: ({ node, path, code, cursor }) =>
-      !node.init &&
-      cursor.start == node.id.end! && {
-        on: [{ code: "Space" }, { key: "=" }],
-        do: () => ({
-          code: code.replaceSource(new Range(node.end!), "= null"),
+    actions: [
+      {
+        id: "assignVariable",
+        if: ({ node, cursor }) => !node.init && cursor.start == node.id.end!,
+        on: ["space", "Shift+;"],
+        do: ({ node, path }) => ({
+          sourceReplace: [new Range(node.end!), "= null"],
           cursor: ({ ast }) => selectNodeFromPath(ast, [...path, "init"]),
         }),
       },
+    ],
   },
 
   BlockStatement: {
-    hasSlot: (node, start) => node.body.length == 0 && node.start! + 1 == start,
+    hasSlot: (node, start) =>
+      (node.body.length == 0 && node.start! + 1 == start) || node.end == start,
   },
 
   IfStatement: {
     hasSlot: (node, start, { source }) =>
-      Boolean(isAtSingleIfEnd(node, start) || isAtElse(node, start, source)),
-    actions: ({ node, path, cursor, code }) => [
-      isAtSingleIfEnd(node, cursor.start) && [
-        {
-          info: { type: "ADD_ELSE" },
-          on: { code: "KeyE" },
-          do: () => ({
-            code: code.replaceSource(new Range(node.end!), "else {}"),
-            cursor: ({ ast }) =>
-              new Range(
-                (getNodeFromPath(ast, [...path, "alternate"]) as t.Node)
-                  .start! - 1
-              ),
-          }),
-        },
-        {
-          info: { type: "ADD_ELSE_IF" },
-          on: { code: "KeyI" },
-          do: () => ({
-            code: code.replaceSource(new Range(node.end!), "else if (null) {}"),
-            cursor: ({ ast }) =>
-              selectNodeFromPath(ast, [...path, "alternate", "test"]),
-          }),
-        },
-      ],
-      isAtElse(node, cursor.start, code.source) && {
-        info: { type: "CHANGE_ELSE_TO_ELSE_IF" },
-        on: { code: "KeyI" },
-        do: () => ({
-          code: code.replaceSource(cursor, " if (t)"),
+      Boolean(
+        isAtSingleIfEnd(node, start) ||
+          isAtElse(node, start, source) ||
+          isAtElseEnd(node, start)
+      ),
+    actions: [
+      {
+        id: "addElse",
+        if: ({ node, cursor }) => isAtSingleIfEnd(node, cursor.start),
+        on: "e",
+        do: ({ node, path }) => ({
+          sourceReplace: [new Range(node.end!), "else {}"],
+          cursor: ({ ast }) =>
+            new Range(
+              (getNodeFromPath(ast, [...path, "alternate"]) as t.Node).start! -
+                1
+            ),
+        }),
+      },
+      {
+        id: "addElseIf",
+        if: ({ node, cursor }) => isAtSingleIfEnd(node, cursor.start),
+        on: "i",
+        do: ({ node, path }) => ({
+          sourceReplace: [new Range(node.end!), "else if (null) {}"],
+          cursor: ({ ast }) =>
+            selectNodeFromPath(ast, [...path, "alternate", "test"]),
+        }),
+      },
+
+      {
+        id: "changeElseToElseIf",
+        if: ({ node, code, cursor }) =>
+          isAtElse(node, cursor.start, code.source),
+        on: "i",
+        do: ({ cursor, path }) => ({
+          sourceReplace: [cursor, " if (t)"],
           cursor: ({ ast }) =>
             selectNode(getNodeFromPath(ast, [...path, "alternate", "test"])),
         }),
@@ -139,46 +156,49 @@ export const statements: NodeDefs = {
     },
   },
   ForOfStatement: {
-    actions: ({ node, path, code }) => ({
-      info: { type: "CONVERT", to: "ForStatement" },
-      on: { code: "KeyO" },
-      /**
-       * from:
-       * for ($kind $element of $list) $any
-       * to:
-       * for (let i = 0; i < $list.length; i++) {
-       *     $kind $element = $list[i];
-       *     ...$any
-       * }
-       */
-      do: () => ({
-        code: code.mutateAST((ast) => {
-          const i = t.identifier("i");
-          (getNodeFromPath(ast, path.slice(0, -1)) as any)[
-            path[path.length - 1]
-          ] = t.forStatement(
-            t.variableDeclaration("let", [
-              t.variableDeclarator(i, t.numericLiteral(0)),
-            ]),
-            t.binaryExpression(
-              "<",
-              i,
-              t.memberExpression(node.right, t.identifier("length"))
-            ),
-            t.updateExpression("++", i),
-            t.blockStatement([
-              t.variableDeclaration("const", [
-                t.variableDeclarator(
-                  (node.left as t.VariableDeclaration).declarations[0].id,
-                  t.memberExpression(node.right, i, true)
-                ),
+    actions: [
+      {
+        id: ["convert", "ForStatement"],
+        on: "i",
+        if: () => false,
+        /**
+         * from:
+         * for ($kind $element of $list) $any
+         * to:
+         * for (let i = 0; i < $list.length; i++) {
+         *     $kind $element = $list[i];
+         *     ...$any
+         * }
+         */
+        do: ({ node, path }) => ({
+          ast(ast) {
+            const i = t.identifier("i");
+            (getNodeFromPath(ast, path.slice(0, -1)) as any)[
+              path[path.length - 1]
+            ] = t.forStatement(
+              t.variableDeclaration("let", [
+                t.variableDeclarator(i, t.numericLiteral(0)),
               ]),
-              ...(node.body as t.BlockStatement).body,
-            ])
-          );
+              t.binaryExpression(
+                "<",
+                i,
+                t.memberExpression(node.right, t.identifier("length"))
+              ),
+              t.updateExpression("++", i),
+              t.blockStatement([
+                t.variableDeclaration("const", [
+                  t.variableDeclarator(
+                    (node.left as t.VariableDeclaration).declarations[0].id,
+                    t.memberExpression(node.right, i, true)
+                  ),
+                ]),
+                ...(node.body as t.BlockStatement).body,
+              ])
+            );
+          },
         }),
-      }),
-    }),
+      },
+    ],
   },
 
   FunctionDeclaration: expressions.FunctionExpression as any,

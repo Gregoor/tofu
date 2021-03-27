@@ -1,5 +1,4 @@
 import * as t from "@babel/types";
-import { useState } from "react";
 
 import {
   Path,
@@ -8,7 +7,7 @@ import {
   getNode,
   getNodeFromPath,
 } from "../ast-utils";
-import { Code, isValid } from "../code";
+import { Code } from "../code";
 import { Direction, Range } from "../utils";
 import { findCursor } from "./find";
 import { selectNode } from "./utils";
@@ -72,7 +71,7 @@ function findNextChildCursor(
 
   const lastIndex = collection.length - 1;
 
-  let nextStartIndex, nextEndIndex;
+  let nextStartIndex: number, nextEndIndex: number;
   if (isRight) {
     if (startIndex == initialIndex) {
       nextStartIndex = startIndex;
@@ -100,62 +99,54 @@ function findNextChildCursor(
   }
 }
 
-export function useSelectRange() {
-  const [initialRange, setInitialRange] = useState<null | Range>(null);
-  return function selectRange(
-    code: Code,
-    cursor: Range,
-    direction: Direction
-  ): Range {
-    if (!isValid(code)) {
-      return initialRange || cursor;
-    }
-    const { ast } = code;
-    if (!initialRange || cursor.isSingle()) {
-      setInitialRange(cursor);
-    }
+export function selectRange(
+  code: Code,
+  cursor: Range,
+  direction: Direction,
+  initialRange: Range
+): Range {
+  const { ast } = code;
 
-    if (direction == "UP") {
-      return selectRangeUp(ast, cursor);
-    } else if (direction == "DOWN") {
-      return selectRangeDown(ast, cursor, initialRange);
-    }
+  if (direction == "UP") {
+    return selectRangeUp(ast, cursor);
+  } else if (direction == "DOWN") {
+    return selectRangeDown(ast, cursor, initialRange);
+  }
 
-    const node = getNode(ast, cursor.start);
+  const node = getNode(ast, cursor.start);
 
-    const isRight = direction == "RIGHT";
-    const nextCursor = findCursor(
-      code,
-      direction,
-      (isRight ? Math.max : Math.min)(cursor.start, cursor.end)
+  const isRight = direction == "RIGHT";
+  const nextCursor = findCursor(
+    code,
+    direction,
+    (isRight ? Math.max : Math.min)(cursor.start, cursor.end)
+  );
+  const nextNode = getNode(ast, nextCursor.start);
+
+  if (
+    node == nextNode &&
+    (t.isLiteral(nextNode) || t.isIdentifier(nextNode)) &&
+    nextNode.start! <= nextCursor.start &&
+    nextNode.end! >= nextCursor.end
+  ) {
+    return new Range(
+      Math.min(cursor.start, nextCursor.start),
+      Math.max(cursor.end, nextCursor.end)
     );
-    const nextNode = getNode(ast, nextCursor.start);
+  }
 
-    if (
-      node == nextNode &&
-      (t.isLiteral(nextNode) || t.isIdentifier(nextNode)) &&
-      nextNode.start! <= nextCursor.start &&
-      nextNode.end! >= nextCursor.end
-    ) {
-      return new Range(
-        Math.min(cursor.start, nextCursor.start),
-        Math.max(cursor.end, nextCursor.end)
-      );
+  const reverseLineage = getLineage(ast, cursor.start).reverse();
+  for (const [, path] of reverseLineage) {
+    const childCursor = findNextChildCursor(
+      ast,
+      path,
+      cursor,
+      initialRange,
+      isRight
+    );
+    if (childCursor) {
+      return childCursor;
     }
-
-    const reverseLineage = getLineage(ast, cursor.start).reverse();
-    for (const [, path] of reverseLineage) {
-      const childCursor = findNextChildCursor(
-        ast,
-        path,
-        cursor,
-        initialRange,
-        isRight
-      );
-      if (childCursor) {
-        return childCursor;
-      }
-    }
-    return cursor;
-  };
+  }
+  return cursor;
 }

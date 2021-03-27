@@ -1,44 +1,31 @@
 import * as t from "@babel/types";
 
-import { Code } from "./code";
+import { AST, Code } from "./code";
+import { NodeActionParams } from "./nodes/utils";
 
-export const modifierKeys = [
-  "altKey",
-  "ctrlKey",
-  "metaKey",
-  "shiftKey",
-] as const;
+export type CursorFn = (code: Code, cursor: Range) => Range;
 
-type Modifiers = Partial<Record<typeof modifierKeys[number], boolean>>;
-
-type KeyConfig = ({ code: string } | { key: string }) & Modifiers;
-
-export type BareChange<C> =
-  | {
-      code: Code;
-      cursor?: Range | ((code: C, cursor: Range) => Range);
-      skipFormatting?: true;
-    }
+export type Change =
+  | ((
+      | { ast: (ast: AST) => void }
+      | { sourceReplace: [Range, string]; skipFormatting?: true }
+      | { source: string }
+    ) & {
+      cursor?: CursorFn;
+    })
   | { cursor: Range }
-  | { rangeSelect: Direction }
-  | { history: "UNDO" | "REDO" };
+  | { rangeSelect: Direction };
 
-export type Change = BareChange<Code>;
+export type Action<T extends t.Node> = (params: NodeActionParams<T>) => Change;
 
-export type BareAction<C> = (
-  code: C,
-  cursor: Range
-) => undefined | null | BareChange<C>;
+type ActionId = string | [string, string, ...string[]];
 
-export type Action = BareAction<Code>;
-
-export type BareDetailAction<C> = {
-  info?: any;
-  on?: KeyConfig | KeyConfig[];
-  do: BareAction<C>;
+export type DetailAction<T extends t.Node> = {
+  id: ActionId;
+  if?: (params: NodeActionParams<T>) => any;
+  on: string | [string, string, ...string[]];
+  do: Action<T>;
 };
-
-export type DetailAction = BareDetailAction<Code>;
 
 export type Direction = "LEFT" | "RIGHT" | "UP" | "DOWN" | null;
 
@@ -59,8 +46,10 @@ export class Range {
     return this.start == this.end;
   }
 
-  includes(pos: number): boolean {
-    return pos >= this.start && pos <= this.end;
+  includes(pos: number | Range): boolean {
+    return (pos instanceof Range ? [pos.start, pos.end] : [pos]).every(
+      (pos) => pos >= this.start && pos <= this.end
+    );
   }
 
   equals(other: Range | t.Node) {
@@ -70,3 +59,10 @@ export class Range {
   toString = () =>
     this._end == null ? this.start : this.start + " - " + this._end;
 }
+
+export const commandFromId = (nodeType: string | null, id: ActionId) =>
+  [
+    "tofu",
+    ...(nodeType ? [nodeType] : []),
+    ...(Array.isArray(id) ? id : [id]),
+  ].join(":");

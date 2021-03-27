@@ -1,13 +1,9 @@
 import { getLineageNodes } from "../ast-utils";
-import { ValidCode } from "../code";
+import { Code } from "../code";
 import { findNodeSlot } from "../nodes";
 import { Direction, Range } from "../utils";
 
-function findCursorX(
-  code: ValidCode,
-  direction: Direction,
-  start: number
-): Range {
+function findCursorX(code: Code, direction: Direction, start: number): Range {
   const { ast, source } = code;
   const { isLeft, isRight } = {
     isLeft: direction === "LEFT",
@@ -86,7 +82,7 @@ export function findCursorY(
 }
 
 export const findCursor = (
-  code: ValidCode,
+  code: Code,
   direction: Direction,
   start: number
 ): Range =>

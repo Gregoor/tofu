@@ -1,6 +1,7 @@
 import * as t from "@babel/types";
 
 import { selectNode } from "./cursor/utils";
+import { Range } from "./utils";
 
 function* forEachProperty(node: t.Node) {
   for (const prop in node) {
@@ -19,19 +20,20 @@ export type Path = (string | number)[];
 
 export function getLineage(
   parentNode: t.Node,
-  pos: number,
+  pos: number | Range,
   parentPath: Path = []
 ): [t.Node, Path][] {
+  const cursor = pos instanceof Range ? pos : new Range(pos);
   const candidates: ReturnType<typeof getLineage> = [];
   for (const { key, value } of forEachProperty(parentNode)) {
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
         const childNode = value[i];
-        if (t.isNode(childNode) && selectNode(childNode).includes(pos)) {
+        if (t.isNode(childNode) && selectNode(childNode).includes(cursor)) {
           candidates.push([childNode, [...parentPath, key, i]]);
         }
       }
-    } else if (t.isNode(value) && selectNode(value).includes(pos)) {
+    } else if (t.isNode(value) && selectNode(value).includes(cursor)) {
       candidates.push([value, [...parentPath, key]]);
     }
   }
@@ -46,7 +48,7 @@ export function getLineage(
           candidates.every(([node2]) => node1.start! >= node2.start!)
         );
   return candidate
-    ? [candidate, ...getLineage(candidate[0], pos, candidate[1])]
+    ? [candidate, ...getLineage(candidate[0], cursor, candidate[1])]
     : [];
 }
 
@@ -54,9 +56,13 @@ export function getLineageNodes(ast: t.File, start: number) {
   return getLineage(ast, start).map(([node]) => node);
 }
 
-export function getNode(ast: t.File, start: number, negIndex = -1) {
+export function getNode(ast: t.File, start: number) {
   const parentsAndPaths = getLineage(ast, start);
-  return parentsAndPaths[parentsAndPaths.length + negIndex][0];
+  const node = parentsAndPaths[parentsAndPaths.length + -1][0];
+  if (!node) {
+    throw new Error("No node found at " + start);
+  }
+  return node;
 }
 
 export function getNodeFromPath(ast: t.File, path: Path) {

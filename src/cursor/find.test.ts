@@ -1,4 +1,4 @@
-import { codeFromSource, isValid } from "../code";
+import { codeFromSource } from "../code";
 import { findCursor } from "./find";
 
 const tests = ([
@@ -353,8 +353,10 @@ for (const [source, paths] of tests) {
       for (let [before, after] of path) {
         it(`${direction}: ${before} => ${after}`, () => {
           const code = codeFromSource(source);
-          expect(isValid(code)).toBeTruthy();
-          if (!isValid(code)) {
+
+          expect(code).toBeTruthy();
+
+          if (!code) {
             return;
           }
 

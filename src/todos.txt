@@ -1,0 +1,14 @@
+KeyEquals (=) does not do things
+    when? can't repro
+
+MAKE DOCUMENT SPECIFIC
+
+destructure obj parens shouldn't do the thing
+
+investigate why type errors are shown for the whole array expression and not each element
+
+automate command updating
+
+BUGS:
+- "\\" gets formatted away (try using it as keybinding for makeOperation, or just in the playground, does repro)
+  - might yet have to create that PR for transactional application of edits & selection updates
