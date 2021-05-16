@@ -18,11 +18,13 @@ function* forEachProperty(node: t.Node) {
 
 export type Path = (string | number)[];
 
+export type Lineage = [t.Node, Path][];
+
 export function getLineage(
   parentNode: t.Node,
   pos: number | Range,
   parentPath: Path = []
-): [t.Node, Path][] {
+): Lineage {
   const cursor = pos instanceof Range ? pos : new Range(pos);
   const candidates: ReturnType<typeof getLineage> = [];
   for (const { key, value } of forEachProperty(parentNode)) {
@@ -66,8 +68,12 @@ export function getNode(ast: t.File, start: number) {
 }
 
 export function getNodeFromPath(ast: t.File, path: Path) {
-  return path.reduce<t.Node | t.Node[]>(
+  const node = path.reduce<t.Node | t.Node[]>(
     (ast, property) => (ast as any)[property],
     ast
   );
+  if (!node) {
+    throw new Error("No node found for path: " + path.join("/"));
+  }
+  return node;
 }

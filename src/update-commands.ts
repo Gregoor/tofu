@@ -4,6 +4,8 @@ import * as t from "@babel/types";
 
 import { baseDetailActions } from "./actions";
 import { nodeDefs } from "./nodes";
+import { Expression } from "./nodes/expressions";
+import { Statement } from "./nodes/statements";
 import { DetailAction, commandFromId } from "./utils";
 
 const when =
@@ -11,13 +13,16 @@ const when =
 
 const commands = [] as any[];
 const keybindings = [] as any[];
-function addCommand(nodeType: string | null, { id, on }: DetailAction<t.Node>) {
+function addCommand(
+  nodeType: string | null,
+  { id, keybinding }: DetailAction<t.Node>
+) {
   const command = commandFromId(nodeType, id);
   commands.push({ command, title: command });
-  for (const key of Array.isArray(on) ? on : [on]) {
+  if (keybinding) {
     keybindings.push({
       command,
-      key,
+      key: keybinding,
       when: when + " && " + command,
     });
   }
@@ -27,7 +32,11 @@ for (const detail of baseDetailActions) {
   addCommand(null, detail);
 }
 
-for (const [nodeType, def] of Object.entries(nodeDefs)) {
+for (const [nodeType, def] of [
+  ...Object.entries(nodeDefs),
+  [Expression.kind, Expression] as const,
+  [Statement.kind, Statement] as const,
+]) {
   if (!def || !def.actions) {
     continue;
   }

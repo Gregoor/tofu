@@ -15,29 +15,31 @@
     "test": "jest /out"
   },
   "dependencies": {
-    "@babel/parser": "^7.12.16",
+    "@babel/generator": "^7.13.16",
+    "@babel/parser": "^7.13.16",
     "lodash.pick": "^4.4.0",
-    "memoize-one": "^5.1.1",
+    "memoize-one": "^5.2.1",
     "prettier": "^2.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/preset-env": "^7.12.16",
-    "@babel/preset-typescript": "^7.12.16",
+    "@babel/core": "^7.13.16",
+    "@babel/preset-env": "^7.13.15",
+    "@babel/preset-typescript": "^7.13.0",
+    "@swc/core": "^1.2.55",
     "@types/glob": "^7.1.3",
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^26.0.23",
     "@types/lodash.pick": "^4.4.6",
-    "@types/node": "^14.14.27",
-    "@types/prettier": "^2.2.1",
-    "@types/vscode": "^1.53.0",
+    "@types/node": "^14.14.41",
+    "@types/prettier": "^2.2.3",
+    "@types/vscode": "^1.55.0",
     "glob": "^7.1.6",
-    "husky": "^4.3.6",
+    "husky": "^6.0.0",
     "import-sort-style-module": "^6.0.0",
     "jest": "^26.6.3",
     "prettier-plugin-import-sort": "^0.0.6",
     "pretty-quick": "^3.1.0",
-    "typescript": "^4.1.5",
-    "vscode-test": "^1.5.0"
+    "typescript": "^4.2.4",
+    "vscode-test": "^1.5.2"
   },
   "categories": [
     "Other"
@@ -97,54 +99,6 @@
       {
         "command": "tofu:stretch",
         "title": "tofu:stretch"
-      },
-      {
-        "command": "tofu:Expression:wrap:array",
-        "title": "tofu:Expression:wrap:array"
-      },
-      {
-        "command": "tofu:Expression:wrap:object",
-        "title": "tofu:Expression:wrap:object"
-      },
-      {
-        "command": "tofu:Expression:wrap:call",
-        "title": "tofu:Expression:wrap:call"
-      },
-      {
-        "command": "tofu:Expression:wrap:arrow",
-        "title": "tofu:Expression:wrap:arrow"
-      },
-      {
-        "command": "tofu:Expression:wrap:jsx",
-        "title": "tofu:Expression:wrap:jsx"
-      },
-      {
-        "command": "tofu:Expression:wrap:ternary",
-        "title": "tofu:Expression:wrap:ternary"
-      },
-      {
-        "command": "tofu:Expression:makeMember",
-        "title": "tofu:Expression:makeMember"
-      },
-      {
-        "command": "tofu:Expression:makeCall",
-        "title": "tofu:Expression:makeCall"
-      },
-      {
-        "command": "tofu:Expression:makeComputedMember",
-        "title": "tofu:Expression:makeComputedMember"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:and",
-        "title": "tofu:Expression:makeOperation:and"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:or",
-        "title": "tofu:Expression:makeOperation:or"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:eq",
-        "title": "tofu:Expression:makeOperation:eq"
       },
       {
         "command": "tofu:NumericLiteral:decimalize",
@@ -259,8 +213,8 @@
         "title": "tofu:VariableDeclaration:changeDeclarationKind:var"
       },
       {
-        "command": "tofu:VariableDeclarator:assignVariable",
-        "title": "tofu:VariableDeclarator:assignVariable"
+        "command": "tofu:VariableDeclarator:assign",
+        "title": "tofu:VariableDeclarator:assign"
       },
       {
         "command": "tofu:IfStatement:addElse",
@@ -281,6 +235,70 @@
       {
         "command": "tofu:FunctionDeclaration:makeAsync",
         "title": "tofu:FunctionDeclaration:makeAsync"
+      },
+      {
+        "command": "tofu:FunctionDeclaration:export",
+        "title": "tofu:FunctionDeclaration:export"
+      },
+      {
+        "command": "tofu:JSXText:makeExpression",
+        "title": "tofu:JSXText:makeExpression"
+      },
+      {
+        "command": "tofu:JSXAttribute:assign",
+        "title": "tofu:JSXAttribute:assign"
+      },
+      {
+        "command": "tofu:Expression:wrap:string",
+        "title": "tofu:Expression:wrap:string"
+      },
+      {
+        "command": "tofu:Expression:wrap:array",
+        "title": "tofu:Expression:wrap:array"
+      },
+      {
+        "command": "tofu:Expression:wrap:object",
+        "title": "tofu:Expression:wrap:object"
+      },
+      {
+        "command": "tofu:Expression:wrap:call",
+        "title": "tofu:Expression:wrap:call"
+      },
+      {
+        "command": "tofu:Expression:wrap:arrow",
+        "title": "tofu:Expression:wrap:arrow"
+      },
+      {
+        "command": "tofu:Expression:wrap:jsx",
+        "title": "tofu:Expression:wrap:jsx"
+      },
+      {
+        "command": "tofu:Expression:wrap:ternary",
+        "title": "tofu:Expression:wrap:ternary"
+      },
+      {
+        "command": "tofu:Expression:makeMember",
+        "title": "tofu:Expression:makeMember"
+      },
+      {
+        "command": "tofu:Expression:makeCall",
+        "title": "tofu:Expression:makeCall"
+      },
+      {
+        "command": "tofu:Expression:makeComputedMember",
+        "title": "tofu:Expression:makeComputedMember"
+      },
+      {
+        "command": "tofu:Expression:makeOperation:and",
+        "title": "tofu:Expression:makeOperation:and"
+      },
+      {
+        "command": "tofu:Expression:makeOperation:or",
+        "title": "tofu:Expression:makeOperation:or"
+      },
+      {
+        "command": "tofu:Expression:makeOperation:eq",
+        "title": "tofu:Expression:makeOperation:eq"
       }
     ],
     "keybindings": [
@@ -335,171 +353,6 @@
         "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:stretch"
       },
       {
-        "command": "tofu:Expression:wrap:array",
-        "key": "[",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:array"
-      },
-      {
-        "command": "tofu:Expression:wrap:object",
-        "key": "Shift+[",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:object"
-      },
-      {
-        "command": "tofu:Expression:wrap:call",
-        "key": "Shift+9",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:call"
-      },
-      {
-        "command": "tofu:Expression:wrap:arrow",
-        "key": "Shift+.",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:arrow"
-      },
-      {
-        "command": "tofu:Expression:wrap:jsx",
-        "key": "Shift+,",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:jsx"
-      },
-      {
-        "command": "tofu:Expression:wrap:ternary",
-        "key": "Shift+/",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:wrap:ternary"
-      },
-      {
-        "command": "tofu:Expression:makeMember",
-        "key": ".",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeMember"
-      },
-      {
-        "command": "tofu:Expression:makeCall",
-        "key": "(",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeCall"
-      },
-      {
-        "command": "tofu:Expression:makeComputedMember",
-        "key": "[",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeComputedMember"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:and",
-        "key": "Shift+7",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeOperation:and"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:or",
-        "key": "Shift+\\",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeOperation:or"
-      },
-      {
-        "command": "tofu:Expression:makeOperation:eq",
-        "key": "=",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Expression:makeOperation:eq"
-      },
-      {
-        "command": "tofu:NumericLiteral:decimalize",
-        "key": ".",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:NumericLiteral:decimalize"
-      },
-      {
-        "command": "tofu:Identifier:assign",
-        "key": "space",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Identifier:assign"
-      },
-      {
-        "command": "tofu:Identifier:assign",
-        "key": "=",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:Identifier:assign"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:&",
-        "key": "&",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:&"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:|",
-        "key": "|",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:|"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:+",
-        "key": "+",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:+"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:-",
-        "key": "-",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:-"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:*",
-        "key": "*",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:*"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:/",
-        "key": "/",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:/"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:=",
-        "key": "=",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:="
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:<",
-        "key": "<",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:<"
-      },
-      {
-        "command": "tofu:BinaryExpression:changeOperation:>",
-        "key": ">",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:BinaryExpression:changeOperation:>"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:&",
-        "key": "&",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:&"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:|",
-        "key": "|",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:|"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:+",
-        "key": "+",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:+"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:-",
-        "key": "-",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:-"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:*",
-        "key": "*",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:*"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:/",
-        "key": "/",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:/"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:=",
-        "key": "=",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:="
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:<",
-        "key": "<",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:<"
-      },
-      {
-        "command": "tofu:LogicalExpression:changeOperation:>",
-        "key": ">",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:LogicalExpression:changeOperation:>"
-      },
-      {
         "command": "tofu:ArrayExpression:moveElement:LEFT",
         "key": "Alt+ArrowLeft",
         "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ArrayExpression:moveElement:LEFT"
@@ -508,76 +361,6 @@
         "command": "tofu:ArrayExpression:moveElement:RIGHT",
         "key": "Alt+ArrowRight",
         "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ArrayExpression:moveElement:RIGHT"
-      },
-      {
-        "command": "tofu:ObjectProperty:addObjectPropertyValue",
-        "key": "space",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ObjectProperty:addObjectPropertyValue"
-      },
-      {
-        "command": "tofu:ObjectProperty:addObjectPropertyValue",
-        "key": ":",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ObjectProperty:addObjectPropertyValue"
-      },
-      {
-        "command": "tofu:FunctionExpression:makeAsync",
-        "key": "a",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:FunctionExpression:makeAsync"
-      },
-      {
-        "command": "tofu:ArrowFunctionExpression:convert:FunctionExpression",
-        "key": "???",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ArrowFunctionExpression:convert:FunctionExpression"
-      },
-      {
-        "command": "tofu:VariableDeclaration:changeDeclarationKind:const",
-        "key": "c",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:VariableDeclaration:changeDeclarationKind:const"
-      },
-      {
-        "command": "tofu:VariableDeclaration:changeDeclarationKind:let",
-        "key": "l",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:VariableDeclaration:changeDeclarationKind:let"
-      },
-      {
-        "command": "tofu:VariableDeclaration:changeDeclarationKind:var",
-        "key": "v",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:VariableDeclaration:changeDeclarationKind:var"
-      },
-      {
-        "command": "tofu:VariableDeclarator:assignVariable",
-        "key": "space",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:VariableDeclarator:assignVariable"
-      },
-      {
-        "command": "tofu:VariableDeclarator:assignVariable",
-        "key": "Shift+;",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:VariableDeclarator:assignVariable"
-      },
-      {
-        "command": "tofu:IfStatement:addElse",
-        "key": "e",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:IfStatement:addElse"
-      },
-      {
-        "command": "tofu:IfStatement:addElseIf",
-        "key": "i",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:IfStatement:addElseIf"
-      },
-      {
-        "command": "tofu:IfStatement:changeElseToElseIf",
-        "key": "i",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:IfStatement:changeElseToElseIf"
-      },
-      {
-        "command": "tofu:ForOfStatement:convert:ForStatement",
-        "key": "i",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:ForOfStatement:convert:ForStatement"
-      },
-      {
-        "command": "tofu:FunctionDeclaration:makeAsync",
-        "key": "a",
-        "when": "editorTextFocus && !findWidgetVisible && !suggestWidgetVisible && !renameInputVisible && !inReferenceSearchEditor && !quickFixWidgetVisible && tofu:hasAST && tofu:FunctionDeclaration:makeAsync"
       }
     ]
   },
@@ -585,11 +368,6 @@
     ".js, .jsx, .es6, .es, .mjs, .ts, .tsx": {
       "parser": "babylon",
       "style": "module"
-    }
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
     }
   }
 }

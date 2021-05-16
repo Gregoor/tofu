@@ -22,6 +22,7 @@ export function codeFromSource(source: string) {
       source,
     };
   } catch (error) {
+    console.error("parsing error", error);
     return null;
   }
 }

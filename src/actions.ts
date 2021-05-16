@@ -23,7 +23,7 @@ export const baseDetailActions: DetailAction<t.Node>[] = [
     (direction) =>
       ({
         id: ["moveCursor", direction],
-        on: direction.toLowerCase(),
+        keybinding: direction.toLowerCase(),
         do: ({ code, cursor }) => ({
           cursor: moveCursor(code, cursor, direction),
         }),
@@ -32,7 +32,7 @@ export const baseDetailActions: DetailAction<t.Node>[] = [
 
   {
     id: "addLine",
-    on: "Enter",
+    keybinding: "Enter",
     do({ code, cursor: { start } }) {
       let pos = 0;
       const wasAtLineStart = isAtLineStart(code.source, start);
@@ -67,14 +67,14 @@ export const baseDetailActions: DetailAction<t.Node>[] = [
       ({
         id: ["selectRange", direction],
         if: ({ leafNode }) => !t.isTemplateElement(leafNode),
-        on: "Shift+" + keyCode,
+        keybinding: "Shift+" + keyCode,
         do: () => ({ rangeSelect: direction }),
       } as DetailAction<t.Node>)
   ),
 
   {
     id: "stretch",
-    on: "Alt+up",
+    keybinding: "Alt+up",
     do: ({ code, cursor }) => {
       const nodes = getLineage(code.ast, cursor.start).reverse();
       const selectedNodeIndex = nodes.findIndex(

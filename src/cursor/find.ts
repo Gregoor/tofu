@@ -1,4 +1,4 @@
-import { getLineageNodes } from "../ast-utils";
+import { getLineage } from "../ast-utils";
 import { Code } from "../code";
 import { findNodeSlot } from "../nodes";
 import { Direction, Range } from "../utils";
@@ -23,11 +23,16 @@ function findCursorX(code: Code, direction: Direction, start: number): Range {
     return new Range(nextStart);
   }
 
-  for (const node of getLineageNodes(ast, nextStart).reverse()) {
+  for (const [node, path] of getLineage(ast, nextStart).reverse()) {
     if (Array.isArray(node)) {
       continue;
     }
-    const slot = findNodeSlot(node, nextStart, code);
+    const slot = findNodeSlot({
+      node,
+      path,
+      code,
+      cursor: new Range(nextStart),
+    });
     if (slot) {
       return slot;
     }

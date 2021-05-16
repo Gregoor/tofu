@@ -1,7 +1,15 @@
 import * as t from "@babel/types";
 
 import { AST, Code } from "./code";
-import { NodeActionParams } from "./nodes/utils";
+
+declare global {
+  const dbg: <V>(value: V) => V;
+}
+
+(global as any).dbg = (value: any) => {
+  console.log(value);
+  return value;
+};
 
 export type CursorFn = (code: Code, cursor: Range) => Range;
 
@@ -16,14 +24,30 @@ export type Change =
   | { cursor: Range }
   | { rangeSelect: Direction };
 
-export type Action<T extends t.Node> = (params: NodeActionParams<T>) => Change;
+export type SelectionContext<T> = {
+  node: T;
+  path: (string | number)[];
+  cursor: Range;
+  code: Code;
+};
+
+export type Action<T extends t.Node> = (params: SelectionContext<T>) => Change;
 
 type ActionId = string | [string, string, ...string[]];
 
 export type DetailAction<T extends t.Node> = {
   id: ActionId;
-  if?: (params: NodeActionParams<T>) => any;
-  on: string | [string, string, ...string[]];
+  if?: (params: {
+    node: T;
+    path: (string | number)[];
+    leafNode: t.Node;
+    code: Code;
+  }) => any;
+  keybinding?: string;
+  on?: {
+    at: (params: SelectionContext<T>) => any;
+    char: string | [string, string, ...string[]];
+  };
   do: Action<T>;
 };
 
