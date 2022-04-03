@@ -22,9 +22,9 @@ On top of this there are many contextual actions. A few examples:
 - `l` at the start of a variable declaration will replace the kind (e.g. `const`) with `let`
 There are currently around 70 of those and counting, many being smaller in nature such as `[` at the end of an expression inserting `[0]` instead to minimize broken syntactical states
   
-I am sure there are many I have not thought of, so contributions in the forms of new issues describing your expectations and wishes are greatly appreciated.
+I am sure there are many I have not thought of, so contributions in the forms of [new issues](https://github.com/Gregoor/tofu/issues) describing your expectations and wishes are greatly appreciated.
   
-The opposite is also true, Tofu makes assumptions about what the right action is in which context. Please let me know where I have baked in assumptions which do not jive with your style.
+The opposite is also true, Tofu makes assumptions about what the right action is in which context. Please [let me know](https://github.com/Gregoor/tofu/issues) where I have baked in assumptions which do not jive with your style.
 
 I will stop thinking of Tofu as an experiment once I and other users deem it a clear workflow improvement and the project has found a path towards monetary sustainability.
 
