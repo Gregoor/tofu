@@ -1,6 +1,6 @@
 # [Tofu](https://tofu.is)
 
-Tofu is an experiment in **structured-yet-fluid** code editing for JavaScript and TypeScript.
+Tofu is an experimental [VSCode](https://code.visualstudio.com/) extension for **structured-yet-fluid** code writing with JavaScript and TypeScript.
 
 Its goal is to provide more semantically meaningful code transformations while also offering escape hatches for direct literal code editing. A secondary goal is to minimize moments of broken syntax.
 
