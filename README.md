@@ -20,6 +20,7 @@ Action | Key(s)
 On top of this there are many contextual actions. A few examples:
 - `e` at the end of an `if`-block will add an `else` branch, placing the cursor within the new block
 - `l` at the start of a variable declaration will replace the kind (e.g. `const`) with `let`
+
 There are currently around 70 of those and counting, many being smaller in nature such as `[` at the end of an expression inserting `[0]` instead to minimize broken syntactical states
   
 I am sure there are many I have not thought of, so contributions in the forms of [new issues](https://github.com/Gregoor/tofu/issues) describing your expectations and wishes are greatly appreciated.
