@@ -4,7 +4,15 @@ Tofu is an experimental [VSCode](https://code.visualstudio.com/) extension for *
 
 Its goal is to provide more semantically meaningful code transformations while also offering escape hatches for direct literal code editing. A secondary goal is to minimize moments of broken syntax.
 
-The keymap is designed to be familiar and literal. These are the basic actions which are usable in most contexts:
+## Caveats
+Given my limited resources of time, I sacrifice efficiency at the altar of iterating on the idea. Tofu re-parses the whole file on every edit, using [Babel](http://babel.io/) and formats it with [Prettier](https://prettier.io/) after most actions. This is not incremental, and costly for large files. In the short-term I make it work by not having large file, which I tend to favor anyway.\
+In the longer term, I'd love for Tofu to use an incremental parser like [TreeSitter](https://tree-sitter.github.io/tree-sitter/) instead.
+
+In terms of experience, depending on where you are coming from, this might be a radical change to how you usually code. Forget thinking about code style or managing syntax and slide into the world of literal structural editing.
+
+## Actions
+
+The **keymap** is designed to be familiar and literal. These are the basic actions which are usable in most contexts:
 
 Action | Key(s)
 --- | ---
@@ -17,11 +25,10 @@ Action | Key(s)
 **Move Node**  | <kbd>⌥ Alt</kbd> <kbd>←</kbd> <br/> <kbd>⌥ Alt</kbd> <kbd>→</kbd>
 **Toggle Tofu (Escape hatch)** | <kbd>Esc</kbd>
   
-On top of this there are many contextual actions. A few examples:
+On top of this there are around 70 contextual actions (and counting). A few examples:
 - `e` at the end of an `if`-block will add an `else` branch, placing the cursor within the new block
 - `l` at the start of a variable declaration will replace the kind (e.g. `const`) with `let`
-
-There are currently around 70 of those and counting, many being smaller in nature such as `[` at the end of an expression inserting `[0]` instead to minimize broken syntactical states
+- many are small in nature such as `[` at the end of an expression inserting `[0]` instead to minimize broken syntactical states
   
 I am sure there are many I have not thought of, so contributions in the forms of [new issues](https://github.com/Gregoor/tofu/issues) describing your expectations and wishes are greatly appreciated.
   
