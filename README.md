@@ -17,7 +17,7 @@ The **keymap** is designed to be familiar and literal. These are the basic actio
 Action | Key(s)
 --- | ---
 **Move Cursor** | <kbd>←</kbd> <br/> <kbd>↑</kbd> <br/> <kbd>→</kbd> <br/> <kbd>↓</kbd>
-**Jump Cursor**  | <kbd>⇥ Tab</kbd> <br/> <kbd>⇧ Shift</kbd> <kbd>⇥ Tab</kbd> (Back)
+**Jump Cursor**  | <kbd>⌥ Alt</kbd> <kbd>←</kbd> <br/> <kbd>⌥ Alt</kbd> <kbd>→</kbd>
 **Extend Selection**  | <kbd>⇧ Shift</kbd> <kbd>↑</kbd> <br/> <kbd>⇧ Shift</kbd> <kbd>↓</kbd>
 **Add new line** | <kbd>⏎ Enter</kbd> (below) <br/> <kbd>⇧ Shift</kbd> <kbd>⏎ Enter</kbd> (above)
 **Wrap**  | <kbd>⌥ Alt</kbd> <kbd>↓</kbd> (Select) <br/> <kbd>(</kbd> (Parenthesize) <br/> <kbd>{</kbd> (Object) <br/> <kbd>[</kbd> (Array) <br/> <kbd>></kbd> (Function) <br/> <kbd><</kbd> (JSX)
