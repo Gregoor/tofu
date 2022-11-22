@@ -22,10 +22,10 @@ Action | Key(s)
 **Add new line** | <kbd>⏎ Enter</kbd> (below) <br/> <kbd>⇧ Shift</kbd> <kbd>⏎ Enter</kbd> (above)
 **Wrap**  | <kbd>⌥ Alt</kbd> <kbd>↓</kbd> (Select) <br/> <kbd>(</kbd> (Parenthesize) <br/> <kbd>{</kbd> (Object) <br/> <kbd>[</kbd> (Array) <br/> <kbd>></kbd> (Function) <br/> <kbd><</kbd> (JSX)
 **Unwrap**  | <kbd>⌥ Alt</kbd> <kbd>↑</kbd>
-**Move Node**  | <kbd>⌥ Alt</kbd> <kbd>←</kbd> <br/> <kbd>⌥ Alt</kbd> <kbd>→</kbd>
+**Move Node**  | <kbd>⇧ Shift</kbd> <kbd>⌥ Alt</kbd> <kbd>←</kbd> <br/> <kbd>⇧ Shift</kbd> <kbd>⌥ Alt</kbd> <kbd>→</kbd>
 **Toggle Tofu (Escape hatch)** | <kbd>Esc</kbd>
   
-On top of this there are around 70 contextual actions (and counting). A few examples:
+On top of this there are around 50 contextual actions (and counting). A few examples:
 - `e` at the end of an `if`-block will add an `else` branch, placing the cursor within the new block
 - `l` at the start of a variable declaration will replace the kind (e.g. `const`) with `let`
 - many are small in nature such as `[` at the end of an expression inserting `[0]` instead to minimize broken syntactical states
