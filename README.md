@@ -1,4 +1,4 @@
-# Tofu - [post-stone age coding](https://dflate.io/state-of-tofu)
+# Tofu: [post-stone age coding](https://dflate.io/state-of-tofu)
 
 Tofu is an experimental [VSCode](https://code.visualstudio.com/) extension for **structured-yet-fluid** code writing with JavaScript and TypeScript.
 
